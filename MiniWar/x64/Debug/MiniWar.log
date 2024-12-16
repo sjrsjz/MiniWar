@@ -1,2 +1,26 @@
-﻿  LINK : 没有找到 D:\VS Projects\MiniWar\x64\Debug\MiniWar.exe 或上一个增量链接没有生成它；正在执行完全链接
+﻿  Main.cpp
+D:\VS Projects\MiniWar\include\linmath.h(611,51): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\include\linmath.h(611,20): warning C4244: “初始化”: 从“double”转换到“const float”，可能丢失数据
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\mash.h(81,80): warning C4312: “类型强制转换”: 从“unsigned int”转换到更大的“void *”
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\mash.h(87,79): warning C4312: “类型强制转换”: 从“unsigned int”转换到更大的“void *”
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\mash.h(93,83): warning C4312: “类型强制转换”: 从“unsigned int”转换到更大的“void *”
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\Camera.h(104,28): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\cpp\Main.cpp(65,77): warning C4244: “参数”: 从“int”转换到“GLfloat”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(66,78): warning C4244: “参数”: 从“int”转换到“GLfloat”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(73,49): warning C4267: “参数”: 从“size_t”转换到“GLsizei”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(109,47): warning C4267: “参数”: 从“size_t”转换到“GLsizei”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(241,15): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(241,34): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
   MiniWar.vcxproj -> D:\VS Projects\MiniWar\x64\Debug\MiniWar.exe

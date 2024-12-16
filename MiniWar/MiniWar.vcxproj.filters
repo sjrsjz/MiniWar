@@ -13,6 +13,9 @@
     <ClCompile Include="..\cpp\shader.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
+    <ClCompile Include="..\cpp\globals.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\Camera.h">
@@ -54,9 +57,33 @@
     <ClInclude Include="..\include\GL\wglew.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\header\passes\FragmentBuffer.h">
+      <Filter>headers\passes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\debug.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\ByteArray.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\globals.h">
+      <Filter>headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
+    <None Include="..\shaders\normal_gl.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\normal_gl.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\map_renderer.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\map_renderer.frag">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="headers">
@@ -68,5 +95,19 @@
     <Filter Include="cpp">
       <UniqueIdentifier>{aa8e1d28-df8b-44e2-9fb8-e8b83128dc4a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="headers\passes">
+      <UniqueIdentifier>{97dd5582-01b7-46b5-bf4d-5a9d11b8bd15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{79b2e853-4416-4792-af4f-28243a3cd31c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\shaders\main_game_pass.frag">
+      <Filter>shaders</Filter>
+    </Text>
+    <Text Include="..\shaders\main_game_pass.vert">
+      <Filter>shaders</Filter>
+    </Text>
   </ItemGroup>
 </Project>
