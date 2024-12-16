@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 PlatformToolSet=v143:VCToolArchitecture=Native64Bit:VCToolsVersion=14.38.33130:TargetPlatformVersion=10.0.22621.0:
 Debug|x64|D:\VSProject\MiniWar\|
+=======
+PlatformToolSet=v143:VCToolArchitecture=Native64Bit:VCToolsVersion=14.41.34117:TargetPlatformVersion=10.0.22621.0:
+Debug|x64|C:\Users\郭\source\repos\moAAjDdgm1Maa\|
+>>>>>>> df7c0a6c9d11cc8a6333aeb0a5c27be342308185
