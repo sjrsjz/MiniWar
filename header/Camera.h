@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "../include/linmath.h"
 #ifndef _Camera_h
 #define _Camera_h
