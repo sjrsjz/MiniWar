@@ -15,7 +15,7 @@ Intercept(weapon:Weapon)
 Interceptable: float
 Type: int
 ## 资源库
-规定四种基本资源：黄金、石油、钢材、电力、人力
+规定五种基本资源：黄金、石油、钢材、电力、人力
 Gold: int
 Oil: int
 Electricity: int
