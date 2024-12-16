@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -28,6 +28,7 @@
     <ClInclude Include="..\header\passes\FragmentBuffer.h" />
     <ClInclude Include="..\header\shader.h" />
     <ClInclude Include="..\header\Timer.h" />
+    <ClInclude Include="..\header\utils\Array.h" />
     <ClInclude Include="..\include\GLFW\glfw3.h" />
     <ClInclude Include="..\include\GLFW\glfw3native.h" />
     <ClInclude Include="..\include\GL\eglew.h" />
@@ -36,6 +37,8 @@
     <ClInclude Include="..\include\GL\glxew.h" />
     <ClInclude Include="..\include\GL\wglew.h" />
     <ClInclude Include="..\include\linmath.h" />
+    <ClInclude Include="Building.h" />
+    <ClInclude Include="region.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cpp\globals.cpp" />
@@ -43,6 +46,8 @@
     <ClCompile Include="..\cpp\mash.cpp" />
     <ClCompile Include="..\cpp\output.cpp" />
     <ClCompile Include="..\cpp\shader.cpp" />
+    <ClCompile Include="..\cpp\utils\Array.cpp" />
+    <ClCompile Include="Weapon.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
