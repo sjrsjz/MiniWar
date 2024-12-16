@@ -34,6 +34,7 @@
     <ClInclude Include="..\include\GL\wglew.h" />
     <ClInclude Include="..\include\linmath.h" />
     <ClInclude Include="Building.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="region.h" />
   </ItemGroup>
   <ItemGroup>

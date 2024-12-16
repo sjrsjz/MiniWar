@@ -69,6 +69,9 @@
     <ClInclude Include="Building.h">
       <Filter>headers\Logic</Filter>
     </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />

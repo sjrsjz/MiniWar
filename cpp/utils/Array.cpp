@@ -24,5 +24,8 @@ T& Array<T>::get(int x, int y) {
 	if (x >= this->width || y >= this->hight) {
 		throw std::out_of_range("Index out of range");
 	}
+	if (x < 0 || y < 0) {
+		throw std::out_of_range("Index should larger than 0");
+	}
 	return data[x][y];
 }
