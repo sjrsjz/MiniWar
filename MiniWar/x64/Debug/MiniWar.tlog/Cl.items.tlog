@@ -1,4 +1,11 @@
+<<<<<<< HEAD
+D:\VSProject\MiniWar\cpp\Main.cpp;D:\VSProject\MiniWar\MiniWar\x64\Debug\Main.obj
+D:\VSProject\MiniWar\cpp\mash.cpp;D:\VSProject\MiniWar\MiniWar\x64\Debug\mash.obj
+D:\VSProject\MiniWar\cpp\output.cpp;D:\VSProject\MiniWar\MiniWar\x64\Debug\output.obj
+D:\VSProject\MiniWar\cpp\shader.cpp;D:\VSProject\MiniWar\MiniWar\x64\Debug\shader.obj
+=======
 D:\VS Projects\MiniWar\cpp\Main.cpp;D:\VS Projects\MiniWar\MiniWar\x64\Debug\Main.obj
 D:\VS Projects\MiniWar\cpp\mash.cpp;D:\VS Projects\MiniWar\MiniWar\x64\Debug\mash.obj
 D:\VS Projects\MiniWar\cpp\output.cpp;D:\VS Projects\MiniWar\MiniWar\x64\Debug\output.obj
 D:\VS Projects\MiniWar\cpp\shader.cpp;D:\VS Projects\MiniWar\MiniWar\x64\Debug\shader.obj
+>>>>>>> df7c0a6c9d11cc8a6333aeb0a5c27be342308185
