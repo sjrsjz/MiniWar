@@ -13,11 +13,8 @@
     <ClCompile Include="..\cpp\shader.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\utils\Array.cpp">
-      <Filter>cpp\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Weapon.h">
-      <Filter>headers\Logic</Filter>
+    <ClCompile Include="..\cpp\globals.cpp">
+      <Filter>cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -60,14 +57,17 @@
     <ClInclude Include="..\include\GL\wglew.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\header\utils\Array.h">
-      <Filter>headers\utils</Filter>
+    <ClInclude Include="..\header\passes\FragmentBuffer.h">
+      <Filter>headers\passes</Filter>
     </ClInclude>
-    <ClInclude Include="region.h">
-      <Filter>headers\Logic</Filter>
+    <ClInclude Include="..\header\debug.h">
+      <Filter>headers</Filter>
     </ClInclude>
-    <ClInclude Include="Building.h">
-      <Filter>headers\Logic</Filter>
+    <ClInclude Include="..\header\ByteArray.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\globals.h">
+      <Filter>headers</Filter>
     </ClInclude>
     <ClInclude Include="Player.h">
       <Filter>headers\Logic</Filter>
@@ -75,6 +75,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
+    <None Include="..\shaders\normal_gl.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\normal_gl.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\map_renderer.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\map_renderer.frag">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="headers">
@@ -86,17 +98,19 @@
     <Filter Include="cpp">
       <UniqueIdentifier>{aa8e1d28-df8b-44e2-9fb8-e8b83128dc4a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="cpp\Logic">
-      <UniqueIdentifier>{73480fba-7604-4ea8-9e16-c618b17aa7c5}</UniqueIdentifier>
+    <Filter Include="headers\passes">
+      <UniqueIdentifier>{97dd5582-01b7-46b5-bf4d-5a9d11b8bd15}</UniqueIdentifier>
     </Filter>
-    <Filter Include="cpp\utils">
-      <UniqueIdentifier>{14ec1a6c-42f5-41dd-a242-c07e4bc8a596}</UniqueIdentifier>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{79b2e853-4416-4792-af4f-28243a3cd31c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="headers\Logic">
-      <UniqueIdentifier>{f02e391e-2ba1-4359-873c-bf3d82637769}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="headers\utils">
-      <UniqueIdentifier>{08c4f959-afc8-4292-9ab2-d3c903925c83}</UniqueIdentifier>
-    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\shaders\main_game_pass.frag">
+      <Filter>shaders</Filter>
+    </Text>
+    <Text Include="..\shaders\main_game_pass.vert">
+      <Filter>shaders</Filter>
+    </Text>
   </ItemGroup>
 </Project>

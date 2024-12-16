@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #pragma once
 #ifndef _gl_h
 #define  _gl_h

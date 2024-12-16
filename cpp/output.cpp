@@ -1,4 +1,4 @@
-#include "../header/output.h"
+﻿#include "../header/output.h"
 void println(const char* str) {
 	std::cout << str << std::endl;
 }
