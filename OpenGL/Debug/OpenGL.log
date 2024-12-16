@@ -1,0 +1,62 @@
+﻿  Main.cpp
+D:\VS Projects\MiniWar\include\linmath.h(611,51): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\include\linmath.h(611,20): warning C4244: “初始化”: 从“double”转换到“const float”，可能丢失数据
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\mash.h(38,22): warning C4018: “<”: 有符号/无符号不匹配
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\mash.h(101,16): warning C4101: “a”: 未引用的局部变量
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\cpp\Main.cpp(84,53): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(85,42): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(86,47): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(87,48): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(166,15): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(166,34): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+Main.obj : error LNK2019: 无法解析的外部符号 __imp__glClear@4，函数 "void __cdecl render(void)" (?render@@YAXXZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp__glDrawArrays@12，函数 "void __cdecl render(void)" (?render@@YAXXZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp__glEnable@4，函数 "void __cdecl render(void)" (?render@@YAXXZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp__glViewport@16，函数 "void __cdecl render(void)" (?render@@YAXXZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp__glewInit@0，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp__glewGetErrorString@4，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwInit，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwTerminate，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwSetErrorCallback，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwWindowHint，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwCreateWindow，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwDestroyWindow，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwWindowShouldClose，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwSetWindowShouldClose，函数 "void __cdecl glfwKeyCallBack(struct GLFWwindow *,int,int,int,int)" (?glfwKeyCallBack@@YAXPAUGLFWwindow@@HHHH@Z) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwGetFramebufferSize，函数 "void __cdecl render(void)" (?render@@YAXXZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwPollEvents，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwSetKeyCallback，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwSetCursorPosCallback，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwGetTime，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwMakeContextCurrent，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwSwapBuffers，函数 "void __cdecl render(void)" (?render@@YAXXZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 _glfwSwapInterval，函数 _main 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewBindBuffer，函数 "public: void __thiscall mash::build(unsigned int,char const *,char const *,char const *,char const *)" (?build@mash@@QAEXIPBD000@Z) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewBufferData，函数 "public: void __thiscall mash::build(unsigned int,char const *,char const *,char const *,char const *)" (?build@mash@@QAEXIPBD000@Z) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewDeleteBuffers，函数 "public: __thiscall mash::~mash(void)" (??1mash@@QAE@XZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewGenBuffers，函数 "public: void __thiscall mash::build(unsigned int,char const *,char const *,char const *,char const *)" (?build@mash@@QAEXIPBD000@Z) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewEnableVertexAttribArray，函数 "public: void __thiscall mash::build(unsigned int,char const *,char const *,char const *,char const *)" (?build@mash@@QAEXIPBD000@Z) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewGetAttribLocation，函数 "public: void __thiscall mash::build(unsigned int,char const *,char const *,char const *,char const *)" (?build@mash@@QAEXIPBD000@Z) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewGetUniformLocation，函数 "void __cdecl render(void)" (?render@@YAXXZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewUniformMatrix4fv，函数 "void __cdecl render(void)" (?render@@YAXXZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewUseProgram，函数 "void __cdecl render(void)" (?render@@YAXXZ) 中引用了该符号
+Main.obj : error LNK2019: 无法解析的外部符号 __imp____glewVertexAttribPointer，函数 "public: void __thiscall mash::build(unsigned int,char const *,char const *,char const *,char const *)" (?build@mash@@QAEXIPBD000@Z) 中引用了该符号
+shader.obj : error LNK2019: 无法解析的外部符号 __imp____glewAttachShader，函数 "int __cdecl CompileComputeShader(char const *,unsigned int *)" (?CompileComputeShader@@YAHPBDPAI@Z) 中引用了该符号
+shader.obj : error LNK2019: 无法解析的外部符号 __imp____glewCompileShader，函数 "int __cdecl CompileComputeShader(char const *,unsigned int *)" (?CompileComputeShader@@YAHPBDPAI@Z) 中引用了该符号
+shader.obj : error LNK2019: 无法解析的外部符号 __imp____glewCreateProgram，函数 "int __cdecl CompileComputeShader(char const *,unsigned int *)" (?CompileComputeShader@@YAHPBDPAI@Z) 中引用了该符号
+shader.obj : error LNK2019: 无法解析的外部符号 __imp____glewCreateShader，函数 "int __cdecl CompileComputeShader(char const *,unsigned int *)" (?CompileComputeShader@@YAHPBDPAI@Z) 中引用了该符号
+shader.obj : error LNK2019: 无法解析的外部符号 __imp____glewGetShaderInfoLog，函数 "int __cdecl CompileComputeShader(char const *,unsigned int *)" (?CompileComputeShader@@YAHPBDPAI@Z) 中引用了该符号
+shader.obj : error LNK2019: 无法解析的外部符号 __imp____glewGetShaderiv，函数 "int __cdecl CompileComputeShader(char const *,unsigned int *)" (?CompileComputeShader@@YAHPBDPAI@Z) 中引用了该符号
+shader.obj : error LNK2019: 无法解析的外部符号 __imp____glewLinkProgram，函数 "int __cdecl CompileComputeShader(char const *,unsigned int *)" (?CompileComputeShader@@YAHPBDPAI@Z) 中引用了该符号
+shader.obj : error LNK2019: 无法解析的外部符号 __imp____glewShaderSource，函数 "int __cdecl CompileComputeShader(char const *,unsigned int *)" (?CompileComputeShader@@YAHPBDPAI@Z) 中引用了该符号
+D:\VS Projects\MiniWar\OpenGL\..\lib\glew32.lib : warning LNK4272: 库计算机类型“x64”与目标计算机类型“x86”冲突
+D:\VS Projects\MiniWar\OpenGL\..\lib\glfw3.lib : warning LNK4272: 库计算机类型“x64”与目标计算机类型“x86”冲突
+D:\VS Projects\MiniWar\Debug\MiniWar.exe : fatal error LNK1120: 40 个无法解析的外部命令

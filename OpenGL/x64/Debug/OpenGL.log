@@ -1,0 +1,27 @@
+﻿  Main.cpp
+D:\VS Projects\MiniWar\include\linmath.h(611,51): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\include\linmath.h(611,20): warning C4244: “初始化”: 从“double”转换到“const float”，可能丢失数据
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\mash.h(81,13): warning C4312: “类型强制转换”: 从“unsigned int”转换到更大的“void *”
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\mash.h(89,13): warning C4312: “类型强制转换”: 从“unsigned int”转换到更大的“void *”
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\mash.h(97,13): warning C4312: “类型强制转换”: 从“unsigned int”转换到更大的“void *”
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\header\mash.h(101,16): warning C4101: “a”: 未引用的局部变量
+  (编译源文件“../cpp/Main.cpp”)
+  
+D:\VS Projects\MiniWar\cpp\Main.cpp(76,46): warning C4267: “参数”: 从“size_t”转换到“GLsizei”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(84,53): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(85,42): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(86,47): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(87,48): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(166,15): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+D:\VS Projects\MiniWar\cpp\Main.cpp(166,34): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+  OpenGL.vcxproj -> D:\VS Projects\MiniWar\x64\Debug\MiniWar.exe
