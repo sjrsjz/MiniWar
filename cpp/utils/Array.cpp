@@ -1,4 +1,5 @@
-#include "../header/utils/Array.h"
+#include "../../header/utils/Array.h"
+//#include "../header/utils/Array.h"
 
 template<class T>
 Array<T>::Array(int w, int h) {
@@ -12,6 +13,9 @@ Array<T>::Array(int w, int h) {
 
 template<class T>
 Array<T>::~Array() {
+	for (size_t i = 0; i < width; i++) {
+		delete[] data[i];
+	}
 	delete[] data;
 }
 
@@ -20,4 +24,5 @@ T& Array<T>::get(int x, int y) {
 	if (x >= this->width || y >= this->hight) {
 		throw std::out_of_range("Index out of range");
 	}
+	return data[x][y];
 }
