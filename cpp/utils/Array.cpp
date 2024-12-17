@@ -1,5 +1,4 @@
 #include "../../header/utils/Array.h"
-//#include "../header/utils/Array.h"
 
 template<class T>
 Array<T>::Array(int w, int h) {

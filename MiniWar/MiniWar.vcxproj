@@ -26,9 +26,12 @@
     <ClInclude Include="..\header\mash.h" />
     <ClInclude Include="..\header\output.h" />
     <ClInclude Include="..\header\passes\FragmentBuffer.h" />
+    <ClInclude Include="..\header\passes\SSBO.h" />
+    <ClInclude Include="..\header\passes\SSBOByteArray.h" />
     <ClInclude Include="..\header\shader.h" />
     <ClInclude Include="..\header\Timer.h" />
     <ClInclude Include="..\header\utils\Array.h" />
+    <ClInclude Include="..\header\utils\SmoothMove.h" />
     <ClInclude Include="..\include\GLFW\glfw3.h" />
     <ClInclude Include="..\include\GLFW\glfw3native.h" />
     <ClInclude Include="..\include\GL\eglew.h" />

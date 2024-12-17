@@ -11,11 +11,11 @@ private:
     int m_height;
 
 public:
-	FragmentBuffer()
+    inline FragmentBuffer()
 		: m_fbo(0), m_texture(0), m_depthBuffer(0), m_width(0), m_height(0)
 	{
 	}
-    FragmentBuffer(int width, int height)
+    inline FragmentBuffer(int width, int height)
         : m_fbo(0), m_texture(0), m_depthBuffer(0), m_width(width), m_height(height)
     {
         create_frameBuffer();
@@ -25,16 +25,16 @@ public:
         unbind_frameBuffer();
     }
 
-    ~FragmentBuffer()
+    inline ~FragmentBuffer()
     {
     }
-	GLuint get_texture() const
+    inline GLuint get_texture() const
 	{
 		return m_texture;
 	}
 
     // 创建帧缓冲
-    void create_frameBuffer()
+    inline void create_frameBuffer()
     {
         glGenFramebuffers(1, &m_fbo);
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
@@ -42,7 +42,7 @@ public:
     }
 
     // 创建纹理
-    void create_texture(int width, int height)
+    inline void create_texture(int width, int height)
     {
         glGenTextures(1, &m_texture);
         glBindTexture(GL_TEXTURE_2D, m_texture);
@@ -54,7 +54,7 @@ public:
     }
 
     // 创建深度缓冲
-    void create_depthBuffer(int width, int height)
+    inline void create_depthBuffer(int width, int height)
     {
         glGenRenderbuffers(1, &m_depthBuffer);
         glBindRenderbuffer(GL_RENDERBUFFER, m_depthBuffer);
@@ -63,7 +63,7 @@ public:
     }
 
     // 检查帧缓冲是否完整
-    void check_frameBuffer()
+    inline void check_frameBuffer()
     {
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
@@ -72,25 +72,25 @@ public:
     }
 
     // 绑定帧缓冲
-    void bind_frameBuffer()
+    inline void bind_frameBuffer()
     {
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     }
 
     // 解绑帧缓冲
-    void unbind_frameBuffer()
+    inline void unbind_frameBuffer()
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     // 绑定纹理
-    void bind_texture()
+    inline void bind_texture()
     {
         glBindTexture(GL_TEXTURE_2D, m_texture);
     }
 
     // 重新设置大小
-    void resize(int width, int height)
+    inline void resize(int width, int height)
     {
         m_width = width;
         m_height = height;
@@ -102,7 +102,7 @@ public:
     }
 
     // 释放资源
-    void release()
+    inline void release()
     {
         if (m_fbo)
         {

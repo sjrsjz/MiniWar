@@ -10,5 +10,8 @@ public:
 	void setTime(double t) {
 		dt = t - lt; lt = t;
 	}
+	double getTime() {
+		return lt;
+	}
 };
 #endif
