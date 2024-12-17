@@ -23,17 +23,14 @@
     <ClInclude Include="..\header\Camera.h" />
     <ClInclude Include="..\header\debug.h" />
     <ClInclude Include="..\header\globals.h" />
-<<<<<<< HEAD
     <ClInclude Include="..\header\Logic\Building.h" />
     <ClInclude Include="..\header\Logic\Player.h" />
     <ClInclude Include="..\header\Logic\region.h" />
     <ClInclude Include="..\header\Logic\RegionManager.h" />
-=======
     <ClInclude Include="..\header\Logic\Army.h" />
     <ClInclude Include="..\header\Logic\Building.h" />
     <ClInclude Include="..\header\Logic\Player.h" />
     <ClInclude Include="..\header\Logic\Region.h" />
->>>>>>> 342fef05818501dee7608a80ac7adf078302a9c5
     <ClInclude Include="..\header\Logic\Weapon.h" />
     <ClInclude Include="..\header\mash.h" />
     <ClInclude Include="..\header\output.h" />
@@ -41,10 +38,7 @@
     <ClInclude Include="..\header\shader.h" />
     <ClInclude Include="..\header\Timer.h" />
     <ClInclude Include="..\header\utils\Array.h" />
-<<<<<<< HEAD
-=======
     <ClInclude Include="..\header\utils\Point.h" />
->>>>>>> 342fef05818501dee7608a80ac7adf078302a9c5
     <ClInclude Include="..\include\GLFW\glfw3.h" />
     <ClInclude Include="..\include\GLFW\glfw3native.h" />
     <ClInclude Include="..\include\GL\eglew.h" />
@@ -61,10 +55,7 @@
     <ClCompile Include="..\cpp\output.cpp" />
     <ClCompile Include="..\cpp\shader.cpp" />
     <ClCompile Include="..\cpp\utils\Array.cpp" />
-<<<<<<< HEAD
-=======
     <ClCompile Include="..\cpp\utils\Point.cpp" />
->>>>>>> 342fef05818501dee7608a80ac7adf078302a9c5
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
