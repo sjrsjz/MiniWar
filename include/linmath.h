@@ -71,12 +71,11 @@ LINMATH_H_FUNC void vec##n##_dup(vec##n r, vec##n const src) \
 	for(i=0; i<n; ++i) \
 		r[i] = src[i]; \
 }\
-LINMATH_H_FUNC float* Vec##n(std::initializer_list<float> t) {\
-	vec##n a;int j=0;\
+LINMATH_H_FUNC void Vec##n(vec##n a, std::initializer_list<float> t) {\
+	int j=0;\
 	for(auto i=t.begin(); i<t.end(); i++){ \
 		a[j] = *i;j++; \
 	}\
-	return a;\
 }
 
 LINMATH_H_DEFINE_VEC(2)
