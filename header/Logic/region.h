@@ -4,18 +4,17 @@
 #include "Weapon.h"
 #include "Player.h"
 #include "../utils/Point.h"
-class region {
+class Region {
 private:
 	Building building;
 	float hp;
 	int owner;
 	Point position;
-	std::pair<float, float> position;
 	std::vector<Weapon> weapons;
 
 public:
-	region();
-	~region();
+	Region();
+	~Region();
 	void setOwner(int owner);
 	int getOwner();
 	bool increaseHp(float hp);
