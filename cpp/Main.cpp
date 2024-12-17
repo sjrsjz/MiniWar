@@ -191,11 +191,11 @@ void init() {
 	map_info_ssbo = SSBO(16 * sizeof(float), GL_STATIC_DRAW);
 	map_info_ssbo.set_binding_point_index(0);
 	map_info_ssbo.create_ssbo();
-	map_info.push_back({ 1.0,1.0,1.0,1.0 });
-	map_info.push_back({ 1.0,1.0,1.0,1.0 });
-	map_info.push_back({ 1.0,1.0,1.0,1.0 });
-	map_info.push_back({ 1.0,1.0,1.0,1.0 });
-
+	map_info << 1.0f << 1.0f << 0.0f << 0.0f;
+	map_info << 0.0f << 1.0f << 0.0f << 0.0f;
+	map_info << 0.0f << 0.0f << 1.0f << 0.0f;
+	map_info << 0.0f << 0.0f << 0.0f << 0.0f;
+	
 	map_info_ssbo.update_data(map_info.ptr, map_info.size);
 
 
