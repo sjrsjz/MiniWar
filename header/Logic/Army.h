@@ -2,8 +2,15 @@
 
 class Army {
 	float speed;
+	int level;
+	int force;
 public:
-	Army();
+	Army(int force, int level = 1);
 	~Army();
 	float getSpeed();
+	int getLevel();
+	int getForce();
+	bool addArmy(int num);
+	bool removeArmy(int num);
+
 };

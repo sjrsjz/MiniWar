@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Player.h"
 #include <vector>
 #include <string>
@@ -17,4 +17,5 @@ public:
 	std::vector<int> getCost();
 	std::string getName();
 	bool remove(Player& player);
+	void update(Player& player);
 };

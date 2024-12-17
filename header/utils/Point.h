@@ -1,4 +1,4 @@
-#include <cmath>:w
+#include <cmath>
 
 
 class Point {
