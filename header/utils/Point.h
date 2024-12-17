@@ -1,5 +1,5 @@
+#pragma once
 #include <cmath>
-
 
 class Point {
 	float x, y;

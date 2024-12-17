@@ -25,7 +25,6 @@
     <ClInclude Include="..\header\globals.h" />
     <ClInclude Include="..\header\Logic\Building.h" />
     <ClInclude Include="..\header\Logic\Player.h" />
-    <ClInclude Include="..\header\Logic\PowerStation.h" />
     <ClInclude Include="..\header\Logic\Region.h" />
     <ClInclude Include="..\header\Logic\RegionManager.h" />
     <ClInclude Include="..\header\Logic\Army.h" />
@@ -51,7 +50,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cpp\globals.cpp" />
-    <ClCompile Include="..\cpp\Logic\PowerStation.cpp" />
+    <ClCompile Include="..\cpp\Logic\Army.cpp" />
+    <ClCompile Include="..\cpp\Logic\Building.cpp" />
+    <ClCompile Include="..\cpp\Logic\Player.cpp" />
+    <ClCompile Include="..\cpp\Logic\Region.cpp" />
+    <ClCompile Include="..\cpp\Logic\RegionManager.cpp" />
     <ClCompile Include="..\cpp\Main.cpp" />
     <ClCompile Include="..\cpp\mash.cpp" />
     <ClCompile Include="..\cpp\output.cpp" />
