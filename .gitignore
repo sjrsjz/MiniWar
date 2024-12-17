@@ -1,5 +1,7 @@
 .vs/*
 x64/
-MiniWar/x64/
+MiniWar/x64/*
 MiniWar/MiniWar.vcxproj
 MiniWar/MiniWar.vcxproj.filters
+MiniWar/MiniWar.vcxproj.user
+

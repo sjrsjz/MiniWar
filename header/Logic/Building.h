@@ -6,7 +6,7 @@ class Building {
 	int level;
 	std::vector<int> cost;
 
-	//�ƽ�ʯ�͡��ֲġ�����������,Ѳ��,�г�,�޼�,ս��
+	//person, 
 	std::vector<int> production;
 	std::string name;
 public:
