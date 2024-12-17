@@ -16,7 +16,16 @@
     <ClCompile Include="..\cpp\globals.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
+<<<<<<< HEAD
     <ClCompile Include="..\cpp\utils\Array.cpp" />
+=======
+    <ClCompile Include="..\cpp\utils\Array.cpp">
+      <Filter>cpp\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\utils\Point.cpp">
+      <Filter>cpp\utils</Filter>
+    </ClCompile>
+>>>>>>> 342fef05818501dee7608a80ac7adf078302a9c5
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\Camera.h">
@@ -70,13 +79,26 @@
     <ClInclude Include="..\header\globals.h">
       <Filter>headers</Filter>
     </ClInclude>
+<<<<<<< HEAD
     <ClInclude Include="..\header\utils\Array.h" />
+=======
+    <ClInclude Include="..\header\utils\Array.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\Region.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\Weapon.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
+>>>>>>> 342fef05818501dee7608a80ac7adf078302a9c5
     <ClInclude Include="..\header\Logic\Building.h">
       <Filter>headers\Logic</Filter>
     </ClInclude>
     <ClInclude Include="..\header\Logic\Player.h">
       <Filter>headers\Logic</Filter>
     </ClInclude>
+<<<<<<< HEAD
     <ClInclude Include="..\header\Logic\region.h">
       <Filter>headers\Logic</Filter>
     </ClInclude>
@@ -85,6 +107,13 @@
     </ClInclude>
     <ClInclude Include="..\header\Logic\Weapon.h">
       <Filter>headers\Logic</Filter>
+=======
+    <ClInclude Include="..\header\Logic\Army.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\Point.h">
+      <Filter>headers\utils</Filter>
+>>>>>>> 342fef05818501dee7608a80ac7adf078302a9c5
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -118,8 +147,22 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{79b2e853-4416-4792-af4f-28243a3cd31c}</UniqueIdentifier>
     </Filter>
+<<<<<<< HEAD
     <Filter Include="headers\Logic">
       <UniqueIdentifier>{e214e9d0-c08e-48cc-a5cb-23de6bb7a5fa}</UniqueIdentifier>
+=======
+    <Filter Include="cpp\Logic">
+      <UniqueIdentifier>{35a55fc2-95cd-481e-aae7-94c5234ccff9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cpp\utils">
+      <UniqueIdentifier>{f82efc86-a5b7-4617-9956-c6df13331bae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="headers\Logic">
+      <UniqueIdentifier>{1b557f20-e25b-47d6-8cf5-809e04c6d8f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="headers\utils">
+      <UniqueIdentifier>{82bb7b68-d06a-4f9c-b28b-3d664b040fd9}</UniqueIdentifier>
+>>>>>>> 342fef05818501dee7608a80ac7adf078302a9c5
     </Filter>
   </ItemGroup>
   <ItemGroup>

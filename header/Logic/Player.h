@@ -3,11 +3,11 @@
 
 class Player {
 private:
-	int gold;
-	int oil;
-	int electricity;
-	int labor;
-	int steel;
+	int gold{};
+	int oil{};
+	int electricity{};
+	int labor{};
+	int steel{};
 	RegionManager& regionmanager;
 public:
 	int id;
@@ -24,4 +24,6 @@ public:
 	void labor_cost(int cost);
 	void steel_cost(int cost);
 	void move_army();
+	void update();
 };
+
