@@ -1,9 +1,4 @@
 #pragma once
-<<<<<<< HEAD
-
-class Weapon {
-
-=======
 #include <vector>
 
 
@@ -27,5 +22,4 @@ public:
 	std::vector<int> getCost();
 	int getId();
 	int getLevel();
->>>>>>> 342fef05818501dee7608a80ac7adf078302a9c5
 };

@@ -6,7 +6,7 @@ class Building {
 	int level;
 	std::vector<int> cost;
 
-	//person, 
+	//gold,oil,elec,steel,labor,ICBM,MRBM,CM,fighter
 	std::vector<int> production;
 	std::string name;
 public:
