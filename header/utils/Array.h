@@ -1,11 +1,12 @@
 #pragma once
+#include <iostream>
 
 template<class T>
 class Array {
 private:
 	int width;
-	int hight;
-	T** data;
+	int height;
+	T* data;
 	Array(int w, int h);
 
 	~Array();
