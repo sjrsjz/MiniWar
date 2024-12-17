@@ -3,11 +3,14 @@
 #include "Building.h"
 #include "Weapon.h"
 #include "Player.h"
+#include "../utils/Point.h"
 class region {
 private:
 	Building building;
-	int hp;
+	float hp;
 	int owner;
+	Point position;
+	std::pair<float, float> position;
 	std::vector<Weapon> weapons;
 
 public:
@@ -15,15 +18,16 @@ public:
 	~region();
 	void setOwner(int owner);
 	int getOwner();
-	bool IncreaseHp(int hp);
-	bool DecreaseHp(int hp);
-	int getHp();
-	void setBuilding(Building building);
-	Building getBuilding();
-	bool addWeapon(Player player, Weapon weapon);
-	bool removeWeapon(Weapon weapon);
+	bool increaseHp(float hp);
+	bool decreaseHp(float hp);
+	float getHp();
+	void setBuilding(Building& building);
+	Building& getBuilding();
+	Point getPosition();
+	bool addWeapon(Weapon& weapon);
+	bool removeWeapon(Weapon& weapon);
 	std::vector<Weapon> getWeapons();
-	bool Attack(int x, int y, Weapon weapon);
-	bool Intercept(Weapon weapon);
+	bool Attack(float x, float y, Weapon& weapon);
+	bool Intercept(Weapon& weapon);
 
 };

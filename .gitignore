@@ -1,3 +1,8 @@
 .vs/*
+<<<<<<< HEAD
 x64/
 MiniWar/x64/
+=======
+x64/*
+MiniWar/x64/*
+>>>>>>> 342fef05818501dee7608a80ac7adf078302a9c5
