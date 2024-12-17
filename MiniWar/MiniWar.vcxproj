@@ -23,6 +23,11 @@
     <ClInclude Include="..\header\Camera.h" />
     <ClInclude Include="..\header\debug.h" />
     <ClInclude Include="..\header\globals.h" />
+    <ClInclude Include="..\header\Logic\Building.h" />
+    <ClInclude Include="..\header\Logic\Player.h" />
+    <ClInclude Include="..\header\Logic\region.h" />
+    <ClInclude Include="..\header\Logic\RegionManager.h" />
+    <ClInclude Include="..\header\Logic\Weapon.h" />
     <ClInclude Include="..\header\mash.h" />
     <ClInclude Include="..\header\output.h" />
     <ClInclude Include="..\header\passes\FragmentBuffer.h" />
@@ -37,9 +42,6 @@
     <ClInclude Include="..\include\GL\glxew.h" />
     <ClInclude Include="..\include\GL\wglew.h" />
     <ClInclude Include="..\include\linmath.h" />
-    <ClInclude Include="Building.h" />
-    <ClInclude Include="Player.h" />
-    <ClInclude Include="region.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cpp\globals.cpp" />
@@ -48,7 +50,6 @@
     <ClCompile Include="..\cpp\output.cpp" />
     <ClCompile Include="..\cpp\shader.cpp" />
     <ClCompile Include="..\cpp\utils\Array.cpp" />
-    <ClCompile Include="Weapon.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />

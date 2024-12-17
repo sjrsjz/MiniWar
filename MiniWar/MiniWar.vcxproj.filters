@@ -16,6 +16,7 @@
     <ClCompile Include="..\cpp\globals.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
+    <ClCompile Include="..\cpp\utils\Array.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\Camera.h">
@@ -69,7 +70,20 @@
     <ClInclude Include="..\header\globals.h">
       <Filter>headers</Filter>
     </ClInclude>
-    <ClInclude Include="Player.h">
+    <ClInclude Include="..\header\utils\Array.h" />
+    <ClInclude Include="..\header\Logic\Building.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\Player.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\region.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\RegionManager.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\Weapon.h">
       <Filter>headers\Logic</Filter>
     </ClInclude>
   </ItemGroup>
@@ -103,6 +117,9 @@
     </Filter>
     <Filter Include="shaders">
       <UniqueIdentifier>{79b2e853-4416-4792-af4f-28243a3cd31c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="headers\Logic">
+      <UniqueIdentifier>{e214e9d0-c08e-48cc-a5cb-23de6bb7a5fa}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
