@@ -11,8 +11,10 @@
 #include "../header/Timer.h"
 
 #include "../header/debug.h"
-
+#include "../header/passes/SSBO.h"
 #include "../header/globals.h"
+
+#include "../header/passes/SSBOByteArray.h"
 
 mash s_mash;
 mash triangle_mash;
@@ -24,6 +26,7 @@ GLuint normal_gl_vertex_shader, normal_gl_fragment_shader, s_normal_gl_program;
 
 GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_program;
 mash map_mash;
+SSBO map_info_ssbo;
 
 GLFWwindow* glfw_win;
 bool keys[512];
@@ -38,8 +41,9 @@ void glfwWindowSizeCallback(GLFWwindow* window, int width, int height);
 
 void render_main_game_pass() {
 	g_main_game_pass_fbo.bind_frameBuffer();
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_FUNC);
+	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	int W, H;
@@ -58,12 +62,24 @@ void render_main_game_pass() {
 	glBindBuffer(GL_ARRAY_BUFFER, map_mash.vertex_buffer);
 	glUseProgram(s_map_renderer_program);
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
+	//map_info_ssbo.bind_ssbo();
+	//GLuint mapBufferIndex = glGetProgramResourceIndex(s_map_renderer_program, GL_SHADER_STORAGE_BLOCK, "MapBuffer");
+	//if (mapBufferIndex != GL_INVALID_INDEX) {
+	//	glShaderStorageBlockBinding(s_map_renderer_program, mapBufferIndex, map_info_ssbo.get_binding_point_index());
+	//}
+	//else {
+	//	DEBUG::DebugOutput("mapBuffer not found in shader");
+	//}
+	
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, map_info_ssbo.get_ssbo());
 
 	// g_fov
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_fov"), -2.0);
 	//g_frame_width, g_frame_height
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_width"), W);
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_height"), H);
+
+	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.getTime());
 
 	mat4x4 g_trans_mat;
 	camera.getMat4(g_trans_mat);
@@ -73,6 +89,8 @@ void render_main_game_pass() {
 	glDrawArrays(GL_QUADS, 0, map_mash.vertexs.size());
 	glUseProgram(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	map_info_ssbo.unbind_ssbo();
+
 	g_main_game_pass_fbo.unbind_frameBuffer();
 }
 
@@ -89,7 +107,7 @@ void render() {
 	//return;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_FUNC);
+	glEnable(GL_DEPTH_TEST);
 	
 
 	ratio = 1;// W / (float)H;
@@ -127,53 +145,19 @@ void KeyProcess() {
 #include "../shaders/map_renderer.vert"
 #include "../shaders/map_renderer.frag"
 
-
-int main() {
-	if (!glfwInit()) {
-		println("Failed to initialize glfw"); return 0;
-	}
-	glfwSetErrorCallback((GLFWerrorfun)glfwErrorCallBack);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-	glfw_win=glfwCreateWindow(800,500,"MiniWar",NULL,NULL);
-
-	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
-	glfwSetCursorPosCallback(glfw_win, (GLFWcursorposfun)glfwMouseCallback);
-	glfwSetWindowSizeCallback(glfw_win, (GLFWwindowsizefun)glfwWindowSizeCallback);
-
-	glfwMakeContextCurrent(glfw_win);
-	glfwSwapInterval(1);
-	if (!glfw_win) {
-		println("Failed to create window"); return 0;
-	}
-	int err = glewInit();
-	if (err) {
-		println("Failed to initialize glew");
-		println((char*)glewGetErrorString(err));
-		goto destroy;
-	}
-
-
-#ifdef DEBUG
-	glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
-	glEnable(GL_DEBUG_CALLBACK_FUNCTION);
-#endif // DEBUG
-
-	DEBUG::DebugOutput("OpenGL Version", (std::string)(char*)glGetString(GL_VERSION));
-	DEBUG::DebugOutput("GLSL Version", (std::string)(char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-	g_main_game_pass_fbo = FragmentBuffer(800, 500);
-
-
+bool compileShaders() {
 	DEBUG::DebugOutput("Compiling Shaders");
 	s_main_game_pass_program = CompileShader(main_game_pass_vert, main_game_pass_frag, nullptr, &vertex_shader, &fragment_shader, nullptr);
+	if (s_main_game_pass_program == -1) return false;
 	s_normal_gl_program = CompileShader(normal_gl_vert, normal_gl_frag, nullptr, &normal_gl_vertex_shader, &normal_gl_fragment_shader, nullptr);
+	if (s_normal_gl_program == -1) return false;
 	s_map_renderer_program = CompileShader(map_renderer_vert, map_renderer_frag, nullptr, &map_renderer_vertex_shader, &map_renderer_fragment_shader, nullptr);
-	if (s_main_game_pass_program == -1) goto destroy;
-	if (s_normal_gl_program == -1) goto destroy;
-	if (s_map_renderer_program == -1) goto destroy;
+	if (s_map_renderer_program == -1) return false;
 	DEBUG::DebugOutput("Shaders Compiled");
+}
 
+void init() {
+	DEBUG::DebugOutput("Building meshes..");
 	triangle_mash.enable_color = true;
 	triangle_mash.RGBA(1, 0, 0, 1);
 	triangle_mash.append(-0.6f, -0.4f, 0.0f);
@@ -199,9 +183,70 @@ int main() {
 	map_mash.append(-1, 1, 0);
 	map_mash.append(-1, -1, 0);
 	map_mash.build(s_map_renderer_program, "vPos", nullptr, nullptr, nullptr);
+	DEBUG::DebugOutput("Meshes built");
+
+	DEBUG::DebugOutput("Creating SSBO..");
+
+	DATA::SSBOByteArray<unsigned char> map_info;
+	map_info_ssbo = SSBO(16 * sizeof(float), GL_STATIC_DRAW);
+	map_info_ssbo.set_binding_point_index(0);
+	map_info_ssbo.create_ssbo();
+	map_info << 1.0f << 1.0f << 0.0f << 0.0f;
+	map_info << 0.0f << 1.0f << 0.0f << 0.0f;
+	map_info << 0.0f << 0.0f << 1.0f << 0.0f;
+	map_info << 0.0f << 0.0f << 0.0f << 0.0f;
+	
+	map_info_ssbo.update_data(map_info.ptr, map_info.size);
 
 
+
+
+	DEBUG::DebugOutput("SSBO Created");
 	timer.setTime(glfwGetTime());
+
+}
+
+int main() {
+	if (!glfwInit()) {
+		println("Failed to initialize glfw"); return 0;
+	}
+	glfwSetErrorCallback((GLFWerrorfun)glfwErrorCallBack);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+	glfw_win=glfwCreateWindow(800,500,"MiniWar",NULL,NULL);
+
+	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
+	glfwSetCursorPosCallback(glfw_win, (GLFWcursorposfun)glfwMouseCallback);
+	glfwSetWindowSizeCallback(glfw_win, (GLFWwindowsizefun)glfwWindowSizeCallback);
+
+	glfwMakeContextCurrent(glfw_win);
+	glfwSwapInterval(1);
+	if (!glfw_win) {
+		println("Failed to create window"); return 0;
+	}
+	int err = glewInit();
+
+	if (err) {
+		println("Failed to initialize glew");
+		println((char*)glewGetErrorString(err));
+		goto destroy;
+	}
+
+
+#ifdef _DEBUG
+	glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
+	glEnable(GL_DEBUG_CALLBACK_FUNCTION);
+#endif // DEBUG
+
+	DEBUG::DebugOutput("OpenGL Version", (std::string)(char*)glGetString(GL_VERSION));
+	DEBUG::DebugOutput("GLSL Version", (std::string)(char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+	g_main_game_pass_fbo = FragmentBuffer(800, 500);
+
+
+	if (!compileShaders()) goto destroy;
+
+	init();
 
 	while (!glfwWindowShouldClose(glfw_win))
 	{
