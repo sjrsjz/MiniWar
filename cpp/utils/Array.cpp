@@ -22,3 +22,13 @@ T& Array<T>::get(int x, int y) {
 	}
 	return this->data[x + y * this->width];
 }
+
+template<class T>
+int Array<T>::get_width() const{
+	return this->width;
+}
+
+template<class T>
+int Array<T>::get_height() const{
+	return this->height;
+}

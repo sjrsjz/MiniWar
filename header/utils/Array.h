@@ -7,12 +7,10 @@ private:
 	int width;
 	int height;
 	T* data;
-	Array(int w, int h);
-
-	~Array();
-
 public:
+	Array(int w, int h);
+	~Array();
 	T& get(int x, int y);
-
-
+	int get_width() const;
+	int get_height() const;
 };
