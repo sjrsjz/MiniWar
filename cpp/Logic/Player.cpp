@@ -114,6 +114,14 @@ int Player:: get_oil(){
     return oil;
 }
 
+int Player::get_capital_x() {
+	return std::floor(std::get<0>(capital));
+}
+
+int Player::get_capital_y() {
+	return std::floor(std::get<1>(capital));
+}
+
 void Player:: gold_cost(int cost){
     if (gold < cost){
         throw "Not enough gold";
@@ -169,6 +177,15 @@ void Player:: add_steel(int amount){
     steel += amount;
 }
 
+int get_building_level_limit(std::string name) {
+    if (name == "PowerStation") return 0;
+    if (name == "SteelFactory") return 1;
+	if (name == "Refinery") return 2;
+	if (name == "CivilFactory") return 3;
+	if (name == "MilitaryFactory") return 4;
+	return -1;
+}
+
 void Player:: move_army(Point start, Point end, int amount){
     float distance = calculate_distance(start, end);
     if (distance == -1) {
@@ -206,6 +223,57 @@ void Player::attack(Point start, Point end, int weapon_id) {
 	start_region.removeWeapon(weapon_id);
 
 	regionmanager.attack_region(weapon_id, start, end, time, damage);
+}
+
+void Player::build(std::string building_name, Point location) {
+	Region region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
+	if (region.getOwner() != id) {
+		throw "Not your region";
+	}
+    if (region.getBuilding().getName() == "none") {
+		throw "Already has a building";
+	}
+    //wait for configure.h complete
+}
+
+void Player::upgrade_building(Point location) {
+	Region region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
+    if (region.getBuilding().getName() == "none") {
+        throw "No building exits";
+    }
+	if (region.getOwner() != id) {
+		throw "Not your region";
+	}
+
+	//wait for configure.h complete
+	//make sure cost is enough, then uplevel
+    if (!region.getBuilding().upLevel(institution_level_limit[get_building_level_limit(region.getBuilding().getName())])) {
+        throw "Already reach your level limit!";
+    }
+}
+
+void Player::remove_building(Point location) {
+	Region region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
+    if (region.getOwner() != id) {
+		throw "Not your region";
+	}
+    if (region.getBuilding().getName() == "none") {
+		throw "No building exits";
+	}
+	region.removeBuilding();
+	//return the cost of the building
+}
+
+void Player::research(int selection) {
+	Region region = regionmanager.get_region(get_capital_x(), get_capital_y());
+    if (region.getOwner() != id) {
+		throw "Not your capital";
+	}
+    if (region.getBuilding().getName() != "ResearchInstitution") {
+		throw "No research center";
+	}
+	//wait for configure.h complete
+	//make sure cost is enough, then research
 }
 
 void Player:: update(Timer timer){

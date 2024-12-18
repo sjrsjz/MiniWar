@@ -4,7 +4,6 @@
 #include <string>
 class Building {
 	int level;
-	//gold,oil,elec,steel,labor,ICBM,MRBM,CM,fighter
 	std::string name;
 public:
 	Building(std::string);
