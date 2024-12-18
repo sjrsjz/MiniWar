@@ -15,6 +15,7 @@
 #include "../header/globals.h"
 
 #include "../header/utils/FloatBuffer.h"
+#include "../header/utils/RegionSelector.h"
 
 mash s_mash;
 mash triangle_mash;
@@ -28,10 +29,11 @@ GLuint normal_gl_vertex_shader, normal_gl_fragment_shader, s_normal_gl_program;
 GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_program;
 mash map_mash;
 SSBO map_info_ssbo;
+DATA::FloatBuffer map_info;
 
 GLFWwindow* glfw_win;
 bool keys[512];
-vec3 rot;
+vec3 s_mouse_position;
 
 
 void glfwErrorCallBack(int error, const char* str);
@@ -73,6 +75,8 @@ void render_main_game_pass() {
 	//g_frame_width, g_frame_height
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_width"), W);
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_height"), H);
+	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.getTime());
+	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), 64, 64);
 
 
 	vec3 plane_u = { 0.25* cos(1), 0, 0.25 * sin(1) }, plane_v = { 0.25 * sin(1),0,-0.25 * cos(1) }, plane_pos = { 0,-2,0 };
@@ -85,16 +89,14 @@ void render_main_game_pass() {
 	model_camera.getMat4(model_mat);
 	mat4x4_scale(model_mat, model_mat, 0.25);
 	glUniformMatrix4fv(glGetUniformLocation(s_map_renderer_program, "g_model_trans_mat"), 1, GL_FALSE, (const GLfloat*)model_mat);
+
+	mat4x4 model_mat_inv_rot;
 	model_camera.setPos(0, 2, 0);
 	model_camera.setRot(0, 1, 0);
-	model_camera.getMat4(model_mat);
-	mat4x4_scale(model_mat, model_mat, 0.25);
-	glUniformMatrix4fv(glGetUniformLocation(s_map_renderer_program, "g_model_trans_mat_inv"), 1, GL_FALSE, (const GLfloat*)model_mat);
+	model_camera.getMat4(model_mat_inv_rot);
+	mat4x4_scale(model_mat_inv_rot, model_mat_inv_rot, 0.25);
+	glUniformMatrix4fv(glGetUniformLocation(s_map_renderer_program, "g_model_trans_mat_inv"), 1, GL_FALSE, (const GLfloat*)model_mat_inv_rot);
 
-
-	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.getTime());
-
-	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), 64, 64);
 
 
 	mat4x4 g_trans_mat;
@@ -104,6 +106,19 @@ void render_main_game_pass() {
 	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
 	int g_trans_mat_location = glGetUniformLocation(s_map_renderer_program, "g_trans_mat");
 	glUniformMatrix4fv(g_trans_mat_location, 1, GL_FALSE, (const GLfloat*)g_trans_mat);
+
+
+
+
+	auto [selected, gridX, gridY] = RegionSelector(-2.0, W, H, g_trans_mat, model_mat, 64, 64, (void*)map_info.buffer().get())(s_mouse_position[0], s_mouse_position[1]);
+
+
+	if (selected) {
+		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_selected"), gridX, gridY);
+	}
+	else {
+		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_selected"), -1, -1);
+	}
 
 	glDrawArrays(GL_QUADS, 0, map_mash.vertexs.size());
 	glUseProgram(0);
@@ -215,6 +230,7 @@ float randfloat() {
 
 void init() {
 	scale_map_camera.setMoveDuration(0.25);
+	scale_map_camera.setPos(0, 0, -32,timer.getTime());
 	camera.setMoveDuration(0.5);
 	camera.rotate(0, 0, -0.75, timer.getTime());
 	camera.move(0, 0, -2, timer.getTime());
@@ -249,7 +265,7 @@ void init() {
 
 	DEBUG::DebugOutput("Creating SSBO..");
 
-	DATA::FloatBuffer map_info;
+
 
 	for (int i{}; i < 64; i++) {
 		for (int j{}; j < 64; j++) {
@@ -349,7 +365,7 @@ void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int 
 
 }
 void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
-	rot[1] = xpos/100; rot[0] = ypos/100;
+	s_mouse_position[0] = xpos; s_mouse_position[1] = ypos;
 }
 
 // 滚轮事件

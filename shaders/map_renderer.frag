@@ -8,6 +8,8 @@ uniform float g_fov;
 uniform float g_frame_width, g_frame_height;
 uniform mat4 g_trans_mat;
 
+uniform ivec2 g_selected;
+
 //uniform vec3 g_plane_u;
 //uniform vec3 g_plane_v;
 //uniform vec3 g_plane_pos;
@@ -66,9 +68,7 @@ struct PlaneIntersection{
 
 vec3 cell(vec2 cell_uv, vec2 cell_center[3][3]){
     float min_dist = 1e6;
-    float sdf = 100;
     vec2 idx = vec2(0);
-    vec2 P = cell_uv - cell_center[1][1];
     for(int i = 0; i < 3; i++){
         for(int j = 0; j < 3; j++){
             vec2 test_cell_uv = cell_center[i][j] + vec2(i, j) - 1;
@@ -122,9 +122,6 @@ vec2 boxIntersection( in vec3 ro, in vec3 rd, vec3 boxSize, out vec3 outNormal )
     return vec2( tN, tF );
 }
 
-
-
-#line 0
 vec4 doPlaneColoring(vec2 uv){
 	vec2 cell_center[3][3];
 	vec4 cell_position = uv_to_cell_position(uv);
@@ -152,6 +149,10 @@ vec4 doPlaneColoring(vec2 uv){
 	color = get_identity_color(region.identity) * float(cell_data.z * 0.5);
 	color = mix(color, vec3(1,0,0), float(cell_data.z < 0.05));
 	color = mix(vec3(0,0,0) * float(sdf<0.0125), color, 0.5 + 0.95 * float(sdf>=0.0125));
+
+	if(real_cell_idx.x == g_selected.x && real_cell_idx.y == g_selected.y){
+	color =  vec3(0,1,0)*( 0.5 + 0.5 * sin(g_time*5));
+	}
 
 	return vec4(color, 1);
 }
