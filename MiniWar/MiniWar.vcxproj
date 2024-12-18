@@ -49,6 +49,15 @@
     <ClInclude Include="..\include\GL\glew.h" />
     <ClInclude Include="..\include\GL\glxew.h" />
     <ClInclude Include="..\include\GL\wglew.h" />
+    <ClInclude Include="..\include\imgui\imconfig.h" />
+    <ClInclude Include="..\include\imgui\imgui.h" />
+    <ClInclude Include="..\include\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="..\include\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="..\include\imgui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="..\include\imgui\imgui_internal.h" />
+    <ClInclude Include="..\include\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\include\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\include\imgui\imstb_truetype.h" />
     <ClInclude Include="..\include\linmath.h" />
   </ItemGroup>
   <ItemGroup>
@@ -60,6 +69,13 @@
     <ClCompile Include="..\cpp\shader.cpp" />
     <ClCompile Include="..\cpp\utils\Array.cpp" />
     <ClCompile Include="..\cpp\utils\Point.cpp" />
+    <ClCompile Include="..\include\imgui\imgui.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />

@@ -17,6 +17,10 @@
 #include "../header/utils/FloatBuffer.h"
 #include "../header/utils/RegionSelector.h"
 
+#include "../include/imgui/imgui.h"
+#include "../include/imgui/imgui_impl_glfw.h"
+#include "../include/imgui/imgui_impl_opengl3.h"
+
 mash s_mash;
 mash triangle_mash;
 SmoothCamera camera;
@@ -171,7 +175,7 @@ void render() {
 	glUseProgram(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glfwSwapBuffers(glfw_win);
+	//glfwSwapBuffers(glfw_win);
 
 }
 
@@ -179,17 +183,19 @@ void KeyProcess() {
 
 	float dx = 0, dz = 0;
 
+	float speed = 100 * exp(- 0.5 * scale_map_camera.getZ());
+
 	if (keys[GLFW_KEY_W]) {
-		dz = 250;
+		dz = speed;
 	}
 	if (keys[GLFW_KEY_S]) {
-		dz = -250;
+		dz = -speed;
 	}
 	if (keys[GLFW_KEY_A]) {
-		dx = 250;
+		dx = speed;
 	}
 	if (keys[GLFW_KEY_D]) {
-		dx = -250;
+		dx = -speed;
 	}
 	if (keys[GLFW_KEY_SPACE]) {
 
@@ -203,6 +209,7 @@ void KeyProcess() {
 	if (keys[GLFW_KEY_R]) {
 		// 重置摄像机
 		camera.move_to(0, 0, -2, timer.getTime());
+		scale_map_camera.move_to(0, 0, -4, timer.getTime());
 	}
 }
 
@@ -300,11 +307,33 @@ int main() {
 	glfwSetWindowSizeCallback(glfw_win, (GLFWwindowsizefun)glfwWindowSizeCallback);
 	glfwSetScrollCallback(glfw_win, (GLFWscrollfun)glfwScrollCallback);
 
+
 	glfwMakeContextCurrent(glfw_win);
 	glfwSwapInterval(1);
 	if (!glfw_win) {
 		println("Failed to create window"); return 0;
 	}
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	// 启用滚轮
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
+
+	
+
+	io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsLight();
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplGlfw_InitForOpenGL(glfw_win, true);
+	const char* glsl_version = "#version 330";
+	ImGui_ImplOpenGL3_Init(glsl_version);
+
 	int err = glewInit();
 
 	if (err) {
@@ -329,17 +358,78 @@ int main() {
 
 	init();
 
+
+
+
 	while (!glfwWindowShouldClose(glfw_win))
 	{
+
+
+
+		glfwPollEvents();
+		if (glfwGetWindowAttrib(glfw_win, GLFW_ICONIFIED) != 0)
+		{
+			ImGui_ImplGlfw_Sleep(10);
+			continue;
+		}
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		int glfw_width, glfw_height;
+		glfwGetWindowSize(glfw_win, &glfw_width, &glfw_height);
+
+		{
+			// 设置控件组位置和大小
+			ImGui::SetNextWindowPos(ImVec2(0, 0));
+			ImGui::SetNextWindowSize(ImVec2(glfw_width, glfw_height));
+
+			// 创建无边框窗口
+			ImGui::Begin("##Controls", nullptr,
+						 ImGuiWindowFlags_NoTitleBar |
+							 ImGuiWindowFlags_NoResize |
+							 ImGuiWindowFlags_NoMove |
+							 ImGuiWindowFlags_NoBackground);
+
+			static float f = 0.0f;
+			static int counter = 0;
+
+			ImGui::Text(u8"测试文本");
+			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+
+			if (ImGui::Button("Button"))
+				counter++;
+			ImGui::SameLine();
+			ImGui::Text("counter = %d", counter);
+
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+						1000.0f / io.Framerate, io.Framerate);
+
+			ImGui::End();
+		}
+
+		// Rendering
+		glDebugMessageCallback(0, 0);
+		ImGui::Render();
+		glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
 		timer.setTime(glfwGetTime());
 		prepare_render();
 		KeyProcess();
 		render();
-		glfwPollEvents();
+
+		glDebugMessageCallback(0, 0);
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
+
+		glfwSwapBuffers(glfw_win);
 	}
 destroy:
 
 	g_main_game_pass_fbo.release();
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
 	glfwDestroyWindow(glfw_win);
 	glfwTerminate();
@@ -370,6 +460,7 @@ void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
 // 滚轮事件
 void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+	DEBUG::DebugOutput(xoffset, yoffset);
 	scale_map_camera.move(0, 0, yoffset, timer.getTime());
 }
 

@@ -201,4 +201,23 @@ public:
 		camera.setRot(pitch.getX(), yaw.getX(), roll.getX());
 		return camera;
 	}
+
+	double getX() {
+		return x.getX();
+	}
+	double getY() {
+		return y.getX();
+	}
+	double getZ() {
+		return z.getX();
+	}
+	double getPitch() {
+		return pitch.getX();
+	}
+	double getYaw() {
+		return yaw.getX();
+	}
+	double getRoll() {
+		return roll.getX();
+	}
 };
