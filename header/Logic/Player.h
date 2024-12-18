@@ -1,7 +1,10 @@
 #pragma once
 #include "../Timer.h"
 #include "../utils/Point.h"
+<<<<<<< HEAD
 #include "../../header/Logic/Weapon.h"
+=======
+>>>>>>> 18189ce55332f6b53f4ad214d042ab1ac1b3cd01
 #include "Army.h"
 #include <cmath>
 #include <vector>

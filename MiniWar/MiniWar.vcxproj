@@ -55,6 +55,7 @@
     <ClCompile Include="..\cpp\Logic\Player.cpp" />
     <ClCompile Include="..\cpp\Logic\Region.cpp" />
     <ClCompile Include="..\cpp\Logic\RegionManager.cpp" />
+    <ClCompile Include="..\cpp\Logic\Weapon.cpp" />
     <ClCompile Include="..\cpp\Main.cpp" />
     <ClCompile Include="..\cpp\mash.cpp" />
     <ClCompile Include="..\cpp\output.cpp" />

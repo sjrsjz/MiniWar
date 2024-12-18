@@ -33,3 +33,30 @@ Labor: int
 ### 炼钢厂
 ### 研究所
 
+
+{
+	"mapSize": {
+		"large": {
+			"width": 64,
+			"height":64 
+			"aiCount": 1
+		},
+		"medium": {
+			"width": 32,
+			"height": 32,
+			"aiCount": 1
+		},
+		"small": {
+			"width": 16,
+			"height": 16,
+			"aiCount": 1
+		}
+	},
+	"Weapon": {
+		0: {
+			"name": "CM",
+			""
+		}	
+	},
+}
+

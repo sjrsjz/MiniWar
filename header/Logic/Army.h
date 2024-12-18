@@ -5,7 +5,7 @@ class Army {
 	int level;
 	int force;
 public:
-	Army(int force, int level = 1);
+	Army(int force = 0, int level = 1);
 	~Army();
 	float getSpeed();
 	int getLevel();

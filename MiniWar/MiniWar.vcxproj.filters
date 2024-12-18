@@ -165,7 +165,7 @@
       <UniqueIdentifier>{82bb7b68-d06a-4f9c-b28b-3d664b040fd9}</UniqueIdentifier>
     </Filter>
     <Filter Include="cpp\Logic">
-      <UniqueIdentifier>{846d7874-46c9-4126-a7f8-aed5cdeb27f4}</UniqueIdentifier>
+      <UniqueIdentifier>{d5e832ea-e918-46f0-94cd-11f0a05368cd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
