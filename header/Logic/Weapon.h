@@ -10,17 +10,14 @@ class Weapon {
 	std::vector<int> cost;
 	std::tuple<float, float> attackRange;
 	int id;
-	int level;
 
 public:
-	Weapon();
+	Weapon(int id);
 	~Weapon();
-	bool upLevel();
-	float getDamage();
-	float getDamageRange();
-	float getAttackSpeed();
-	std::tuple<float, float> getAttackRange();
+	float getDamage(int level);
+	float getDamageRange(int level);
+	float getAttackSpeed(int level);
+	std::tuple<float, float> getAttackRange(int level);
 	std::vector<int> getCost();
 	int getId();
-	int getLevel();
 };

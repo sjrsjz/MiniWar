@@ -1,6 +1,6 @@
 #include "../../header/Logic/Army.h"
 
-Army::Army(int force, int level = 1) {
+Army::Army(int force, int level) {
 	this->level = level;
 	this->force = force;
 	/* speed = */ 

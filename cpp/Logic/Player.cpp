@@ -1,5 +1,5 @@
-#include "../header/Logic/Player.h"
-#include "../header/Logic/RegionManager.h"
+#include "../../header/Logic/Player.h"
+#include "../../header/Logic/RegionManager.h"
 
 struct Node{
     int x, y;

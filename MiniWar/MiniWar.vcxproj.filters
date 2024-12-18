@@ -22,8 +22,25 @@
     <ClCompile Include="..\cpp\utils\Point.cpp">
       <Filter>cpp\utils</Filter>
     </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Army.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Building.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Player.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Region.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\RegionManager.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Weapon.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
   </ItemGroup>
-
   <ItemGroup>
     <ClInclude Include="..\header\Camera.h">
       <Filter>headers</Filter>
@@ -100,8 +117,10 @@
     <ClInclude Include="..\header\Logic\Army.h">
       <Filter>headers\Logic</Filter>
     </ClInclude>
+    <ClInclude Include="..\header\passes\SSBO.h" />
+    <ClInclude Include="..\header\passes\SSBOByteArray.h" />
+    <ClInclude Include="..\header\utils\SmoothMove.h" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="..\README.md" />
     <None Include="..\shaders\normal_gl.frag">
@@ -117,7 +136,6 @@
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
-
   <ItemGroup>
     <Filter Include="headers">
       <UniqueIdentifier>{ec299f0c-013b-4cb3-a0a1-e9280676cc9a}</UniqueIdentifier>
@@ -143,5 +161,12 @@
     <Filter Include="headers\utils">
       <UniqueIdentifier>{82bb7b68-d06a-4f9c-b28b-3d664b040fd9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="cpp\Logic">
+      <UniqueIdentifier>{d5e832ea-e918-46f0-94cd-11f0a05368cd}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\shaders\main_game_pass.frag" />
+    <Text Include="..\shaders\main_game_pass.vert" />
   </ItemGroup>
 </Project>

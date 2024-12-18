@@ -7,20 +7,20 @@
 #include "../utils/Point.h"
 class Region {
 private:
-	Building building;
+	Building building = Building("none");
 	float hp;
 	float maxHp; 
 	int owner;
 	Point position;
 	std::vector<int> weapons;
 	Army army;
-	int availableLabor;
-	int allLabor;
-	int availableElectricity;
-	int allElectricity;
+	/* int availableLabor; */
+	/* int allLabor; */
+	/* int availableElectricity; */
+	/* int allElectricity; */
 
 public:
-	Region(Point position);
+	Region(int x, int y);
 	~Region();
 	bool setOwner(int owner);//in manage to judge if exists this player
 	int getOwner();
@@ -31,21 +31,22 @@ public:
 	Building& getBuilding();
 	Point getPosition();
 	bool addWeapon(int weapon, int num = 1);
-	bool removeWeapon(int weapon, int num = 1);
+	bool removeWeapon(int weapon);
 	std::vector<int> getWeapons();
 	bool removeArmy(int num);
 	bool addArmy(int num);
 	Army& getArmy();
-	int getAvailableLabor();
-	int getAllLabor();
-	int getAvailableElectricity();
-	int getAllElectricity();
-	bool addAvailableLabor(int labor);
-	bool addAllLabor(int labor);
-	bool addAvailableElectricity(int electricity);
-	bool addAllElectricity(int electricity);
-	bool removeAvailableLabor(int labor);
-	bool removeAllLabor(int labor);
+	bool removeBuilding();
+	/* int getAvailableLabor(); */
+	/* int getAllLabor(); */
+	/* int getAvailableElectricity(); */
+	/* int getAllElectricity(); */
+	/* bool addAvailableLabor(int labor); */
+	/* bool addAllLabor(int labor); */
+	/* bool addAvailableElectricity(int electricity); */
+	/* bool addAllElectricity(int electricity); */
+	/* bool removeAvailableLabor(int labor); */
+	/* bool removeAllLabor(int labor); */
 	
 	
 };

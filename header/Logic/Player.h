@@ -1,5 +1,6 @@
 #pragma once
-#include "../header/Timer.h"
+#include "../Timer.h"
+#include "../utils/Point.h"
 #include "Army.h"
 #include <cmath>
 #include <vector>
