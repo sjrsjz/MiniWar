@@ -8,10 +8,12 @@ uniform float g_fov;
 uniform float g_frame_width, g_frame_height;
 uniform mat4 g_trans_mat;
 
-uniform vec3 g_plane_u;
-uniform vec3 g_plane_v;
-uniform vec3 g_plane_pos;
+//uniform vec3 g_plane_u;
+//uniform vec3 g_plane_v;
+//uniform vec3 g_plane_pos;
 
+uniform mat4 g_model_trans_mat;
+uniform mat4 g_model_trans_mat_inv;
 uniform ivec2 g_map_size;
 struct RegionData{
 	vec2 cell_center;
@@ -58,7 +60,7 @@ vec3 getRayDir(float x, float y){ // x, y in [-1, 1]
 struct PlaneIntersection{
 	vec3 pos;
 	vec2 uv;
-	bool intersected;
+	float t;
 };
 
 
@@ -94,14 +96,34 @@ float cell_sdf(vec2 cell_uv, vec2 cell_center[5][5]){
 PlaneIntersection intersectPlane(vec3 rayOrigin, vec3 rayDir, vec3 planeU, vec3 planeV, vec3 planePos){
 	vec3 n = cross(planeU, planeV);
 	float t = dot(n, planePos - rayOrigin) / dot(n, rayDir);
-	if (t<0) return PlaneIntersection(vec3(0), vec2(0), false);
+	if (t<0) return PlaneIntersection(vec3(0), vec2(0), -1);
 	vec3 pos = rayOrigin + t*rayDir;
 	vec3 posLocal = pos - planePos;
 	vec2 uv;
 	uv.x = dot(posLocal, planeU);
 	uv.y = dot(posLocal, planeV);
-	return PlaneIntersection(pos,uv,true);
+	return PlaneIntersection(pos,uv,t);
 }
+
+vec2 boxIntersection( in vec3 ro, in vec3 rd, vec3 boxSize, out vec3 outNormal ) 
+{
+    vec3 m = 1.0/rd; // can precompute if traversing a set of aligned boxes
+    vec3 n = m*ro;   // can precompute if traversing a set of aligned boxes
+    vec3 k = abs(m)*boxSize;
+    vec3 t1 = -n - k;
+    vec3 t2 = -n + k;
+    float tN = max( max( t1.x, t1.y ), t1.z );
+    float tF = min( min( t2.x, t2.y ), t2.z );
+    #line 0
+	if( tN>tF || tF<0.0) return vec2(-1.0); // no intersection
+    outNormal = (tN>0.0) ? step(vec3(tN),t1): // ro ouside the box
+                           step(t2,vec3(tF));  // ro inside the box
+    outNormal *= -sign(rd);
+    return vec2( tN, tF );
+}
+
+
+
 #line 0
 vec4 doPlaneColoring(vec2 uv){
 	vec2 cell_center[3][3];
@@ -154,9 +176,36 @@ vec3 rot3D(vec3 v, vec3 axis, float angle){
 vec4 render(){
 	vec3 rayDir = getRayDir(texCoord.x, texCoord.y);
 	vec3 rayOrigin = (g_trans_mat * vec4(0, 0, 0, 1)).xyz;
-	PlaneIntersection pi = intersectPlane(rayOrigin, rayDir, g_plane_u, g_plane_v, g_plane_pos);
 	vec2 max_padding_board = 1.0/g_map_size;
-	return doPlaneColoring(pi.uv) * float(pi.intersected) * float(abs(pi.uv.x)<=1 + max_padding_board.x &&abs(pi.uv.y)<=1 + max_padding_board.y);
+	vec4 color = vec4(0);
+
+	vec3 box_normal = vec3(0);
+	vec3 transformed_rayOrigin = (g_model_trans_mat_inv * vec4(rayOrigin, 1)).xyz;
+	vec3 transformed_rayDir = (g_model_trans_mat_inv * vec4(rayDir, 0)).xyz;
+	vec2 base_box = boxIntersection(transformed_rayOrigin + vec3(0,0.875+1e-3,0), transformed_rayDir, vec3(1 + max_padding_board.x ,0.25, 1 + max_padding_board.y), box_normal);
+	if(base_box.x > 0){
+		vec3 p = transformed_rayOrigin + base_box.x * transformed_rayDir;
+		vec4 box_color = vec4(1)* pow(clamp(1.5+p.y,0.,1.),4);
+		color = mix(color, box_color, box_color.a);
+	}
+	
+	
+	vec3 g_plane_u = (g_model_trans_mat*vec4(1,0,0,0)).xyz;
+	vec3 g_plane_v = (g_model_trans_mat*vec4(0,0,1,0)).xyz;
+	vec3 g_plane_pos = (g_model_trans_mat*vec4(0,0,0,1)).xyz;
+
+	PlaneIntersection pi = intersectPlane(rayOrigin, rayDir, g_plane_u, g_plane_v, g_plane_pos);
+
+	vec4 map = doPlaneColoring(pi.uv) * float(pi.t > 0) * float(abs(pi.uv.x)<=1 + max_padding_board.x &&abs(pi.uv.y)<=1 + max_padding_board.y);
+
+	float board = max(abs(pi.uv.x),abs(pi.uv.y));
+	map += step(1 + max_padding_board.x,board)*pow(smoothstep(1.5, 1. + max_padding_board.x,board),2)*vec4(1+sin(g_time*2)) * 0.25;
+
+	if(pi.t <= base_box.x || base_box.x < 0)
+		color = mix(color, map, map.a);
+
+
+	return color;
 }
 
 

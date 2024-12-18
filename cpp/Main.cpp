@@ -78,9 +78,19 @@ void render_main_game_pass() {
 	vec3 plane_u = { 0.25* cos(1), 0, 0.25 * sin(1) }, plane_v = { 0.25 * sin(1),0,-0.25 * cos(1) }, plane_pos = { 0,-2,0 };
 	
 
-	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_plane_u"), plane_u[0], plane_u[1], plane_u[2]);
-	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_plane_v"), plane_v[0], plane_v[1], plane_v[2]);
-	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_plane_pos"), plane_pos[0], plane_pos[1], plane_pos[2]);
+	Camera model_camera;
+	model_camera.setPos(0, 2, 0);
+	model_camera.setRot(0, -1, 0);
+	mat4x4 model_mat;
+	model_camera.getMat4(model_mat);
+	mat4x4_scale(model_mat, model_mat, 0.25);
+	glUniformMatrix4fv(glGetUniformLocation(s_map_renderer_program, "g_model_trans_mat"), 1, GL_FALSE, (const GLfloat*)model_mat);
+	model_camera.setPos(0, 2, 0);
+	model_camera.setRot(0, 1, 0);
+	model_camera.getMat4(model_mat);
+	mat4x4_scale(model_mat, model_mat, 0.25);
+	glUniformMatrix4fv(glGetUniformLocation(s_map_renderer_program, "g_model_trans_mat_inv"), 1, GL_FALSE, (const GLfloat*)model_mat);
+
 
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.getTime());
 
@@ -105,11 +115,11 @@ void render_main_game_pass() {
 
 void prepare_render() {
 	scale_map_camera.update(timer.getTime());
-	scale_map_camera.clampZ(-2, 2,timer.getTime());
+	scale_map_camera.clampZ(-4, 0,timer.getTime());
 
 	camera.update(timer.getTime());
-	camera.clampX(-4, 4, timer.getTime());
-	camera.clampZ(-12, 4, timer.getTime());
+	camera.clampX(-5, 5, timer.getTime());
+	camera.clampZ(-6, 4, timer.getTime());
 }
 
 void render() {
