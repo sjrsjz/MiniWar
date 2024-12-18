@@ -1,9 +1,9 @@
 #pragma once
 #include "../utils/Array.h"
 #include "region.h"
-#include "Player.h"
 #include <vector>
 
+class Player;
 class RegionManager {
 private:
 	Array<region> regions;

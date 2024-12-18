@@ -1,5 +1,5 @@
 #pragma once
-#include "RegionManager.h"
+class RegionManager;
 
 class Player {
 private:

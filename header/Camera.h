@@ -1,4 +1,5 @@
 #pragma once
+#include "./utils/SmoothMove.h"
 class Camera
 {
 
@@ -62,11 +63,11 @@ class Camera
 			//m[3] m[4] m[5]
 			//m[6] m[7] m[8]
 			double cx = cos(roll);
-			double sx = sin(roll);
+			double sx = sin(-roll);
 			double cy = cos(yaw);
-			double sy = sin(yaw);
+			double sy = sin(-yaw);
 			double cz = cos(pitch);
-			double sz = sin(pitch);
+			double sz = sin(-pitch);
 
 			// 计算旋转矩阵的元素
 			m[0] = cy * cz - sx * sy * sz; // 第一行第一列
@@ -93,7 +94,7 @@ class Camera
 			m[0] = m1[0]; m[1] = m1[1]; m[2] = m1[2]; m[3] = 0;
 			m[4] = m1[3]; m[5] = m1[4]; m[6] = m1[5]; m[7] = 0;
 			m[8] = m1[6]; m[9] = m1[7]; m[10] = m1[8]; m[11] = 0;
-			m[12] = x; m[13] = y; m[14] = z; m[15] = 1;
+			m[12] = -x; m[13] = -y; m[14] = -z; m[15] = 1;
 		}
 
 		void getMat4(mat4x4 m) {
@@ -105,4 +106,99 @@ class Camera
 				}
 			}
 		}
+};
+
+
+class SmoothCamera {
+	SmoothMove x, y, z;
+	SmoothMove pitch, yaw, roll;
+public:
+	SmoothCamera() {
+		x = SmoothMove();
+		y = SmoothMove();
+		z = SmoothMove();
+		pitch = SmoothMove();
+		yaw = SmoothMove();
+		roll = SmoothMove();
+#define DURATION 1
+		x.setTotalDuration(DURATION);
+		y.setTotalDuration(DURATION);
+		z.setTotalDuration(DURATION);
+		pitch.setTotalDuration(DURATION);
+		yaw.setTotalDuration(DURATION);
+		roll.setTotalDuration(DURATION);
+#undef DURATION
+	}
+	void setPos(double x, double y, double z, double time) {
+		this->x.setStartPosition(x, time);
+		this->y.setStartPosition(y, time);
+		this->z.setStartPosition(z, time);
+	}
+	void setRot(double pitch, double yaw, double roll, double time) {
+		this->pitch.setStartPosition(pitch, time);
+		this->yaw.setStartPosition(yaw, time);
+		this->roll.setStartPosition(roll, time);
+	}
+
+	void move(double dx, double dy, double dz, double time) {
+		x.newEndPosition(x.getX() + dx, time);
+		y.newEndPosition(y.getX() + dy, time);
+		z.newEndPosition(z.getX() + dz, time);
+	}
+	void move_to(double x, double y, double z, double time) {
+		this->x.newEndPosition(x, time);
+		this->y.newEndPosition(y, time);
+		this->z.newEndPosition(z, time);
+	}
+	void clampX(double x_min, double x_max, double time) {
+		if (x.getX() > x_max) x.newEndPosition(x_max, time);
+		if (x.getX() < x_min) x.newEndPosition(x_min, time);
+	}
+	void clampY(double y_min, double y_max, double time) {
+		if (y.getX() > y_max) y.newEndPosition(y_max, time);
+		if (y.getX() < y_min) y.newEndPosition(y_min, time);
+	}
+	void clampZ(double z_min, double z_max, double time) {
+		if (z.getX() > z_max) z.newEndPosition(z_max, time);
+		if (z.getX() < z_min) z.newEndPosition(z_min, time);
+	}
+
+	void rotate(double dpitch, double dyaw, double droll, double time) {
+		pitch.newEndPosition(pitch.getX() + dpitch, time);
+		yaw.newEndPosition(yaw.getX() + dyaw, time);
+		roll.newEndPosition(roll.getX() + droll, time);
+	}
+
+	void setMoveDuration(double time) {
+		x.setTotalDuration(time);
+		y.setTotalDuration(time);
+		z.setTotalDuration(time);
+	}
+
+	void setRotateDuration(double time) {
+		pitch.setTotalDuration(time);
+		yaw.setTotalDuration(time);
+		roll.setTotalDuration(time);
+	}
+
+	void update(double time) {
+		x.update_sin(time);
+		y.update_sin(time);
+		z.update_sin(time);
+		pitch.update_sin(time);
+		yaw.update_sin(time);
+		roll.update_sin(time);
+	}
+
+	void getCamera(Camera& camera) {
+		camera.setPos(x.getX(), y.getX(), z.getX());
+		camera.setRot(pitch.getX(), yaw.getX(), roll.getX());
+	}
+
+	Camera getCamera() {
+		Camera camera;
+		camera.setPos(x.getX(), y.getX(), z.getX());
+		camera.setRot(pitch.getX(), yaw.getX(), roll.getX());
+		return camera;
+	}
 };

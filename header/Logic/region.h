@@ -1,5 +1,5 @@
-#include <vector>
 #pragma once
+#include <vector>
 #include "Building.h"
 #include "Weapon.h"
 #include "Player.h"
@@ -10,7 +10,6 @@ private:
 	float hp;
 	int owner;
 	Point position;
-	std::pair<float, float> position;
 	std::vector<Weapon> weapons;
 
 public:

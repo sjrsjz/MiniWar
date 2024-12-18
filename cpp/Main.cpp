@@ -14,11 +14,12 @@
 #include "../header/passes/SSBO.h"
 #include "../header/globals.h"
 
-#include "../header/passes/SSBOByteArray.h"
+#include "../header/utils/FloatBuffer.h"
 
 mash s_mash;
 mash triangle_mash;
-Camera camera;
+SmoothCamera camera;
+SmoothCamera scale_map_camera; // 缩放摄像机
 Timer timer(0);
 
 GLuint vertex_shader, fragment_shader, s_main_game_pass_program;
@@ -37,6 +38,7 @@ void glfwErrorCallBack(int error, const char* str);
 void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int mods);
 void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos);
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height);
+void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 
 void render_main_game_pass() {
@@ -62,16 +64,9 @@ void render_main_game_pass() {
 	glBindBuffer(GL_ARRAY_BUFFER, map_mash.vertex_buffer);
 	glUseProgram(s_map_renderer_program);
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
-	//map_info_ssbo.bind_ssbo();
-	//GLuint mapBufferIndex = glGetProgramResourceIndex(s_map_renderer_program, GL_SHADER_STORAGE_BLOCK, "MapBuffer");
-	//if (mapBufferIndex != GL_INVALID_INDEX) {
-	//	glShaderStorageBlockBinding(s_map_renderer_program, mapBufferIndex, map_info_ssbo.get_binding_point_index());
-	//}
-	//else {
-	//	DEBUG::DebugOutput("mapBuffer not found in shader");
-	//}
+
 	
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, map_info_ssbo.get_ssbo());
+	map_info_ssbo.bind(0);
 
 	// g_fov
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_fov"), -2.0);
@@ -79,10 +74,24 @@ void render_main_game_pass() {
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_width"), W);
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_height"), H);
 
+
+	vec3 plane_u = { 0.25* cos(1), 0, 0.25 * sin(1) }, plane_v = { 0.25 * sin(1),0,-0.25 * cos(1) }, plane_pos = { 0,-2,0 };
+	
+
+	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_plane_u"), plane_u[0], plane_u[1], plane_u[2]);
+	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_plane_v"), plane_v[0], plane_v[1], plane_v[2]);
+	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_plane_pos"), plane_pos[0], plane_pos[1], plane_pos[2]);
+
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.getTime());
 
+	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), 64, 64);
+
+
 	mat4x4 g_trans_mat;
-	camera.getMat4(g_trans_mat);
+	camera.getCamera().getMat4(g_trans_mat);
+	mat4x4 g_scale_mat;
+	scale_map_camera.getCamera().getMat4(g_scale_mat);
+	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
 	int g_trans_mat_location = glGetUniformLocation(s_map_renderer_program, "g_trans_mat");
 	glUniformMatrix4fv(g_trans_mat_location, 1, GL_FALSE, (const GLfloat*)g_trans_mat);
 
@@ -94,8 +103,17 @@ void render_main_game_pass() {
 	g_main_game_pass_fbo.unbind_frameBuffer();
 }
 
+void prepare_render() {
+	scale_map_camera.update(timer.getTime());
+	scale_map_camera.clampZ(-2, 2,timer.getTime());
+
+	camera.update(timer.getTime());
+	camera.clampX(-4, 4, timer.getTime());
+	camera.clampZ(-12, 4, timer.getTime());
+}
 
 void render() {
+
 	int W, H;
 	float ratio;
 	mat4x4 m, p, mvp;
@@ -104,7 +122,6 @@ void render() {
 	glViewport(0, 0, W, H);
 
 	render_main_game_pass();
-	//return;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -130,12 +147,38 @@ void render() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glfwSwapBuffers(glfw_win);
+
 }
 
 void KeyProcess() {
 
+	float dx = 0, dz = 0;
 
+	if (keys[GLFW_KEY_W]) {
+		dz = 250;
+	}
+	if (keys[GLFW_KEY_S]) {
+		dz = -250;
+	}
+	if (keys[GLFW_KEY_A]) {
+		dx = 250;
+	}
+	if (keys[GLFW_KEY_D]) {
+		dx = -250;
+	}
+	if (keys[GLFW_KEY_SPACE]) {
 
+	}
+	if (dx != 0 || dz != 0) {
+		dx *= timer.dt;
+		dz *= timer.dt;
+		camera.move(dx, 0, dz, timer.getTime());
+
+	}
+	if (keys[GLFW_KEY_R]) {
+		// 重置摄像机
+		camera.move_to(0, 0, -2, timer.getTime());
+	}
 }
 
 #include "../shaders/main_game_pass.vert"
@@ -156,7 +199,16 @@ bool compileShaders() {
 	DEBUG::DebugOutput("Shaders Compiled");
 }
 
+float randfloat() {
+	return (float)rand() / RAND_MAX;
+}
+
 void init() {
+	scale_map_camera.setMoveDuration(0.25);
+	camera.setMoveDuration(0.5);
+	camera.rotate(0, 0, -0.75, timer.getTime());
+	camera.move(0, 0, -2, timer.getTime());
+
 	DEBUG::DebugOutput("Building meshes..");
 	triangle_mash.enable_color = true;
 	triangle_mash.RGBA(1, 0, 0, 1);
@@ -187,16 +239,18 @@ void init() {
 
 	DEBUG::DebugOutput("Creating SSBO..");
 
-	DATA::SSBOByteArray<unsigned char> map_info;
-	map_info_ssbo = SSBO(16 * sizeof(float), GL_STATIC_DRAW);
+	DATA::FloatBuffer map_info;
+
+	for (int i{}; i < 64; i++) {
+		for (int j{}; j < 64; j++) {
+			map_info << randfloat() << randfloat() << (float)(rand() % 2) << 0.0;
+		}
+	}
+
+	map_info_ssbo = SSBO(map_info.size() * sizeof(float), GL_STATIC_DRAW);
 	map_info_ssbo.set_binding_point_index(0);
 	map_info_ssbo.create_ssbo();
-	map_info << 1.0f << 1.0f << 0.0f << 0.0f;
-	map_info << 0.0f << 1.0f << 0.0f << 0.0f;
-	map_info << 0.0f << 0.0f << 1.0f << 0.0f;
-	map_info << 0.0f << 0.0f << 0.0f << 0.0f;
-	
-	map_info_ssbo.update_data(map_info.ptr, map_info.size);
+	map_info_ssbo.update_data(map_info.buffer().get(), map_info.size() * sizeof(float));
 
 
 
@@ -218,6 +272,7 @@ int main() {
 	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
 	glfwSetCursorPosCallback(glfw_win, (GLFWcursorposfun)glfwMouseCallback);
 	glfwSetWindowSizeCallback(glfw_win, (GLFWwindowsizefun)glfwWindowSizeCallback);
+	glfwSetScrollCallback(glfw_win, (GLFWscrollfun)glfwScrollCallback);
 
 	glfwMakeContextCurrent(glfw_win);
 	glfwSwapInterval(1);
@@ -251,6 +306,7 @@ int main() {
 	while (!glfwWindowShouldClose(glfw_win))
 	{
 		timer.setTime(glfwGetTime());
+		prepare_render();
 		KeyProcess();
 		render();
 		glfwPollEvents();
@@ -284,6 +340,11 @@ void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int 
 }
 void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
 	rot[1] = xpos/100; rot[0] = ypos/100;
+}
+
+// 滚轮事件
+void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+	scale_map_camera.move(0, 0, yoffset, timer.getTime());
 }
 
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {

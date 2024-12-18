@@ -38,6 +38,7 @@
     <ClInclude Include="..\header\shader.h" />
     <ClInclude Include="..\header\Timer.h" />
     <ClInclude Include="..\header\utils\Array.h" />
+    <ClInclude Include="..\header\utils\FloatBuffer.h" />
     <ClInclude Include="..\header\utils\Point.h" />
     <ClInclude Include="..\header\utils\SmoothMove.h" />
     <ClInclude Include="..\include\GLFW\glfw3.h" />

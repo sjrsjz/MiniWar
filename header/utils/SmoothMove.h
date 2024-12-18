@@ -1,6 +1,7 @@
 #include <cmath>
 
 static const double M_PI = 3.14159265358979323846;
+// »º¶¯Ëã·¨
 class SmoothMove {
 private:
     double v0 = 0;

@@ -39,6 +39,11 @@ public:
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo);
     }
 
+	inline void bind(GLuint index)
+	{
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, m_ssbo);
+	}
+
     inline void unbind_ssbo()
     {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
