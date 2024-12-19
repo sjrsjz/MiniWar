@@ -169,6 +169,12 @@ public:
 		roll.newEndPosition(roll.getX() + droll, time);
 	}
 
+	void rotate_to(double pitch, double yaw, double roll, double time) {
+		this->pitch.newEndPosition(pitch, time);
+		this->yaw.newEndPosition(yaw, time);
+		this->roll.newEndPosition(roll, time);
+	}
+
 	void setMoveDuration(double time) {
 		x.setTotalDuration(time);
 		y.setTotalDuration(time);

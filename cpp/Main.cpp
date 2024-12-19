@@ -45,6 +45,8 @@ GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_
 mash map_mash;
 RegionSSBOBuffer map_info(64, 64);
 
+SmoothMove map_rotation;
+
 GLuint gaussian_blur_vertex_shader, gaussian_blur_fragment_shader, s_gaussian_blur_program;
 
 
@@ -52,9 +54,33 @@ GLFWwindow* glfw_win;
 bool keys[512];
 vec3 s_mouse_position;
 
+int s_current_selected_grid[2] = { -1,-1 };
+bool s_is_selected = false;
+
+class SelectedGui {
+public:
+	int grid[2]{}; // 选中的格子
+	bool is_selected = false; // 是否选中
+	
+	void render_gui(ImGuiIO& io) {
+		if (!is_selected) return;
+		ImGui::SetNextWindowBgAlpha(0.5);
+		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+		// 移动到最低端
+		ImGui::SetWindowPos(ImVec2(0, io.DisplaySize.y - 100));
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x, 100));
+
+
+		ImGui::Text("Selected Grid: %d, %d", grid[0], grid[1]);
+		ImGui::End();
+	}
+
+}s_selected_gui;
+
 
 GLuint s_image_radioactive;
 
+bool s_pause_rendering = false;
 
 void glfwErrorCallBack(int error, const char* str);
 void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int mods);
@@ -76,25 +102,39 @@ void render_imgui(ImGuiIO& io) {
 		ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoBackground);
-	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+	ImGui::Text("%.3f ms/frame (%.1f FPS)",
 		1000.0f / io.Framerate, io.Framerate);
+
+	if(s_is_selected)
+		ImGui::Text(u8"当前选中格子: %d, %d", s_current_selected_grid[0], s_current_selected_grid[1]);
 
 	static float f = 0.0f;
 	static int counter = 0;
 
 	// 检查窗口是否被点击
 	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-		DEBUG::DebugOutput("LButton Clicked");
+
+		// 显示格子信息
+		if (s_is_selected && s_current_selected_grid[0] == s_selected_gui.grid[0] && s_current_selected_grid[1] == s_selected_gui.grid[1]) {
+			s_selected_gui.is_selected = !s_selected_gui.is_selected;
+		}
+		else {
+			s_selected_gui.is_selected = s_is_selected;
+			s_selected_gui.grid[0] = s_current_selected_grid[0];
+			s_selected_gui.grid[1] = s_current_selected_grid[1];
+		}
 	}
-	ImGui::Text(u8"测试文本");
-	ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+	//ImGui::Text(u8"测试文本");
+	/*ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
 
 	if (ImGui::Button("Button"))
 		counter++;
 	ImGui::SameLine();
-	ImGui::Text("counter = %d", counter);
+	ImGui::Text("counter = %d", counter);*/
 
 	ImGui::End();	
+
+	s_selected_gui.render_gui(io);
 }
 
 void render_main_game_pass() {
@@ -133,13 +173,9 @@ void render_main_game_pass() {
 	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), 64, 64);
 
 
-
-	vec3 plane_u = { 0.25* cos(1), 0, 0.25 * sin(1) }, plane_v = { 0.25 * sin(1),0,-0.25 * cos(1) }, plane_pos = { 0,-2,0 };
-	
-
 	Camera model_camera;
 	model_camera.setPos(0, 2, 0);
-	model_camera.setRot(0, -1, 0);
+	model_camera.setRot(0, -map_rotation.getX(), 0);
 	mat4x4 model_mat;
 	model_camera.getMat4(model_mat);
 	mat4x4_scale(model_mat, model_mat, 0.25);
@@ -147,7 +183,7 @@ void render_main_game_pass() {
 
 	mat4x4 model_mat_inv_rot;
 	model_camera.setPos(0, 2, 0);
-	model_camera.setRot(0, 1, 0);
+	model_camera.setRot(0, map_rotation.getX(), 0);
 	model_camera.getMat4(model_mat_inv_rot);
 	mat4x4_scale(model_mat_inv_rot, model_mat_inv_rot, 0.25);
 	glUniformMatrix4fv(glGetUniformLocation(s_map_renderer_program, "g_model_trans_mat_inv"), 1, GL_FALSE, (const GLfloat*)model_mat_inv_rot);
@@ -165,16 +201,24 @@ void render_main_game_pass() {
 
 
 
-	auto [selected, gridX, gridY] = RegionSelector(-2.0, W, H, g_trans_mat, model_mat, 64, 64, map_info.getRegions())(s_mouse_position[0], s_mouse_position[1]);
+	auto [selected, gridX, gridY] = RegionSelector(-2.0, W, H, g_trans_mat, model_mat, map_info.getWidth(), map_info.getHeight(), map_info.getRegions())(s_mouse_position[0], s_mouse_position[1]);
 
+	s_current_selected_grid[0] = gridX;
+	s_current_selected_grid[1] = gridY;
+	s_is_selected = selected;
 
-	if (selected) {
-		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_selected"), gridX, gridY);
+	if (s_selected_gui.is_selected) {
+		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_selected"), s_selected_gui.grid[0], s_selected_gui.grid[1]);
 	}
 	else {
 		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_selected"), -1, -1);
 	}
-
+	if (selected) {
+		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_mouse_selected"), gridX, gridY);
+	}
+	else {
+		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_mouse_selected"), -1, -1);
+	}
 
 	// 圆形选中
 	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_circle_selected"), gridX, gridY, 10, 1);
@@ -195,11 +239,13 @@ void render_main_game_pass() {
 
 void prepare_render() {
 	scale_map_camera.update(timer.getTime());
-	scale_map_camera.clampZ(-4, 0,timer.getTime());
+	scale_map_camera.clampZ(-6, 0,timer.getTime());
 
 	camera.update(timer.getTime());
 	camera.clampX(-5, 5, timer.getTime());
 	camera.clampZ(-6, 4, timer.getTime());
+
+	map_rotation.update(timer.getTime());
 }
 
 void render_gaussian_blur() {
@@ -415,7 +461,7 @@ void KeyProcess() {
 
 	float dx = 0, dz = 0;
 
-	float speed = 100 * exp(- 0.5 * scale_map_camera.getZ());
+	float speed = 100 * exp(- 0.25 * scale_map_camera.getZ());
 
 	if (keys[GLFW_KEY_W]) {
 		dz = speed;
@@ -441,7 +487,10 @@ void KeyProcess() {
 	if (keys[GLFW_KEY_R]) {
 		// 重置摄像机
 		camera.move_to(0, 0, -2, timer.getTime());
+		camera.rotate_to(0, 0, -1.5, timer.getTime());
 		scale_map_camera.move_to(0, 0, -4, timer.getTime());
+		camera.rotate_to(0, 0, -1.5 / (1 + 2 * exp(-0.05 * -4 * -4)), timer.getTime());
+		map_rotation.newEndPosition(-(exp(-0.01 * pow(-4 * -4, 2))), timer.getTime());
 	}
 }
 
@@ -467,8 +516,13 @@ void init() {
 	scale_map_camera.setMoveDuration(0.25);
 	scale_map_camera.setPos(0, 0, -32,timer.getTime());
 	camera.setMoveDuration(0.5);
-	camera.rotate(0, 0, -0.75, timer.getTime());
+	camera.setRotateDuration(0.25);
+	camera.rotate(0, 0, -1.5, timer.getTime());
 	camera.move(0, 0, -2, timer.getTime());
+	map_rotation.setStartPosition(-1, timer.getTime());
+	map_rotation.setTotalDuration(0.25);
+
+	glfwScrollCallback(glfw_win, 0, 0);
 
 	DEBUG::DebugOutput("Building meshes..");
 
@@ -567,7 +621,6 @@ int main() {
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-	// 启用滚轮
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
 
 	
@@ -617,7 +670,7 @@ int main() {
 	while (!glfwWindowShouldClose(glfw_win))
 	{
 
-
+		
 
 		glfwPollEvents();
 		if (glfwGetWindowAttrib(glfw_win, GLFW_ICONIFIED) != 0)
@@ -625,20 +678,26 @@ int main() {
 			ImGui_ImplGlfw_Sleep(10);
 			continue;
 		}
+		if (s_pause_rendering) {
+			ImGui_ImplGlfw_Sleep(10);
+			continue;
+		}
+		timer.setTime(glfwGetTime());
+		prepare_render();
+		KeyProcess();
+		render();
+
+
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-
 		render_imgui(io);
 
 		// Rendering
 		glDebugMessageCallback(0, 0);
 		ImGui::Render();
 		glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
-		timer.setTime(glfwGetTime());
-		prepare_render();
-		KeyProcess();
-		render();
+
 
 		glDebugMessageCallback(0, 0);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -684,11 +743,19 @@ void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
 // 滚轮事件
 void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 	scale_map_camera.move(0, 0, yoffset, timer.getTime());
+	camera.rotate_to(0, 0, -1.5 /(1 + 2 * exp(-0.05 * scale_map_camera.getZ() * scale_map_camera.getZ())), timer.getTime());
+	map_rotation.newEndPosition(-(exp(-0.01 * pow(scale_map_camera.getZ() * scale_map_camera.getZ(),2))),timer.getTime());
 }
 
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {
-	glViewport(0, 0, width, height);
-	g_main_game_pass_fbo.resize(width, height);
-	g_gaussian_blur_pass_fbo.resize(width, height);
-	g_gaussian_blur_vertical_pass_fbo.resize(width, height);
+	try {
+		glViewport(0, 0, width, height);
+		g_main_game_pass_fbo.resize(width, height);
+		g_gaussian_blur_pass_fbo.resize(width, height);
+		g_gaussian_blur_vertical_pass_fbo.resize(width, height);
+		s_pause_rendering = false;
+	}
+	catch (const char* str) {
+		s_pause_rendering = true;
+	}
 }

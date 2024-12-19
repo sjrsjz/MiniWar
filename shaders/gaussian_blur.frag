@@ -34,16 +34,17 @@ vec4 sampleLod(sampler2D tex, vec2 uv, float lod, float scale){
 }
 
 
+
 void main(){
 	
 	vec2 uv = texCoord;
 	vec4 color;
-	
+
 	if(g_gaussian){
 		if(g_vertical){
 			float w = 0;
 			for(int i = -g_blur_radius; i <= g_blur_radius; i++){
-				float weight = exp(- 0.125 * float(i * i));
+;				float weight = exp(- 0.05 * float(i * i));
 				color += weight * sampleData(g_last_blur_pass, uv + vec2(0, i * g_w_div_h * g_step));
 				w += weight;
 			}
@@ -51,7 +52,7 @@ void main(){
 		}else{
 			float w = 0;
 			for(int i = -g_blur_radius; i <= g_blur_radius; i++){
-				float weight = exp(- 0.125 * float(i * i));
+				float weight = exp(- 0.05 * float(i * i));
 				color += weight * sampleData(g_last_blur_pass, uv + vec2(i * g_step, 0));
 				w += weight;
 			}
@@ -62,7 +63,7 @@ void main(){
 	
 		if(g_from_origin){
 			color += sampleLod(g_main_game_pass, uv, 0.05 * g_step, 0.25);
-			color += sampleLod(g_main_game_pass, uv, 0.02 * g_step, 0.75);
+			color += sampleLod(g_main_game_pass, uv, 0.005 * g_step, 0.75);
 		}else{
 			color += sampleLod(g_last_blur_pass, uv, 0.01 * g_step, 0.5);
 			color += sampleLod(g_last_blur_pass, uv, 0.005 * g_step, 0.5);
