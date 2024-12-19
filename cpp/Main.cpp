@@ -67,8 +67,8 @@ public:
 		ImGui::SetNextWindowBgAlpha(0.5);
 		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
 		// 移动到最低端
-		ImGui::SetWindowPos(ImVec2(0, io.DisplaySize.y - 100));
-		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x, 100));
+		ImGui::SetWindowPos(ImVec2(0, io.DisplaySize.y - 500));
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 500));
 
 
 		ImGui::Text("Selected Grid: %d, %d", grid[0], grid[1]);
@@ -79,6 +79,7 @@ public:
 
 
 GLuint s_image_radioactive;
+GLuint s_image_attack_target;
 
 bool s_pause_rendering = false;
 
@@ -108,8 +109,6 @@ void render_imgui(ImGuiIO& io) {
 	if(s_is_selected)
 		ImGui::Text(u8"当前选中格子: %d, %d", s_current_selected_grid[0], s_current_selected_grid[1]);
 
-	static float f = 0.0f;
-	static int counter = 0;
 
 	// 检查窗口是否被点击
 	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -124,6 +123,10 @@ void render_imgui(ImGuiIO& io) {
 			s_selected_gui.grid[1] = s_current_selected_grid[1];
 		}
 	}
+
+	//static float f = 0.0f;
+	//static int counter = 0;
+
 	//ImGui::Text(u8"测试文本");
 	/*ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
 
@@ -131,7 +134,14 @@ void render_imgui(ImGuiIO& io) {
 		counter++;
 	ImGui::SameLine();
 	ImGui::Text("counter = %d", counter);*/
+	ImGui::End();
 
+	ImGui::SetNextWindowBgAlpha(0.5);
+	ImGui::Begin("SelectedWeapon", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+	ImGui::SetWindowSize(ImVec2(120, 120));
+	ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - 130, io.DisplaySize.y - 130));
+	ImGui::SetCursorPos(ImVec2(10, 10));
+	ImGui::Image(s_image_radioactive, ImVec2(100, 100));
 	ImGui::End();	
 
 	s_selected_gui.render_gui(io);
@@ -220,13 +230,17 @@ void render_main_game_pass() {
 		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_mouse_selected"), -1, -1);
 	}
 
-	// 圆形选中
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_circle_selected"), gridX, gridY, 10, 1);
-
 	// 核辐射标识
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, 5, 1 && selected);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, s_image_radioactive);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_radioactive"), 0);
+
+	// 攻击目标标识
+	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_attack_target"), gridX, gridY, 0 && selected);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, s_image_attack_target);
+	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_attack_target"), 1);
 
 	// 渲染！
 	glDrawArrays(GL_QUADS, 0, map_mash.vertexs.size());
@@ -488,9 +502,9 @@ void KeyProcess() {
 		// 重置摄像机
 		camera.move_to(0, 0, -2, timer.getTime());
 		camera.rotate_to(0, 0, -1.5, timer.getTime());
-		scale_map_camera.move_to(0, 0, -4, timer.getTime());
-		camera.rotate_to(0, 0, -1.5 / (1 + 2 * exp(-0.05 * -4 * -4)), timer.getTime());
-		map_rotation.newEndPosition(-(exp(-0.01 * pow(-4 * -4, 2))), timer.getTime());
+		scale_map_camera.move_to(0, 0, -6, timer.getTime());
+		camera.rotate_to(0, 0, -1.5 / (1 + 2 * exp(-0.05 * -6 * -6)), timer.getTime());
+		map_rotation.newEndPosition(-(exp(-0.01 * pow(-6 * -6, 2))), timer.getTime());
 	}
 }
 
@@ -553,7 +567,7 @@ void init() {
 			RegionData region;
 			region.cell_center_x = randfloat();
 			region.cell_center_y = randfloat();
-			region.identity = (int)(i * i + j * j < 400);
+			region.identity = (int)(i * i + j * j < 400) + (int)(i * i + j * j < 200);
 			region.padding_1 = 0;
 			map_info.setRegion(i, j, region);
 		}
@@ -566,6 +580,7 @@ void init() {
 	DEBUG::DebugOutput("SSBO Created");
 	DEBUG::DebugOutput("Loading Textures...");
 	s_image_radioactive = LoadPNG("resources/textures/radioactivity.png");
+	s_image_attack_target = LoadPNG("resources/textures/target.png");
 	DEBUG::DebugOutput("Textures Loaded");
 
 
@@ -593,6 +608,9 @@ void destroy() {
 	if (s_image_radioactive != GLFW_INVALID_VALUE) {
 		glDeleteTextures(1, &s_image_radioactive);
 	}
+	if (s_image_attack_target != GLFW_INVALID_VALUE) {
+		glDeleteTextures(1, &s_image_attack_target);
+	}
 }
 
 int main() {
@@ -602,7 +620,7 @@ int main() {
 	glfwSetErrorCallback((GLFWerrorfun)glfwErrorCallBack);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-	glfw_win=glfwCreateWindow(800,500,"MiniWar",NULL,NULL);
+	glfw_win=glfwCreateWindow(1600,1000,"MiniWar",NULL,NULL);
 
 	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
 	glfwSetCursorPosCallback(glfw_win, (GLFWcursorposfun)glfwMouseCallback);

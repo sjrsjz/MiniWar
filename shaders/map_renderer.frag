@@ -11,7 +11,8 @@ uniform mat4 g_trans_mat;
 uniform ivec2 g_selected;
 uniform ivec2 g_mouse_selected;
 
-uniform vec4 g_circle_selected; // [center_x, center_y, radius, selected]
+uniform vec4 g_radioactive_selected; // [center_x, center_y, radius, selected]
+uniform vec3 g_attack_target; // [center_x, center_y, selected]
 
 uniform mat4 g_model_trans_mat;
 uniform mat4 g_model_trans_mat_inv;
@@ -19,6 +20,7 @@ uniform ivec2 g_map_size;
 
 
 layout(binding = 0) uniform sampler2D g_tex_radioactive;
+layout(binding = 1) uniform sampler2D g_tex_attack_target;
 
 struct RegionData{
 	vec2 cell_center;
@@ -45,8 +47,8 @@ vec4 uv_to_cell_position(vec2 uv){
 
 vec3 get_identity_color(float identity){
 	if(identity == 0) return vec3(0.1);
-	if(identity == 1) return mix(vec3(0.1),vec3(10,0,0),pow(1 - abs(sin(2 * g_time)),4));
-	if(identity == 2) return vec3(0,1,0);
+	if(identity == 1) return mix(vec3(0.1),vec3(10,0,0),pow(1 - 0.65 * abs(sin(2 * g_time)),4));
+	if(identity == 2) return vec3(0,1,1);
 	if(identity == 3) return vec3(0,0,1);
 	return vec3(1,1,1);
 }
@@ -224,20 +226,25 @@ vec4 doPlaneColoring(vec2 uv){
     color = get_identity_color(region.identity);
     
     // 区块中心
-    color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
+    // color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
 
     // 当前选中
-    if(cell_idx.real_idx.x == g_selected.x && cell_idx.real_idx.y == g_selected.y || cell_idx.real_idx.x == g_mouse_selected.x && cell_idx.real_idx.y == g_mouse_selected.y){
-        color = vec3(0,1,0)*( 0.5 + 0.5 * sin(g_time*5));
+    bool is_selected = cell_idx.real_idx.x == g_selected.x && cell_idx.real_idx.y == g_selected.y;
+    
+    if(g_radioactive_selected.w < 0.5 && g_attack_target.z < 0.5){
+        is_selected = is_selected || cell_idx.real_idx.x == g_mouse_selected.x && cell_idx.real_idx.y == g_mouse_selected.y;
+    }
+    if(is_selected){
+        color = vec3(0,10,0) * (0.5 + 0.5 * sin(g_time * 15));
     }
 
     // 圆形选中
-    if(g_circle_selected.w > 0){
-        vec2 center = g_circle_selected.xy;
-        float radius = g_circle_selected.z;
+    if(g_radioactive_selected.w > 0.5){
+        vec2 center = g_radioactive_selected.xy;
+        float radius = g_radioactive_selected.z;
         float dist = length(vec2(cell_idx.real_idx) - center);
         if(dist < radius){
-            float weight = pow(0.5 + 0.5 * sin(g_time*5),3) * exp(-7*dist/(radius+1e-3));
+            float weight = pow(0.65 + 0.35 * sin(g_time*5),3) * exp(-7*dist/(radius+1e-3));
             color = mix(color, vec3(10,10,0), weight);
             vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
             vec2 d_uv = (uv - region_uv) * g_map_size / radius * 1.25 * 0.25 + 0.5;
@@ -247,6 +254,20 @@ vec4 doPlaneColoring(vec2 uv){
             color = mix(color, vec3(100,100,0) * color_radioactive.a, color_radioactive.a * weight);
         }
     }
+
+    if(g_attack_target.z > 0.5){
+        vec2 center = g_attack_target.xy;
+		float radius = 5;
+		float dist = length(vec2(cell_idx.real_idx) - center);
+		if(dist < radius){
+			vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
+			vec2 d_uv = (uv - region_uv) * g_map_size / radius * 2 * 0.25 + 0.5;
+
+			vec4 color_attack_target = texture(g_tex_attack_target, d_uv);
+			color_attack_target *= float(d_uv.x>=0 && d_uv.x <= 1 && d_uv.y >= 0 && d_uv.y <= 1);
+			color = mix(color, vec3(0,10,0) * color_attack_target.a, color_attack_target.a * pow(0.55 + 0.45 * sin(g_time*5),3));
+        }
+     }
 
     // 边界线
     color = mix(mix(vec3(0,0,0),vec3(0,50,0),cell_idx.diff_identity) * float(cell_idx.sdf<0.025), 
