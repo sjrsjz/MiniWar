@@ -168,6 +168,18 @@
     <ClInclude Include="..\include\imgui\imgui_impl_opengl3_loader.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\header\utils\RegionSSBOBuffer.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\RegionData.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\stb\stb_image.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\ImageLoader.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
@@ -181,6 +193,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\map_renderer.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\gaussian_blur.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\gaussian_blur.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

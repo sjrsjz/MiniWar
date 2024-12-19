@@ -11,7 +11,8 @@
 #include "../header/Timer.h"
 
 #include "../header/debug.h"
-#include "../header/passes/SSBO.h"
+#include "../header/utils/RegionSSBOBuffer.h"
+#include "../header/utils/RegionData.h"
 #include "../header/globals.h"
 
 #include "../header/utils/FloatBuffer.h"
@@ -21,8 +22,18 @@
 #include "../include/imgui/imgui_impl_glfw.h"
 #include "../include/imgui/imgui_impl_opengl3.h"
 
+#include "../header/utils/ImageLoader.h"
+
+#include "../shaders/main_game_pass.vert"
+#include "../shaders/main_game_pass.frag"
+#include "../shaders/normal_gl.vert"
+#include "../shaders/normal_gl.frag"
+#include "../shaders/map_renderer.vert"
+#include "../shaders/map_renderer.frag"
+#include "../shaders/gaussian_blur.vert"
+#include "../shaders/gaussian_blur.frag"
+
 mash s_mash;
-mash triangle_mash;
 SmoothCamera camera;
 SmoothCamera scale_map_camera; // 缩放摄像机
 Timer timer(0);
@@ -32,12 +43,17 @@ GLuint normal_gl_vertex_shader, normal_gl_fragment_shader, s_normal_gl_program;
 
 GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_program;
 mash map_mash;
-SSBO map_info_ssbo;
-DATA::FloatBuffer map_info;
+RegionSSBOBuffer map_info(64, 64);
+
+GLuint gaussian_blur_vertex_shader, gaussian_blur_fragment_shader, s_gaussian_blur_program;
+
 
 GLFWwindow* glfw_win;
 bool keys[512];
 vec3 s_mouse_position;
+
+
+GLuint s_image_radioactive;
 
 
 void glfwErrorCallBack(int error, const char* str);
@@ -46,6 +62,40 @@ void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos);
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height);
 void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+void render_imgui(ImGuiIO& io) {
+	int glfw_width, glfw_height;
+	glfwGetWindowSize(glfw_win, &glfw_width, &glfw_height);
+
+	// 设置控件组位置和大小
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(glfw_width, glfw_height));
+
+	// 创建无边框窗口
+	ImGui::Begin("##Controls", nullptr,
+		ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoBackground);
+	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+		1000.0f / io.Framerate, io.Framerate);
+
+	static float f = 0.0f;
+	static int counter = 0;
+
+	// 检查窗口是否被点击
+	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		DEBUG::DebugOutput("LButton Clicked");
+	}
+	ImGui::Text(u8"测试文本");
+	ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+
+	if (ImGui::Button("Button"))
+		counter++;
+	ImGui::SameLine();
+	ImGui::Text("counter = %d", counter);
+
+	ImGui::End();	
+}
 
 void render_main_game_pass() {
 	g_main_game_pass_fbo.bind_frameBuffer();
@@ -72,7 +122,7 @@ void render_main_game_pass() {
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
 	
-	map_info_ssbo.bind(0);
+	map_info.bind(0);
 
 	// g_fov
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_fov"), -2.0);
@@ -81,6 +131,7 @@ void render_main_game_pass() {
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_height"), H);
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.getTime());
 	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), 64, 64);
+
 
 
 	vec3 plane_u = { 0.25* cos(1), 0, 0.25 * sin(1) }, plane_v = { 0.25 * sin(1),0,-0.25 * cos(1) }, plane_pos = { 0,-2,0 };
@@ -114,7 +165,7 @@ void render_main_game_pass() {
 
 
 
-	auto [selected, gridX, gridY] = RegionSelector(-2.0, W, H, g_trans_mat, model_mat, 64, 64, (void*)map_info.buffer().get())(s_mouse_position[0], s_mouse_position[1]);
+	auto [selected, gridX, gridY] = RegionSelector(-2.0, W, H, g_trans_mat, model_mat, 64, 64, map_info.getRegions())(s_mouse_position[0], s_mouse_position[1]);
 
 
 	if (selected) {
@@ -124,10 +175,20 @@ void render_main_game_pass() {
 		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_selected"), -1, -1);
 	}
 
+
+	// 圆形选中
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_circle_selected"), gridX, gridY, 10, 1);
+
+	// 核辐射标识
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, s_image_radioactive);
+	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_radioactive"), 0);
+
+	// 渲染！
 	glDrawArrays(GL_QUADS, 0, map_mash.vertexs.size());
 	glUseProgram(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	map_info_ssbo.unbind_ssbo();
+	map_info.unbind();
 
 	g_main_game_pass_fbo.unbind_frameBuffer();
 }
@@ -141,6 +202,173 @@ void prepare_render() {
 	camera.clampZ(-6, 4, timer.getTime());
 }
 
+void render_gaussian_blur() {
+	
+	{
+		g_gaussian_blur_pass_fbo.bind_frameBuffer();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+		int W, H;
+		float ratio;
+		mat4x4 m, p, mvp;
+
+		glfwGetFramebufferSize(glfw_win, &W, &H);
+
+		ratio = W / (float)H;
+		int mvp_location = glGetUniformLocation(s_gaussian_blur_program, "MVP");
+
+		mat4x4_identity(m);
+		mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
+		mat4x4_mul(mvp, p, m);
+
+		glBindBuffer(GL_ARRAY_BUFFER, s_mash.vertex_buffer);
+		glUseProgram(s_gaussian_blur_program);
+		glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
+
+		glActiveTexture(GL_TEXTURE0);
+		g_main_game_pass_fbo.bind_texture();
+		glActiveTexture(GL_TEXTURE1);
+		g_gaussian_blur_vertical_pass_fbo.bind_texture();
+
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_from_origin"), true);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_blur_radius"), 1);
+		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_step"), 1);
+		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_w_div_h"), ratio);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_gaussian"), false);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_vertical"), false);
+
+		glDrawArrays(GL_QUADS, 0, s_mash.vertexs.size());
+		glUseProgram(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		g_gaussian_blur_pass_fbo.unbind_frameBuffer();
+	}
+	{
+		g_gaussian_blur_vertical_pass_fbo.bind_frameBuffer();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+		int W, H;
+		float ratio;
+		mat4x4 m, p, mvp;
+
+		glfwGetFramebufferSize(glfw_win, &W, &H);
+
+		ratio = W / (float)H;
+		int mvp_location = glGetUniformLocation(s_gaussian_blur_program, "MVP");
+
+		mat4x4_identity(m);
+		mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
+		mat4x4_mul(mvp, p, m);
+
+		glBindBuffer(GL_ARRAY_BUFFER, s_mash.vertex_buffer);
+		glUseProgram(s_gaussian_blur_program);
+		glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
+
+		glActiveTexture(GL_TEXTURE0);
+		g_main_game_pass_fbo.bind_texture();
+		glActiveTexture(GL_TEXTURE1);
+		g_gaussian_blur_pass_fbo.bind_texture();
+
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_from_origin"), false);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_blur_radius"), 1);
+		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_step"), 1);
+		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_w_div_h"), ratio);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_gaussian"), false);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_vertical"), false);
+		glDrawArrays(GL_QUADS, 0, s_mash.vertexs.size());
+		glUseProgram(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		g_gaussian_blur_vertical_pass_fbo.unbind_frameBuffer();
+	}
+
+
+	{
+		g_gaussian_blur_pass_fbo.bind_frameBuffer();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+		int W, H;
+		float ratio;
+		mat4x4 m, p, mvp;
+
+		glfwGetFramebufferSize(glfw_win, &W, &H);
+
+		ratio = W / (float)H;
+		int mvp_location = glGetUniformLocation(s_gaussian_blur_program, "MVP");
+
+		mat4x4_identity(m);
+		mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
+		mat4x4_mul(mvp, p, m);
+
+		glBindBuffer(GL_ARRAY_BUFFER, s_mash.vertex_buffer);
+		glUseProgram(s_gaussian_blur_program);
+		glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
+
+		glActiveTexture(GL_TEXTURE0);
+		g_main_game_pass_fbo.bind_texture();
+		glActiveTexture(GL_TEXTURE1);
+		g_gaussian_blur_vertical_pass_fbo.bind_texture();
+
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_from_origin"), false);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_blur_radius"), 8);
+		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_step"), 0.025);
+		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_w_div_h"), ratio);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_gaussian"), true);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_vertical"), true);
+
+
+		glDrawArrays(GL_QUADS, 0, s_mash.vertexs.size());
+		glUseProgram(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		g_gaussian_blur_pass_fbo.unbind_frameBuffer();
+	}
+	{
+		g_gaussian_blur_vertical_pass_fbo.bind_frameBuffer();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+		int W, H;
+		float ratio;
+		mat4x4 m, p, mvp;
+
+		glfwGetFramebufferSize(glfw_win, &W, &H);
+
+		ratio = W / (float)H;
+		int mvp_location = glGetUniformLocation(s_gaussian_blur_program, "MVP");
+
+		mat4x4_identity(m);
+		mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
+		mat4x4_mul(mvp, p, m);
+
+		glBindBuffer(GL_ARRAY_BUFFER, s_mash.vertex_buffer);
+		glUseProgram(s_gaussian_blur_program);
+		glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
+
+		glActiveTexture(GL_TEXTURE0);
+		g_main_game_pass_fbo.bind_texture();
+		glActiveTexture(GL_TEXTURE1);
+		g_gaussian_blur_pass_fbo.bind_texture();
+
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_from_origin"), false);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_blur_radius"), 8);
+		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_step"), 0.025);
+		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_w_div_h"), ratio);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_gaussian"), true);
+		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_vertical"), false);
+
+		glDrawArrays(GL_QUADS, 0, s_mash.vertexs.size());
+		glUseProgram(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		g_gaussian_blur_vertical_pass_fbo.unbind_frameBuffer();
+	}
+}
+
+
 void render() {
 
 	int W, H;
@@ -152,6 +380,8 @@ void render() {
 
 	render_main_game_pass();
 
+	render_gaussian_blur();
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	
@@ -159,15 +389,17 @@ void render() {
 	ratio = 1;// W / (float)H;
 
 	int mvp_location = glGetUniformLocation(s_main_game_pass_program, "MVP");
-	//int fbo_location = glGetUniformLocation(s_main_game_pass_program, "g_main_game_pass");
+	
 
 	mat4x4_identity(m);
 	mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
 	mat4x4_mul(mvp, p, m);
 
 	glBindBuffer(GL_ARRAY_BUFFER,s_mash.vertex_buffer);
+	glActiveTexture(GL_TEXTURE0);
 	g_main_game_pass_fbo.bind_texture();
-	//glUniform1i(fbo_location, g_main_game_pass_fbo.get_texture());
+	glActiveTexture(GL_TEXTURE1);
+	g_gaussian_blur_vertical_pass_fbo.bind_texture();
 	glUseProgram(s_main_game_pass_program);
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 	glDrawArrays(GL_QUADS, 0, s_mash.vertexs.size());
@@ -213,12 +445,6 @@ void KeyProcess() {
 	}
 }
 
-#include "../shaders/main_game_pass.vert"
-#include "../shaders/main_game_pass.frag"
-#include "../shaders/normal_gl.vert"
-#include "../shaders/normal_gl.frag"
-#include "../shaders/map_renderer.vert"
-#include "../shaders/map_renderer.frag"
 
 bool compileShaders() {
 	DEBUG::DebugOutput("Compiling Shaders");
@@ -228,6 +454,8 @@ bool compileShaders() {
 	if (s_normal_gl_program == -1) return false;
 	s_map_renderer_program = CompileShader(map_renderer_vert, map_renderer_frag, nullptr, &map_renderer_vertex_shader, &map_renderer_fragment_shader, nullptr);
 	if (s_map_renderer_program == -1) return false;
+	s_gaussian_blur_program = CompileShader(gaussian_blur_vert, gaussian_blur_frag, nullptr, &gaussian_blur_vertex_shader, &gaussian_blur_fragment_shader, nullptr);
+	if (s_gaussian_blur_program == -1) return false;
 	DEBUG::DebugOutput("Shaders Compiled");
 }
 
@@ -243,14 +471,6 @@ void init() {
 	camera.move(0, 0, -2, timer.getTime());
 
 	DEBUG::DebugOutput("Building meshes..");
-	triangle_mash.enable_color = true;
-	triangle_mash.RGBA(1, 0, 0, 1);
-	triangle_mash.append(-0.6f, -0.4f, 0.0f);
-	triangle_mash.RGBA(0, 1, 0, 1);
-	triangle_mash.append(0.6f, -0.4f, 0.0f);
-	triangle_mash.RGBA(0, 0, 1, 1);
-	triangle_mash.append(0.0f, 0.6f, 0.0f);
-	triangle_mash.build(s_normal_gl_program, "vPos", "vColor", nullptr, nullptr);
 
 	s_mash.enable_uv = true;
 	s_mash.UV(0, 0);
@@ -276,21 +496,49 @@ void init() {
 
 	for (int i{}; i < 64; i++) {
 		for (int j{}; j < 64; j++) {
-			map_info << randfloat() << randfloat() << (float)(rand() % 2) << 0.0;
+			RegionData region;
+			region.cell_center_x = randfloat();
+			region.cell_center_y = randfloat();
+			region.identity = (int)(i * i + j * j < 400);
+			region.padding_1 = 0;
+			map_info.setRegion(i, j, region);
 		}
 	}
-
-	map_info_ssbo = SSBO(map_info.size() * sizeof(float), GL_STATIC_DRAW);
-	map_info_ssbo.set_binding_point_index(0);
-	map_info_ssbo.create_ssbo();
-	map_info_ssbo.update_data(map_info.buffer().get(), map_info.size() * sizeof(float));
-
+	map_info.create_ssbo();
+	map_info.update();
 
 
 
 	DEBUG::DebugOutput("SSBO Created");
+	DEBUG::DebugOutput("Loading Textures...");
+	s_image_radioactive = LoadPNG("resources/textures/radioactivity.png");
+	DEBUG::DebugOutput("Textures Loaded");
+
+
 	timer.setTime(glfwGetTime());
 
+}
+
+void destroy() {
+	if (s_main_game_pass_program != -1) glDeleteProgram(s_main_game_pass_program);
+	if (s_normal_gl_program != -1) glDeleteProgram(s_normal_gl_program);
+	if (s_map_renderer_program != -1) glDeleteProgram(s_map_renderer_program);
+	if (s_gaussian_blur_program != -1) glDeleteProgram(s_gaussian_blur_program);
+	if (vertex_shader != -1) glDeleteShader(vertex_shader);
+	if (fragment_shader != -1) glDeleteShader(fragment_shader);
+	if (normal_gl_vertex_shader != -1) glDeleteShader(normal_gl_vertex_shader);
+	if (normal_gl_fragment_shader != -1) glDeleteShader(normal_gl_fragment_shader);
+	if (map_renderer_vertex_shader != -1) glDeleteShader(map_renderer_vertex_shader);
+	if (map_renderer_fragment_shader != -1) glDeleteShader(map_renderer_fragment_shader);
+	if (gaussian_blur_vertex_shader != -1) glDeleteShader(gaussian_blur_vertex_shader);
+	if (gaussian_blur_fragment_shader != -1) glDeleteShader(gaussian_blur_fragment_shader);
+	g_gaussian_blur_pass_fbo.release();
+	g_gaussian_blur_vertical_pass_fbo.release();
+	g_main_game_pass_fbo.release();
+
+	if (s_image_radioactive != GLFW_INVALID_VALUE) {
+		glDeleteTextures(1, &s_image_radioactive);
+	}
 }
 
 int main() {
@@ -351,7 +599,12 @@ int main() {
 	DEBUG::DebugOutput("OpenGL Version", (std::string)(char*)glGetString(GL_VERSION));
 	DEBUG::DebugOutput("GLSL Version", (std::string)(char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-	g_main_game_pass_fbo = FragmentBuffer(800, 500);
+
+	int width, height;
+	glfwGetFramebufferSize(glfw_win, &width, &height);
+	g_main_game_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
+	g_gaussian_blur_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
+	g_gaussian_blur_vertical_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
 
 
 	if (!compileShaders()) goto destroy;
@@ -372,42 +625,11 @@ int main() {
 			ImGui_ImplGlfw_Sleep(10);
 			continue;
 		}
-		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		int glfw_width, glfw_height;
-		glfwGetWindowSize(glfw_win, &glfw_width, &glfw_height);
-
-		{
-			// 设置控件组位置和大小
-			ImGui::SetNextWindowPos(ImVec2(0, 0));
-			ImGui::SetNextWindowSize(ImVec2(glfw_width, glfw_height));
-
-			// 创建无边框窗口
-			ImGui::Begin("##Controls", nullptr,
-						 ImGuiWindowFlags_NoTitleBar |
-							 ImGuiWindowFlags_NoResize |
-							 ImGuiWindowFlags_NoMove |
-							 ImGuiWindowFlags_NoBackground);
-
-			static float f = 0.0f;
-			static int counter = 0;
-
-			ImGui::Text(u8"测试文本");
-			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-
-			if (ImGui::Button("Button"))
-				counter++;
-			ImGui::SameLine();
-			ImGui::Text("counter = %d", counter);
-
-			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-						1000.0f / io.Framerate, io.Framerate);
-
-			ImGui::End();
-		}
+		render_imgui(io);
 
 		// Rendering
 		glDebugMessageCallback(0, 0);
@@ -426,7 +648,8 @@ int main() {
 	}
 destroy:
 
-	g_main_game_pass_fbo.release();
+	destroy();
+
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -460,11 +683,12 @@ void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
 // 滚轮事件
 void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-	DEBUG::DebugOutput(xoffset, yoffset);
 	scale_map_camera.move(0, 0, yoffset, timer.getTime());
 }
 
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 	g_main_game_pass_fbo.resize(width, height);
+	g_gaussian_blur_pass_fbo.resize(width, height);
+	g_gaussian_blur_vertical_pass_fbo.resize(width, height);
 }

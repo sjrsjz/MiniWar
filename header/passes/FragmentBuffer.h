@@ -9,14 +9,15 @@ private:
     GLuint m_depthBuffer;
     int m_width;
     int m_height;
+	int m_data_format;
 
 public:
     inline FragmentBuffer()
-		: m_fbo(0), m_texture(0), m_depthBuffer(0), m_width(0), m_height(0)
+		: m_fbo(0), m_texture(0), m_depthBuffer(0), m_width(0), m_height(0), m_data_format(GL_RGB)
 	{
 	}
-    inline FragmentBuffer(int width, int height)
-        : m_fbo(0), m_texture(0), m_depthBuffer(0), m_width(width), m_height(height)
+    inline FragmentBuffer(int width, int height, int data_format)
+		: m_fbo(0), m_texture(0), m_depthBuffer(0), m_width(width), m_height(height), m_data_format(data_format)
     {
         create_frameBuffer();
         create_texture(m_width, m_height);
@@ -44,11 +45,15 @@ public:
     // 创建纹理
     inline void create_texture(int width, int height)
     {
+
         glGenTextures(1, &m_texture);
         glBindTexture(GL_TEXTURE_2D, m_texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, m_data_format, width, height, 0, GL_RGBA, GL_FLOAT, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // 禁用颜色值钳制
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glBindTexture(GL_TEXTURE_2D, 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0);
     }

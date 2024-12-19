@@ -10,13 +10,15 @@ uniform mat4 g_trans_mat;
 
 uniform ivec2 g_selected;
 
-//uniform vec3 g_plane_u;
-//uniform vec3 g_plane_v;
-//uniform vec3 g_plane_pos;
+uniform vec4 g_circle_selected; // [center_x, center_y, radius, selected]
 
 uniform mat4 g_model_trans_mat;
 uniform mat4 g_model_trans_mat_inv;
 uniform ivec2 g_map_size;
+
+
+layout(binding = 0) uniform sampler2D g_tex_radioactive;
+
 struct RegionData{
 	vec2 cell_center;
 	float identity;
@@ -41,8 +43,8 @@ vec4 uv_to_cell_position(vec2 uv){
 }
 
 vec3 get_identity_color(float identity){
-	if(identity == 0) return vec3(1,1,1);
-	if(identity == 1) return mix(vec3(1),vec3(1,0,0),1 - abs(sin(2 * g_time)));
+	if(identity == 0) return vec3(0.1);
+	if(identity == 1) return mix(vec3(0.1),vec3(10,0,0),pow(1 - abs(sin(2 * g_time)),4));
 	if(identity == 2) return vec3(0,1,0);
 	if(identity == 3) return vec3(0,0,1);
 	return vec3(1,1,1);
@@ -80,16 +82,19 @@ vec3 cell(vec2 cell_uv, vec2 cell_center[3][3]){
     return vec3(ivec2(idx) - 1, min_dist);    
 }
 
-float cell_sdf(vec2 cell_uv, vec2 cell_center[5][5]){
+vec2 cell_sdf(vec2 cell_uv, vec3 cell_center[5][5]){
     float sdf = 1e6;
+	float diff_identity = 0;
     for(int i = 0; i < 5; i++){
         for(int j = 0; j < 5; j++){
 			if(i==2 && j==2) continue;
-			vec2 N = normalize(cell_center[i][j] - cell_center[2][2]);
-			sdf = min(sdf, abs(dot(N,0.5*(cell_center[i][j]+cell_center[2][2])-cell_uv)));
+			vec2 N = normalize(cell_center[i][j].xy - cell_center[2][2].xy);
+			float d = abs(dot(N,0.5*(cell_center[i][j].xy+cell_center[2][2].xy)-cell_uv));
+			diff_identity = float(d<sdf) * float(cell_center[i][j].z != cell_center[2][2].z) + diff_identity * (1 - float(d<sdf));
+			sdf = min(sdf, d);
         }
     }
-    return sdf;    
+    return vec2(sdf, diff_identity);    
 }
 
 
@@ -134,26 +139,49 @@ vec4 doPlaneColoring(vec2 uv){
 	}
 	vec3 cell_data = cell(cell_uv, cell_center);
 	ivec2 real_cell_idx = cell_idx + ivec2(cell_data.xy);
-	vec2 cell_center_5x5[5][5];
+	vec3 cell_center_5x5[5][5];
 	for(int i = -2; i <= 2; i++){
 		for(int j = -2; j <= 2; j++){
-			cell_center_5x5[i+2][j+2] = getRegion(real_cell_idx.x + i, real_cell_idx.y + j).cell_center + cell_data.xy + vec2(i,j);
+			RegionData r = getRegion(real_cell_idx.x + i, real_cell_idx.y + j);
+			cell_center_5x5[i+2][j+2] = vec3(r.cell_center + cell_data.xy + vec2(i,j), r.identity);
 		}
 	}
-	float sdf = cell_sdf(cell_uv, cell_center_5x5);
-
+	vec2 sdf_diff = cell_sdf(cell_uv, cell_center_5x5);
+	float sdf = sdf_diff.x;
+	float diff_identity = sdf_diff.y;
 
 
 	vec3 color = vec3(0);
 	RegionData region = getRegion(real_cell_idx.x, real_cell_idx.y);
-	color = get_identity_color(region.identity) * float(cell_data.z * 0.5);
+	color = get_identity_color(region.identity);
+	
+	// 区块中心
 	color = mix(color, vec3(1,0,0), float(cell_data.z < 0.05));
-	color = mix(vec3(0,0,0) * float(sdf<0.0125), color, 0.5 + 0.95 * float(sdf>=0.0125));
 
+	// 当前选中
 	if(real_cell_idx.x == g_selected.x && real_cell_idx.y == g_selected.y){
-	color =  vec3(0,1,0)*( 0.5 + 0.5 * sin(g_time*5));
+		color =  vec3(0,1,0)*( 0.5 + 0.5 * sin(g_time*5));
 	}
 
+	// 圆形选中
+	if(g_circle_selected.w > 0){
+		vec2 center = g_circle_selected.xy;
+		float radius = g_circle_selected.z;
+		float dist = length(vec2(real_cell_idx) - center);
+		if(dist < radius){
+			float weight = pow(0.5 + 0.5 * sin(g_time*5),3) * exp(-7*dist/(radius+1e-3));
+			color = mix(color, vec3(10,10,0), weight);
+			vec2 region_uv = (vec2(g_selected) + 0.5) / g_map_size * 2 - 1;
+			vec2 d_uv = (uv - region_uv) * g_map_size / radius * 1.25 * 0.25 + 0.5;
+
+			vec4 color_radioactive = texture(g_tex_radioactive, d_uv);
+			color_radioactive *= float(d_uv.x>=0 && d_uv.x <= 1 && d_uv.y >= 0 && d_uv.y <= 1);
+			color = mix(color, vec3(100,100,0) * color_radioactive.a, color_radioactive.a * weight);
+		}
+	}
+
+	// 边界线
+	color = mix(mix(vec3(0,0,0),vec3(0,50,0),diff_identity) * float(sdf<0.025), color, 0.5 + 0.95 * float(sdf>=0.0125));
 	return vec4(color, 1);
 }
 
@@ -200,17 +228,16 @@ vec4 render(){
 	vec4 map = doPlaneColoring(pi.uv) * float(pi.t > 0) * float(abs(pi.uv.x)<=1 + max_padding_board.x &&abs(pi.uv.y)<=1 + max_padding_board.y);
 
 	float board = max(abs(pi.uv.x),abs(pi.uv.y));
-	map += step(1 + max_padding_board.x,board)*pow(smoothstep(1.5, 1. + max_padding_board.x,board),2)*vec4(1+sin(g_time*2)) * 0.25;
+	map += step(1 + max_padding_board.x,board)*pow(smoothstep(1.5, 1. + max_padding_board.x,board),2)*vec4(0.125);
 
 	if(pi.t <= base_box.x || base_box.x < 0)
 		color = mix(color, map, map.a);
-
 
 	return color;
 }
 
 
-out vec4 fragColor;
+layout (location = 0) out vec4 fragColor;
 void main(){
 	fragColor = render();
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "../../include/linmath.h"
+#include "RegionData.h"
 #include <tuple>
 #include <cmath>
 
@@ -10,16 +11,8 @@ private:
     float width, height;
     mat4x4 viewMat;
     mat4x4 modelMat;
-    int mapWidth, mapHeight;
-    
-    struct RegionData {
-        float cell_center_x;
-        float cell_center_y;
-
-        float identity;
-        float padding_1;
-    };
-    
+    int mapWidth, mapHeight; 
+   
     RegionData* regions;
 
 private:
