@@ -4,5 +4,4 @@ MiniWar/x64/*
 MiniWar/MiniWar.vcxproj
 MiniWar/MiniWar.vcxproj.filters
 MiniWar/MiniWar.vcxproj.user
-.vscode/*
-/.gitmodules
+
