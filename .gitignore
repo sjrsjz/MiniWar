@@ -5,3 +5,4 @@ MiniWar/MiniWar.vcxproj
 MiniWar/MiniWar.vcxproj.filters
 MiniWar/MiniWar.vcxproj.user
 
+*.gitmodules

@@ -21,6 +21,7 @@ public:
 	~RegionManager();
 	Weapon& get_weapon(int id);
 	void update();
+	void move_army(int amount, double time, std::vector<std::tuple<int, int>>& path);
 	void attack_region(int weapon_id, Point start, Point end, double time, int damage);
 	void owner_alter();
 	Array<Region> get_regions();

@@ -1,24 +1,6 @@
 #include "../../header/Logic/Player.h"
 #include "../../header/Logic/RegionManager.h"
 
-struct Node{
-    int x, y;
-    float cost;
-    float heuristic;
-    Node* parent;
-
-    Node(int x, int y, float cost, float heuristic, Node* parent = nullptr)
-    : x(x), y(y), cost(cost), heuristic(heuristic), parent(parent){}
-
-    float total_cost() const{
-        return cost + heuristic;
-    }
-
-    bool operator>(const Node& other) const{
-        return total_cost() > other.total_cost();
-    }
-};
-
 Player:: Player(RegionManager& Manager, int id) : regionmanager(Manager), id(id){
     gold = 0;
     oil = 0;
@@ -30,10 +12,19 @@ Player:: Player(RegionManager& Manager, int id) : regionmanager(Manager), id(id)
 }
 
 Player:: ~Player(){
-    delete &regionmanager;
 }
 
-float Player::calculate_distance(Point start, Point end){
+double Player::calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end) {
+    Region start_region = regionmanager.get_region(std::get<0>(start), std::get<1>(start));
+    Region end_region = regionmanager.get_region(std::get<0>(end), std::get<1>(end));
+    Point start_region_position = start_region.getPosition();
+    Point end_region_position = end_region.getPosition();
+    return sqrt(pow(start_region_position.getX() - end_region_position.getX(), 2) + pow(start_region_position.getY() - end_region_position.getY(), 2));
+}
+
+double Player::calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path) {
+	double distance = 0;
+
     Array<Region> regions = regionmanager.get_regions();
     int *player_region_martix = new int[regions.get_width() * regions.get_height()];
     for(int i = 0; i<regions.get_width(); i++){
@@ -51,47 +42,168 @@ float Player::calculate_distance(Point start, Point end){
     int end_x = std::floor(end.getX());
     int end_y = std::floor(end.getY());
 
-    auto heuristic = [&](int x, int y){
-        return std::sqrt(std::pow(x-end_x, 2) + std::pow(y-end_y, 2));
-    };
+    int temp_x = start_x;
+    int temp_y = start_y;
 
-    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_list;
-    std::unordered_map<int, Node*> all_nodes;
-    open_list.emplace(start_x, start_y, 0, heuristic(start_x, start_y));
+    static int NOT_AVALIABLE = 1000000;
+    static int straight_cost = 10;
+    static int diagonal_cost = 14;
 
-    while (!open_list.empty()){
-        Node current = open_list.top();
-        open_list.pop();
+    int cost_list[8] = {};//0: left up 1: up 2: right up 3: left 4: right 5: left down 6: down 7: right down
 
-        if(current.x == end_x && current.y == end_y){
-            float distance = 0;
-            while(current.parent != nullptr){
-                distance += regions(current.x, current.y).getArmy().getSpeed();
-                current = *current.parent;
+    while(temp_x!= end_x && temp_y != end_y)
+    {
+        path.push_back(std::make_tuple(temp_x, temp_y));
+
+        bool up = true;
+		bool down = true;
+		bool left = true;
+		bool right = true;
+        if (temp_x - 1 < 0)
+        {
+			cost_list[0] = NOT_AVALIABLE;
+			cost_list[3] = NOT_AVALIABLE;
+			cost_list[5] = NOT_AVALIABLE;
+			left = false;
+		}
+        if (temp_x + 1 > regions.get_width())
+        {
+			cost_list[2] = NOT_AVALIABLE;
+			cost_list[4] = NOT_AVALIABLE;
+			cost_list[7] = NOT_AVALIABLE;
+			right = false;
+        }
+		if (temp_y - 1 < 0)
+		{
+			cost_list[5] = NOT_AVALIABLE;
+			cost_list[6] = NOT_AVALIABLE;
+			cost_list[7] = NOT_AVALIABLE;
+			down = false;
+		}
+        if (temp_y + 1 > 0)
+        {
+			cost_list[0] = NOT_AVALIABLE;
+			cost_list[1] = NOT_AVALIABLE;
+			cost_list[2] = NOT_AVALIABLE;
+			up = false;
+        }
+        if (up) {
+			if (player_region_martix[temp_x + (temp_y + 1) * regions.get_width()] == 1) {
+				cost_list[0] = straight_cost*(1 + end_x - temp_x + end_y - temp_y);
+			}
+            else {
+				cost_list[0] = NOT_AVALIABLE;
+			}
+            if (left) {
+				if (player_region_martix[temp_x - 1 + (temp_y + 1) * regions.get_width()] == 1) {
+					cost_list[1] = diagonal_cost + straight_cost*(end_x - temp_x + end_y - temp_y);
+				}
+                else {
+					cost_list[1] = NOT_AVALIABLE;
+				}
             }
-            return distance;
+            if (right) {
+				if (player_region_martix[temp_x + 1 + (temp_y + 1) * regions.get_width()] == 1) {
+					cost_list[2] = diagonal_cost + straight_cost*(end_x - temp_x + end_y - temp_y);
+				}
+                else {
+					cost_list[2] = NOT_AVALIABLE;
+                }
+            }
+        }
+        if (down) {
+			if (player_region_martix[temp_x + (temp_y - 1) * regions.get_width()] == 1) {
+				cost_list[5] = straight_cost*(1 + end_x - temp_x + end_y - temp_y);
+			}
+            else {
+				cost_list[5] = NOT_AVALIABLE;
+			}
+            if (left) {
+				if (player_region_martix[temp_x - 1 + (temp_y - 1) * regions.get_width()] == 1) {
+					cost_list[6] = diagonal_cost + straight_cost*(end_x - temp_x + end_y - temp_y);
+				}
+                else {
+					cost_list[6] = NOT_AVALIABLE;
+				}
+            }
+            if (right) {
+				if (player_region_martix[temp_x + 1 + (temp_y - 1) * regions.get_width()] == 1) {
+					cost_list[7] = diagonal_cost + straight_cost*(end_x - temp_x + end_y - temp_y);
+				}
+                else {
+					cost_list[7] = NOT_AVALIABLE;
+				}
+            }
+        }
+        if (left) {
+			if (player_region_martix[temp_x - 1 + temp_y * regions.get_width()] == 1) {
+				cost_list[3] = straight_cost*(1 + end_x - temp_x + end_y - temp_y);
+			}
+            else {
+				cost_list[3] = NOT_AVALIABLE;
+			}
+        }
+        if (right) {
+			if (player_region_martix[temp_x + 1 + temp_y * regions.get_width()] == 1) {
+				cost_list[4] = straight_cost*(1 + end_x - temp_x + end_y - temp_y);
+			}
+            else {
+				cost_list[4] = NOT_AVALIABLE;
+			}
         }
 
-        std::vector<std::pair<int,int>> neibours = {
-            {current.x-1, current.y},
-            {current.x+1, current.y},
-            {current.x, current.y-1},
-            {current.x, current.y+1}
-        };
-
-        for(auto& neibour : neibours){
-            int nx = neibour.first;
-            int ny = neibour.second;
-            if(nx >= 0 && nx < regions.get_width() && ny >= 0 && ny < regions.get_height() && player_region_martix[nx + ny * regions.get_width()] == 1){
-                float new_cost = current.cost + std::sqrt(std::pow(nx - current.x, 2) + std::pow(ny - current.y, 2));
-                Node* neighbor_node = new Node(nx, ny, new_cost, heuristic(nx, ny), &current);
-                open_list.push(*neighbor_node);
-                all_nodes[nx + ny * regions.get_width()] = neighbor_node;
-            }
+		int min_cost = NOT_AVALIABLE, min_way = 0;
+        for (int i = 0; i < 8; i++) {
+			if (cost_list[i] < min_cost) {
+				min_cost = cost_list[i];
+				min_way = i;
+			}
         }
-    } 
+		if (min_cost == NOT_AVALIABLE) {
+			return -1;
+		}
 
-    return -1;
+        switch (min_way) {
+        case 0:
+            temp_y++;
+            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y - 1));
+            break;
+        case 1:
+            temp_x--;
+            temp_y++;
+            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y - 1));
+            break;
+        case 2:
+            temp_x++;
+            temp_y++;
+            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y - 1));
+            break;
+        case 3:
+            temp_x--;
+            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y));
+            break;
+        case 4:
+            temp_x++;
+            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y));
+            break;
+        case 5:
+            temp_y--;
+            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y + 1));
+            break;
+        case 6:
+            temp_x--;
+            temp_y--;
+            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y + 1));
+            break;
+        case 7:
+            temp_x++;
+            temp_y--;
+            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y + 1));
+            break;
+        }
+		player_region_martix[temp_x + temp_y * regions.get_width()] = 0;
+    }
+    return distance;
 }
 
 int Player:: get_gold(){
@@ -187,9 +299,10 @@ int get_building_level_limit(std::string name) {
 }
 
 void Player:: move_army(Point start, Point end, int amount){
-    float distance = calculate_distance(start, end);
+    std::vector<std::tuple<int, int>> path;
+    double distance = calculate_distance(start, end, path);
     if (distance == -1) {
-        throw "No such road";
+        throw "Can't find a path";
     }
 
     int start_x = std::floor(start.getX());
@@ -204,7 +317,7 @@ void Player:: move_army(Point start, Point end, int amount){
 
     start_region.removeArmy(amount);
     //create a new army to move, when time is up, this army shall be destroyed, and the end region add this army's force
-    
+	regionmanager.move_army(amount, time, path);
 }
 
 void Player::attack(Point start, Point end, int weapon_id) {

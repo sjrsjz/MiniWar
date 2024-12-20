@@ -25,7 +25,8 @@ private:
 	std::vector<int> arm_level;//0: army, 1: CM 2: MRBM 3: ICBM
 	std::vector<int> institution_level_limit;//0: powerstation, 1: steelmill, 2: oilwell, 3: civilian_factory, 4: military_factory
 	RegionManager& regionmanager;
-	float calculate_distance(Point start, Point end);
+	double calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path);
+	double calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end);
 public:
 	Player(RegionManager& Manager, int id);
 	~Player();

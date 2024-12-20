@@ -39,6 +39,19 @@ Weapon& RegionManager::get_weapon(int id) {
 	return weapons[id];
 }
 
+void RegionManager::move_army(int amount, double time, std::vector<std::tuple<int, int>>& path) {
+	MovingArmy army;
+	army.amount = amount;
+	army.time = time;
+	Region end_region = get_region(std::get<0>(path.back()), std::get<1>(path.back()));
+
+	army.path = path;
+	moving_armies.push_back(army);
+	//count time
+	//if time is up, move
+	end_region.addArmy(amount);
+}
+
 void RegionManager::attack_region(int weapon_id, Point start, Point end, double time, int damage) {
 	MovingMissle missle;
 	missle.damage = damage;
