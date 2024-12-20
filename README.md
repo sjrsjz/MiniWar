@@ -55,8 +55,84 @@ Labor: int
 	"Weapon": {
 		0: {
 			"name": "CM",
-			""
-		}	
+			"damage": 25,
+            "damageRange": 0,
+            "attackSpeed": 0.0625,
+            "AttackRange": [0.0, 0.25],
+            "cost": [10000, 200, 300, 1000, 50]
+		},	
+        1: {
+            "name": "MRBM",
+            "damage": 74,
+            "damageRange": 1.2,
+            "attackSpeed": 0.03125,
+            "AttackRange": [0.0, 0.5],
+            "cost": [35000, 500, 700, 1500, 75]
+        },
+        2: {
+            "name": "ICBM",
+            "damage": 45,
+            "damageRange": 1.5,
+            "attackSpeed": 0.025,
+            "AttackRange": [0.2, 0.8],
+            "cost": [50000, 1000, 1500, 2000, 100]
+        }
 	},
+    "Region": {
+        "hp": [200, 300],
+        "Army": [30, 50],
+        "OriginSize": [1.5, 2.5],
+        "CapitalHp": 1000,
+        "CapitalArmy": 200
+    },
+    "Building": {
+        "PowerStation": {
+            "BuildCost": [3000, 500, 1000, 200, 30],
+            "Product": [0, 0, 0, 5, 0],
+            "UpLevelFactor": [1.3, 1.5],
+            "UpLevelCost1": [30000, 2000, 5000, 1000, 20]
+            "UpLevelCost2": [50000, 5000, 10000, 2000, 40]
+        },
+        "Refinery": {
+            "BuildCost": [5000, 1000, 2000, 300, 50],
+            "Product": [0, 15, 0, 0, 0],
+            "UpLevelFactor": [1.3, 1.5],
+            "UpLevelCost1": [50000, 5000, 10000, 2000, 40]
+            "UpLevelCost2": [80000, 10000, 20000, 4000, 60]
+        },
+        "SteelFactory": {
+            "BuildCost": [5000, 1000, 2000, 300, 50],
+            "Product": [0, 0, 20, 0, 0],
+            "UpLevelFactor": [1.3, 1.5],
+            "UpLevelCost1": [50000, 5000, 10000, 2000, 40]
+            "UpLevelCost2": [80000, 10000, 20000, 4000, 60]
+        },
+        "CivilFactory": {
+            "BuildCost": [5000, 1000, 2000, 300, 50],
+            "Product": [500, 0, 0, 0, 0],
+            "UpLevelFactor": [1.3, 1.5],
+            "UpLevelCost1": [50000, 5000, 10000, 2000, 40]
+            "UpLevelCost2": [80000, 10000, 20000, 4000, 60]
+        },
+        "MilitaryFactory": {
+            "BuildCost": [5000, 1000, 2000, 300, 50],
+            "CD": [15, 10, 7],
+            "UpLevelCost1": [50000, 5000, 10000, 2000, 40]
+            "UpLevelCost2": [80000, 10000, 20000, 4000, 60]
+        },
+    },
+    "ReasearchInstitution":{
+        "BuildCost": 200000,
+        "OUpLevelCost": {
+            "PowerStation": [100000, 300000],
+            "Refinery": [100000, 300000],
+            "SteelFactory": [100000, 300000],
+            "CivilFactory": [300000, 500000],
+            "MilitaryFactory": [300000, 500000],
+            0: [200000, 400000],
+            1: [250000, 500000],
+            2: [300000, 600000]
+        }
+    }
 }
 
