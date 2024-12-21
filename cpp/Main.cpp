@@ -32,6 +32,8 @@
 #include "../shaders/map_renderer.frag"
 #include "../shaders/gaussian_blur.vert"
 #include "../shaders/gaussian_blur.frag"
+#include "../shaders/direct_tex.frag"
+#include "../shaders/direct_tex.vert"
 
 mash s_mash;
 SmoothCamera camera;
@@ -40,6 +42,9 @@ Timer timer(0);
 
 GLuint vertex_shader, fragment_shader, s_main_game_pass_program;
 GLuint normal_gl_vertex_shader, normal_gl_fragment_shader, s_normal_gl_program;
+
+// 直接渲染纹理
+GLuint direct_tex_vertex_shader, direct_tex_fragment_shader, s_direct_tex_program;
 
 GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_program;
 mash map_mash;
@@ -57,6 +62,23 @@ vec3 s_mouse_position;
 int s_current_selected_grid[2] = { -1,-1 };
 bool s_is_selected = false;
 
+
+namespace TEXTURE {
+	GLuint s_image_radioactive;
+	GLuint s_image_attack_target;
+	GLuint s_image_scatter;
+	GLuint s_image_lightning;
+}
+
+bool s_pause_rendering = false;
+
+void glfwErrorCallBack(int error, const char* str);
+void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int mods);
+void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos);
+void glfwWindowSizeCallback(GLFWwindow* window, int width, int height);
+void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+void KeyProcess();
+void KeyRelease(int key);
 
 enum SelectedWeapon {
 	NUCLEAR_MISSILE, // 核导弹
@@ -81,8 +103,8 @@ public:
 		ImGui::SetNextWindowBgAlpha(0.5);
 		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
 		// 移动到最低端
-		ImGui::SetWindowPos(ImVec2(0, io.DisplaySize.y - 500));
-		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 500));
+		ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, io.DisplaySize.y - 200));
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 200));
 
 
 		ImGui::Text("Selected Grid: %d, %d", grid[0], grid[1]);
@@ -96,7 +118,7 @@ class MenuGui {
 	SmoothMove x{};
 public:
 	MenuGui() {
-		x.setTotalDuration(0.125);
+		x.setTotalDuration(0.5);
 	}
 	void open_gui(bool open, const Timer& timer) {
 		this->open = open;
@@ -107,8 +129,14 @@ public:
 			x.newEndPosition(0, timer.getTime());
 		}
 	}
+	bool is_activitied() {
+		return x.getX() > 1e-3;
+	}
 	void render_gui(ImGuiIO& io) {
-		ImGui::SetNextWindowBgAlpha(0.75 * x.getX());
+		if (!is_activitied()) {
+			return;
+		}
+		ImGui::SetNextWindowBgAlpha(0.25 * x.getX());
 		// 设置边框宽度为0
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
@@ -120,7 +148,7 @@ public:
 			ImGuiWindowFlags_NoScrollbar
 		);
 
-		float x_pos = (x.getX() - 1.0f) * io.DisplaySize.x;
+		int x_pos = 0;
 		ImGui::SetWindowPos(ImVec2(x_pos, 0));
 		ImGui::SetWindowSize(io.DisplaySize);
 		// 调整字体大小(不使用缩放而是直接使用大号字体）
@@ -128,12 +156,30 @@ public:
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, x.getX()));
 		const char* tilte = u8"菜单";
 		ImVec2 title_size = ImGui::CalcTextSize(tilte);
-		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - title_size.x) / 2 + x_pos, 10));
+		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - title_size.x) / 2 + x_pos, 50));
 		ImGui::Text(tilte);
 		ImGui::PopStyleColor();
 		ImGui::PopFont();
-		ImGui::End();
 
+		// 按钮
+		ImGui::PushFont(UIFonts::large_font);
+
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25, 0.25, 0.25, 0.25 * x.getX()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35, 0.35, 0.35, x.getX()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15, 0.15, 0.15, x.getX()));
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, x.getX()));
+		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 200));
+		if (ImGui::Button(u8"继续游戏", ImVec2(400, 100))) {
+			open_gui(false, timer);
+		}
+
+		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 360));
+		if (ImGui::Button(u8"退出游戏", ImVec2(400, 100))) {
+			glfwSetWindowShouldClose(glfw_win, true);
+		}
+		ImGui::PopStyleColor(4);
+		ImGui::PopFont();
+		ImGui::End();
 		// 恢复样式
 		ImGui::PopStyleVar();
 	}
@@ -151,120 +197,145 @@ public:
 	}
 } s_menu_gui;
 
+class StatusGui {
+private:
+	SmoothMove resources_amount{};
+	SmoothMove resources_amount_back{};
 
-namespace TEXTURE {
-	GLuint s_image_radioactive;
-	GLuint s_image_attack_target;
-	GLuint s_image_scatter;
-}
+	void render_bar(ImGuiIO& io, const SmoothMove& f, const SmoothMove& b, const char* title, GLuint tex, int scale) {
+		ImGui::Image(tex, ImVec2(30, 30));
+		ImGui::SameLine();
+		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 0.0f, 0.0f, 0.5f)); // 前景色
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.25f));	   // 背景色
+		ImVec2 pos = ImGui::GetCursorPos();
+		ImGui::ProgressBar(b.getX(), ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
+		ImGui::PopStyleColor(2); // 恢复颜色设置
+		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 1.0f, 0.0f, 0.5f)); // 前景色
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.0f));	   // 背景色
+		ImGui::SetCursorPos(pos);
+		ImGui::ProgressBar(f.getX(), ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
+		ImGui::PopStyleColor(2); // 恢复颜色设置
+		ImVec2 text_size = ImGui::CalcTextSize(title);
+		ImGui::SetCursorPos(ImVec2(pos.x + 5, pos.y + 30 - text_size.y));
+		ImGui::Text(title, (int)(f.getX() * scale));
+	}
 
-bool s_pause_rendering = false;
+public:
+	StatusGui() {
+		// 资源条
+		{
+			resources_amount.setTotalDuration(0.125);
+			resources_amount_back.setTotalDuration(0.5);
+		}
+	}
+	void render_gui(ImGuiIO& io) {
+		ImGui::Begin("Status", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground);
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x/4, 200));
+		ImGui::SetWindowPos(ImVec2(50, io.DisplaySize.y - 250));
 
-void glfwErrorCallBack(int error, const char* str);
-void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int mods);
-void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos);
-void glfwWindowSizeCallback(GLFWwindow* window, int width, int height);
-void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-void KeyProcess();
-void KeyRelease(int key);
+		// 资源条
+		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100);
+		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100);
+		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100);
+		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100);
+
+		ImGui::End();
+	}
+	void update(const Timer& timer) {
+		resources_amount.update(timer.getTime());
+		resources_amount_back.update(timer.getTime());
+	}
+
+	void set_resources_amout(double x, const Timer& timer) {
+		resources_amount.newEndPosition(x, timer.getTime());
+		resources_amount_back.newEndPosition(x, timer.getTime());
+	}
+	double get_resources_amount() {
+		return resources_amount.getX();
+	}
+
+}s_status_gui;
 
 void render_imgui(ImGuiIO& io) {
-	int glfw_width, glfw_height;
-	glfwGetWindowSize(glfw_win, &glfw_width, &glfw_height);
+	if (!s_menu_gui.is_activitied()) {
+		int glfw_width, glfw_height;
+		glfwGetWindowSize(glfw_win, &glfw_width, &glfw_height);
 
 
-	ImGui::SetNextWindowBgAlpha(0.25);
-	ImGui::Begin("SelectedWeapon", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
-	ImGui::SetWindowSize(ImVec2(120, 120));
-	ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - 130, io.DisplaySize.y - 130));
-	ImGui::SetCursorPos(ImVec2(10, 10));
-	switch (s_selected_weapon)
-	{
-	case NUCLEAR_MISSILE:
-		ImGui::Image(TEXTURE::s_image_radioactive, ImVec2(100, 100));
-		break;
-	case ARMY:
-		ImGui::Image(TEXTURE::s_image_attack_target, ImVec2(100, 100));
-		break;
-	case SCATTER_BOMB:
-		ImGui::Image(TEXTURE::s_image_scatter, ImVec2(100, 100));
-		break;
-	default:
-		break;
-	}
-
-	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-		KeyRelease(GLFW_KEY_SPACE); // 切换武器
-	}
-
-	ImGui::End();
-
-	// 设置控件组位置和大小
-	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSize(ImVec2(glfw_width, glfw_height));
-
-	// 创建无边框窗口
-	ImGui::Begin("##Controls", nullptr,
-		ImGuiWindowFlags_NoTitleBar |
-		ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoBackground | 
-		ImGuiWindowFlags_NoBringToFrontOnFocus | 
-		ImGuiWindowFlags_NoFocusOnAppearing
-	);
-
-	ImGui::SetCursorPos(ImVec2(10, 50));
-
-	//ImGui::Text("%.3f ms/frame (%.1f FPS)",
-	//	1000.0f / io.Framerate, io.Framerate);
-
-	//if(s_is_selected)
-	//	ImGui::Text(u8"当前选中格子: %d, %d", s_current_selected_grid[0], s_current_selected_grid[1]);
-
-
-	// 检查窗口是否被点击
-	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-
-		// 显示格子信息
-		if (s_is_selected && s_current_selected_grid[0] == s_selected_gui.grid[0] && s_current_selected_grid[1] == s_selected_gui.grid[1]) {
-			s_selected_gui.is_selected = !s_selected_gui.is_selected;
+		ImGui::SetNextWindowBgAlpha(0.25);
+		ImGui::Begin("SelectedWeapon", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
+		ImGui::SetWindowSize(ImVec2(120, 120));
+		ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - 130, io.DisplaySize.y - 130));
+		ImGui::SetCursorPos(ImVec2(10, 10));
+		switch (s_selected_weapon)
+		{
+		case NUCLEAR_MISSILE:
+			ImGui::Image(TEXTURE::s_image_radioactive, ImVec2(100, 100));
+			break;
+		case ARMY:
+			ImGui::Image(TEXTURE::s_image_attack_target, ImVec2(100, 100));
+			break;
+		case SCATTER_BOMB:
+			ImGui::Image(TEXTURE::s_image_scatter, ImVec2(100, 100));
+			break;
+		default:
+			break;
 		}
-		else {
-			s_selected_gui.is_selected = s_is_selected;
-			s_selected_gui.grid[0] = s_current_selected_grid[0];
-			s_selected_gui.grid[1] = s_current_selected_grid[1];
+
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+			KeyRelease(GLFW_KEY_SPACE); // 切换武器
 		}
+
+		ImGui::End();
+
+		// 设置控件组位置和大小
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+		ImGui::SetNextWindowSize(ImVec2(glfw_width, glfw_height));
+
+		// 创建无边框窗口
+		ImGui::Begin("##Controls", nullptr,
+			ImGuiWindowFlags_NoTitleBar |
+			ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoBackground |
+			ImGuiWindowFlags_NoBringToFrontOnFocus |
+			ImGuiWindowFlags_NoFocusOnAppearing
+		);
+
+		ImGui::SetCursorPos(ImVec2(10, 50));
+
+		// 检查窗口是否被点击
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+
+			// 显示格子信息
+			if (s_is_selected && s_current_selected_grid[0] == s_selected_gui.grid[0] && s_current_selected_grid[1] == s_selected_gui.grid[1]) {
+				s_selected_gui.is_selected = !s_selected_gui.is_selected;
+			}
+			else {
+				s_selected_gui.is_selected = s_is_selected;
+				s_selected_gui.grid[0] = s_current_selected_grid[0];
+				s_selected_gui.grid[1] = s_current_selected_grid[1];
+			}
+		}
+		// 检查鼠标是否移动
+		if (ImGui::IsWindowHovered()) {
+			ImVec2 mouse_pos = ImGui::GetMousePos();
+			s_mouse_position[0] = mouse_pos.x; s_mouse_position[1] = mouse_pos.y;
+		}
+
+		// 在最上方画一个双色进度条来显示已占区块数量和未占区块数量
+		ImGui::SetCursorPos(ImVec2(40, 20));
+
+		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 1.0f, 1.0f, 0.5f)); // 前景色
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.5f));	   // 背景色
+		ImGui::ProgressBar((1 + sin(timer.getTime())) * 0.5, ImVec2(io.DisplaySize.x - 80, 20), u8"");
+		ImGui::PopStyleColor(2); // 恢复颜色设置
+
+		ImGui::End();
+
+		s_selected_gui.render_gui(io);
+		s_status_gui.render_gui(io);
 	}
-	// 检查鼠标是否移动
-	if (ImGui::IsWindowHovered()) {
-		ImVec2 mouse_pos = ImGui::GetMousePos();
-		s_mouse_position[0] = mouse_pos.x; s_mouse_position[1] = mouse_pos.y;
-	}
-
-	//static float f = 0.0f;
-	//static int counter = 0;
-
-	//ImGui::Text(u8"测试文本");
-	/*ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-
-	if (ImGui::Button("Button"))
-		counter++;
-	ImGui::SameLine();
-	ImGui::Text("counter = %d", counter);*/
-
-	// 在最上方画一个双色进度条来显示已占区块数量和未占区块数量
-	ImGui::SetCursorPos(ImVec2(40, 20));
-
-	ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 1.0f, 1.0f, 0.5f)); // 前景色
-	ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.5f));	   // 背景色
-	ImGui::ProgressBar((1 + sin(timer.getTime())) * 0.5, ImVec2(io.DisplaySize.x - 80, 20), u8"");
-	ImGui::PopStyleColor(2); // 恢复颜色设置
-
-	ImGui::End();
-
-
-
-	s_selected_gui.render_gui(io);
 	s_menu_gui.render_gui(io);
 }
 
@@ -389,6 +460,7 @@ void prepare_render() {
 	map_rotation.update(timer.getTime());
 
 	s_menu_gui.update(timer);
+	s_status_gui.update(timer);
 }
 
 void render_gaussian_blur() {
@@ -559,27 +631,63 @@ void render_gaussian_blur() {
 }
 
 
-void render() {
-
+void render_final() {
 	int W, H;
 	float ratio;
 	mat4x4 m, p, mvp;
-
-	glfwGetFramebufferSize(glfw_win,&W,&H);
+	glfwGetFramebufferSize(glfw_win, &W, &H);
 	glViewport(0, 0, W, H);
-
-	render_main_game_pass();
-
-	render_gaussian_blur();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	ratio = 1;// W / (float)H;
+	ratio = 1;
+	int mvp_location = glGetUniformLocation(s_direct_tex_program, "MVP");
 
+	mat4x4_identity(m);
+	mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+	mat4x4_mul(mvp, p, m);
+
+	glBindBuffer(GL_ARRAY_BUFFER, s_mash.vertex_buffer);
+	glActiveTexture(GL_TEXTURE0);
+
+	if (s_menu_gui.is_activitied()) {
+		g_flame_render_pass.render(g_final_mix_pass_fbo.get_texture(), timer, s_mash, s_menu_gui.getX());
+		g_flame_render_pass.get_fbo().bind_texture();
+	}
+	else
+		g_final_mix_pass_fbo.bind_texture();
+
+	glUseProgram(s_direct_tex_program);
+	glUniform1i(glGetUniformLocation(s_direct_tex_program, "g_pass"), 0);
+	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
+	glDrawArrays(GL_QUADS, 0, s_mash.vertexs.size());
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glUseProgram(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void render() {
+	// HDR
+	//glEnable(GL_FRAMEBUFFER_SRGB);
+	//glEnable(GL_COLOR_LOGIC_OP);
+
+	render_main_game_pass();
+	render_gaussian_blur();
+
+	g_final_mix_pass_fbo.bind_frameBuffer();
+	int W, H;
+	float ratio;
+	mat4x4 m, p, mvp;
+	glfwGetFramebufferSize(glfw_win,&W,&H);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	ratio = 1;
 	int mvp_location = glGetUniformLocation(s_main_game_pass_program, "MVP");
-	
 
 	mat4x4_identity(m);
 	mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
@@ -600,7 +708,13 @@ void render() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	g_final_mix_pass_fbo.unbind_frameBuffer();
 
+	render_final();
+
+	//glDisable(GL_COLOR_LOGIC_OP);
+	//glDisable(GL_FRAMEBUFFER_SRGB);
 	//glfwSwapBuffers(glfw_win);
 
 }
@@ -655,6 +769,8 @@ void KeyRelease(int key) {
 	case GLFW_KEY_SPACE:
 		s_selected_weapon = (SelectedWeapon)((s_selected_weapon + 1) % 3);
 		break;
+	case GLFW_KEY_F:
+		s_status_gui.set_resources_amout(fmod(s_status_gui.get_resources_amount() + 0.1,1), timer);
 	default:
 		break;
 	}
@@ -671,6 +787,8 @@ bool compileShaders() {
 	if (s_map_renderer_program == -1) return false;
 	s_gaussian_blur_program = CompileShader(gaussian_blur_vert, gaussian_blur_frag, nullptr, &gaussian_blur_vertex_shader, &gaussian_blur_fragment_shader, nullptr);
 	if (s_gaussian_blur_program == -1) return false;
+	s_direct_tex_program = CompileShader(direct_tex_pass_vert, direct_tex_pass_frag, nullptr, &direct_tex_vertex_shader, &direct_tex_fragment_shader, nullptr);
+	if (s_direct_tex_program == -1) return false;
 	DEBUG::DebugOutput("Shaders Compiled");
 }
 
@@ -679,6 +797,8 @@ float randfloat() {
 }
 
 void init() {
+
+
 	scale_map_camera.setMoveDuration(0.25);
 	scale_map_camera.setPos(0, 0, -32,timer.getTime());
 	camera.setMoveDuration(0.5);
@@ -734,6 +854,7 @@ void init() {
 	TEXTURE::s_image_radioactive = LoadPNG("resources/textures/radioactivity.png");
 	TEXTURE::s_image_attack_target = LoadPNG("resources/textures/target.png");
 	TEXTURE::s_image_scatter = LoadPNG("resources/textures/scatter.png");
+	TEXTURE::s_image_lightning = LoadPNG("resources/textures/lightning.png");
 	DEBUG::DebugOutput("Textures Loaded");
 	timer.setTime(glfwGetTime());
 
@@ -744,6 +865,7 @@ void destroy() {
 	if (s_normal_gl_program != -1) glDeleteProgram(s_normal_gl_program);
 	if (s_map_renderer_program != -1) glDeleteProgram(s_map_renderer_program);
 	if (s_gaussian_blur_program != -1) glDeleteProgram(s_gaussian_blur_program);
+	if (s_direct_tex_program != -1) glDeleteProgram(s_direct_tex_program);
 	if (vertex_shader != -1) glDeleteShader(vertex_shader);
 	if (fragment_shader != -1) glDeleteShader(fragment_shader);
 	if (normal_gl_vertex_shader != -1) glDeleteShader(normal_gl_vertex_shader);
@@ -752,9 +874,14 @@ void destroy() {
 	if (map_renderer_fragment_shader != -1) glDeleteShader(map_renderer_fragment_shader);
 	if (gaussian_blur_vertex_shader != -1) glDeleteShader(gaussian_blur_vertex_shader);
 	if (gaussian_blur_fragment_shader != -1) glDeleteShader(gaussian_blur_fragment_shader);
+	if (direct_tex_vertex_shader != -1) glDeleteShader(direct_tex_vertex_shader);
+	if (direct_tex_fragment_shader != -1) glDeleteShader(direct_tex_fragment_shader);
+	
 	g_gaussian_blur_pass_fbo.release();
 	g_gaussian_blur_vertical_pass_fbo.release();
 	g_main_game_pass_fbo.release();
+	g_final_mix_pass_fbo.release();
+	g_flame_render_pass.release();
 
 	if (TEXTURE::s_image_radioactive != GLFW_INVALID_VALUE) {
 		glDeleteTextures(1, &TEXTURE::s_image_radioactive);
@@ -765,6 +892,9 @@ void destroy() {
 	if (TEXTURE::s_image_scatter != GLFW_INVALID_VALUE) {
 		glDeleteTextures(1, &TEXTURE::s_image_scatter);
 	}
+	if (TEXTURE::s_image_lightning != GLFW_INVALID_VALUE) {
+		glDeleteTextures(1, &TEXTURE::s_image_lightning);
+	}
 }
 
 int main() {
@@ -774,19 +904,30 @@ int main() {
 	glfwSetErrorCallback((GLFWerrorfun)glfwErrorCallBack);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-	glfw_win=glfwCreateWindow(1600,1000,"MiniWar",NULL,NULL);
+
+	GLFWmonitor* primary = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(primary);
+
+	glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+	glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+	glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+	glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", primary, NULL);
 
 	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
 	glfwSetCursorPosCallback(glfw_win, (GLFWcursorposfun)glfwMouseCallback);
 	glfwSetWindowSizeCallback(glfw_win, (GLFWwindowsizefun)glfwWindowSizeCallback);
 	glfwSetScrollCallback(glfw_win, (GLFWscrollfun)glfwScrollCallback);
 
-
 	glfwMakeContextCurrent(glfw_win);
+
 	glfwSwapInterval(1);
 	if (!glfw_win) {
 		println("Failed to create window"); return 0;
 	}
+
+
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -816,7 +957,21 @@ int main() {
 		println((char*)glewGetErrorString(err));
 		goto destroy;
 	}
-
+	GLint float_framebuffer_supported;
+	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &float_framebuffer_supported);
+	if (!float_framebuffer_supported) {
+		DEBUG::DebugOutput("ARB_color_buffer_float not supported");
+	}
+	else {
+		// 启用扩展
+		glewExperimental = GL_TRUE;
+		if (GLEW_ARB_color_buffer_float) {
+			DEBUG::DebugOutput("Activate ARB_color_buffer_float");
+			glClampColorARB(GL_CLAMP_VERTEX_COLOR_ARB, GL_FALSE);
+			glClampColorARB(GL_CLAMP_FRAGMENT_COLOR_ARB, GL_FALSE);
+			glClampColorARB(GL_CLAMP_READ_COLOR_ARB, GL_FALSE);
+		}
+	}
 
 #ifdef _DEBUG
 	glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
@@ -830,8 +985,11 @@ int main() {
 	int width, height;
 	glfwGetFramebufferSize(glfw_win, &width, &height);
 	g_main_game_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F, true);
+	g_final_mix_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
 	g_gaussian_blur_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
 	g_gaussian_blur_vertical_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
+	g_flame_render_pass = FlameRenderPass(width, height, GL_RGBA16F);
+	g_flame_render_pass.init();
 
 
 	if (!compileShaders()) goto destroy;
@@ -923,6 +1081,9 @@ void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
 // 滚轮事件
 void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+	if (s_menu_gui.is_open()) {
+		return;
+	}
 	scale_map_camera.move(0, 0, yoffset, timer.getTime());
 	camera.rotate_to(0, 0, -1.5 /(1 + 2 * exp(-0.05 * scale_map_camera.getZ() * scale_map_camera.getZ())), timer.getTime());
 	map_rotation.newEndPosition(-(exp(-0.01 * pow(scale_map_camera.getZ() * scale_map_camera.getZ(),2))),timer.getTime());
@@ -934,6 +1095,8 @@ void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {
 		g_main_game_pass_fbo.resize(width, height, true);
 		g_gaussian_blur_pass_fbo.resize(width, height);
 		g_gaussian_blur_vertical_pass_fbo.resize(width, height);
+		g_final_mix_pass_fbo.resize(width, height);
+		g_flame_render_pass.get_fbo().resize(width, height);
 		s_pause_rendering = false;
 	}
 	catch (const char* str) {

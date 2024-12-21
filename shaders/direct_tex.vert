@@ -1,6 +1,6 @@
-﻿#ifndef __glsl_gaussian_blur_vert__
-#define __glsl_gaussian_blur_vert__
-static const char* gaussian_blur_vert = R"(
+﻿#ifndef __glsl_direct_tex_pass_vert__
+#define __glsl_direct_tex_pass_vert__
+static const char* direct_tex_pass_vert = R"(
 #version 430 core
 uniform mat4 MVP;
 in vec3 vPos;

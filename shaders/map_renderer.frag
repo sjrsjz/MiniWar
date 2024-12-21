@@ -1,4 +1,6 @@
-﻿const char* map_renderer_frag = R"(
+﻿#ifndef __glsl_map_renderer_frag__
+#define __glsl_map_renderer_frag__
+static const char* map_renderer_frag = R"(
 #version 430 core
 
 
@@ -371,3 +373,4 @@ void main(){
 	fragColor = render();
 }
 )";
+#endif

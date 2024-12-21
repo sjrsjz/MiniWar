@@ -1,4 +1,6 @@
-﻿const char* main_game_pass_vert = R"(
+﻿#ifndef __glsl_main_game_pass_vert__
+#define __glsl_main_game_pass_vert__
+static const char* main_game_pass_vert = R"(
 #version 430 core
 uniform mat4 MVP;
 in vec3 vPos;
@@ -11,3 +13,4 @@ void main()
 	texCoord = vec2(vPos.x, vPos.y);
 }
 )";
+#endif

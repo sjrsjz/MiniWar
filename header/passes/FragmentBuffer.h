@@ -125,4 +125,10 @@ public:
             m_depthBuffer = 0;
         }
     }
+    inline int width() const {
+		return m_width;
+    }
+	inline int height() const {
+		return m_height;
+	}
 };

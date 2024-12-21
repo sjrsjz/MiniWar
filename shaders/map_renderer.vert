@@ -1,4 +1,6 @@
-﻿const char* map_renderer_vert = R"(
+﻿#ifndef __glsl_map_renderer_vert__
+#define __glsl_map_renderer_vert__
+static const char* map_renderer_vert = R"(
 #version 430 core
 uniform mat4 MVP;
 in vec3 vPos;
@@ -10,3 +12,4 @@ void main()
 	texCoord = vec2(vPos.x, vPos.y);
 }
 )";
+#endif

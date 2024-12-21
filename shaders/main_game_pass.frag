@@ -1,4 +1,6 @@
-﻿const char* main_game_pass_frag = R"(
+﻿#ifndef __glsl_main_game_pass_frag__
+#define __glsl_main_game_pass_frag__
+static const char* main_game_pass_frag = R"(
 #version 430 core
 
 in vec2 texCoord; // [-1, 1]
@@ -26,3 +28,4 @@ void main(){
 	fragColor.a = 1;
 }
 )";
+#endif

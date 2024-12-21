@@ -32,6 +32,7 @@
     <ClInclude Include="..\header\Logic\Weapon.h" />
     <ClInclude Include="..\header\mash.h" />
     <ClInclude Include="..\header\output.h" />
+    <ClInclude Include="..\header\passes\FlameRenderPass.h" />
     <ClInclude Include="..\header\passes\FragmentBuffer.h" />
     <ClInclude Include="..\header\passes\SSBO.h" />
     <ClInclude Include="..\header\passes\SSBOByteArray.h" />
@@ -83,6 +84,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
+    <None Include="..\shaders\direct_tex.frag" />
+    <None Include="..\shaders\direct_tex.vert" />
+    <None Include="..\shaders\flame_render_pass.frag" />
+    <None Include="..\shaders\flame_render_pass.vert" />
     <None Include="..\shaders\gaussian_blur.frag" />
     <None Include="..\shaders\gaussian_blur.vert" />
     <None Include="..\shaders\map_renderer.frag" />

@@ -180,6 +180,9 @@
     <ClInclude Include="..\header\utils\ImageLoader.h">
       <Filter>headers\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\header\passes\FlameRenderPass.h">
+      <Filter>headers\passes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
@@ -199,6 +202,18 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\gaussian_blur.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\flame_render_pass.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\flame_render_pass.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\direct_tex.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\direct_tex.frag">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

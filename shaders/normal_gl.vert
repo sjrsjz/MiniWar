@@ -1,4 +1,6 @@
-﻿const char* normal_gl_vert = R"(
+﻿#ifndef __glsl_normal_gl_vert__
+#define __glsl_normal_gl_vert__
+static const char* normal_gl_vert = R"(
 #version 430 core
 uniform mat4 MVP;
 in vec3 vPos;
@@ -10,3 +12,4 @@ void main()
 	color = vColor;
 }
 )";
+#endif
