@@ -57,6 +57,20 @@ vec3 s_mouse_position;
 int s_current_selected_grid[2] = { -1,-1 };
 bool s_is_selected = false;
 
+
+enum SelectedWeapon {
+	NUCLEAR_MISSILE, // 核导弹
+	ARMY, // 军队
+	SCATTER_BOMB, // 散弹炸弹
+} s_selected_weapon;
+
+namespace UIFonts {
+	ImFont* default_font;
+	ImFont* menu_font;
+	ImFont* large_font;
+}
+
+
 class SelectedGui {
 public:
 	int grid[2]{}; // 选中的格子
@@ -65,7 +79,7 @@ public:
 	void render_gui(ImGuiIO& io) {
 		if (!is_selected) return;
 		ImGui::SetNextWindowBgAlpha(0.5);
-		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
 		// 移动到最低端
 		ImGui::SetWindowPos(ImVec2(0, io.DisplaySize.y - 500));
 		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 500));
@@ -77,9 +91,72 @@ public:
 
 }s_selected_gui;
 
+class MenuGui {
+	bool open = false;
+	SmoothMove x{};
+public:
+	MenuGui() {
+		x.setTotalDuration(0.125);
+	}
+	void open_gui(bool open, const Timer& timer) {
+		this->open = open;
+		if (open) {
+			x.newEndPosition(1, timer.getTime());
+		}
+		else {
+			x.newEndPosition(0, timer.getTime());
+		}
+	}
+	void render_gui(ImGuiIO& io) {
+		ImGui::SetNextWindowBgAlpha(0.75 * x.getX());
+		// 设置边框宽度为0
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
-GLuint s_image_radioactive;
-GLuint s_image_attack_target;
+		ImGui::Begin("Menu", nullptr,
+			ImGuiWindowFlags_NoTitleBar |
+			ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove |
+			//ImGuiWindowFlags_NoCollapse |
+			ImGuiWindowFlags_NoScrollbar
+		);
+
+		float x_pos = (x.getX() - 1.0f) * io.DisplaySize.x;
+		ImGui::SetWindowPos(ImVec2(x_pos, 0));
+		ImGui::SetWindowSize(io.DisplaySize);
+		// 调整字体大小(不使用缩放而是直接使用大号字体）
+		ImGui::PushFont(UIFonts::menu_font);
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, x.getX()));
+		const char* tilte = u8"菜单";
+		ImVec2 title_size = ImGui::CalcTextSize(tilte);
+		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - title_size.x) / 2 + x_pos, 10));
+		ImGui::Text(tilte);
+		ImGui::PopStyleColor();
+		ImGui::PopFont();
+		ImGui::End();
+
+		// 恢复样式
+		ImGui::PopStyleVar();
+	}
+	void update(const Timer& timer) {
+		x.update(timer.getTime());
+	}
+	bool is_open() const{
+		return open;
+	}
+	void set_move_time(double time) {
+		x.setTotalDuration(time);
+	}
+	double getX() {
+		return x.getX();
+	}
+} s_menu_gui;
+
+
+namespace TEXTURE {
+	GLuint s_image_radioactive;
+	GLuint s_image_attack_target;
+	GLuint s_image_scatter;
+}
 
 bool s_pause_rendering = false;
 
@@ -88,10 +165,39 @@ void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int 
 void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos);
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height);
 void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+void KeyProcess();
+void KeyRelease(int key);
 
 void render_imgui(ImGuiIO& io) {
 	int glfw_width, glfw_height;
 	glfwGetWindowSize(glfw_win, &glfw_width, &glfw_height);
+
+
+	ImGui::SetNextWindowBgAlpha(0.25);
+	ImGui::Begin("SelectedWeapon", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
+	ImGui::SetWindowSize(ImVec2(120, 120));
+	ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - 130, io.DisplaySize.y - 130));
+	ImGui::SetCursorPos(ImVec2(10, 10));
+	switch (s_selected_weapon)
+	{
+	case NUCLEAR_MISSILE:
+		ImGui::Image(TEXTURE::s_image_radioactive, ImVec2(100, 100));
+		break;
+	case ARMY:
+		ImGui::Image(TEXTURE::s_image_attack_target, ImVec2(100, 100));
+		break;
+	case SCATTER_BOMB:
+		ImGui::Image(TEXTURE::s_image_scatter, ImVec2(100, 100));
+		break;
+	default:
+		break;
+	}
+
+	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		KeyRelease(GLFW_KEY_SPACE); // 切换武器
+	}
+
+	ImGui::End();
 
 	// 设置控件组位置和大小
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -102,12 +208,18 @@ void render_imgui(ImGuiIO& io) {
 		ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoBackground);
-	ImGui::Text("%.3f ms/frame (%.1f FPS)",
-		1000.0f / io.Framerate, io.Framerate);
+		ImGuiWindowFlags_NoBackground | 
+		ImGuiWindowFlags_NoBringToFrontOnFocus | 
+		ImGuiWindowFlags_NoFocusOnAppearing
+	);
 
-	if(s_is_selected)
-		ImGui::Text(u8"当前选中格子: %d, %d", s_current_selected_grid[0], s_current_selected_grid[1]);
+	ImGui::SetCursorPos(ImVec2(10, 50));
+
+	//ImGui::Text("%.3f ms/frame (%.1f FPS)",
+	//	1000.0f / io.Framerate, io.Framerate);
+
+	//if(s_is_selected)
+	//	ImGui::Text(u8"当前选中格子: %d, %d", s_current_selected_grid[0], s_current_selected_grid[1]);
 
 
 	// 检查窗口是否被点击
@@ -123,6 +235,11 @@ void render_imgui(ImGuiIO& io) {
 			s_selected_gui.grid[1] = s_current_selected_grid[1];
 		}
 	}
+	// 检查鼠标是否移动
+	if (ImGui::IsWindowHovered()) {
+		ImVec2 mouse_pos = ImGui::GetMousePos();
+		s_mouse_position[0] = mouse_pos.x; s_mouse_position[1] = mouse_pos.y;
+	}
 
 	//static float f = 0.0f;
 	//static int counter = 0;
@@ -134,17 +251,21 @@ void render_imgui(ImGuiIO& io) {
 		counter++;
 	ImGui::SameLine();
 	ImGui::Text("counter = %d", counter);*/
+
+	// 在最上方画一个双色进度条来显示已占区块数量和未占区块数量
+	ImGui::SetCursorPos(ImVec2(40, 20));
+
+	ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 1.0f, 1.0f, 0.5f)); // 前景色
+	ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.5f));	   // 背景色
+	ImGui::ProgressBar((1 + sin(timer.getTime())) * 0.5, ImVec2(io.DisplaySize.x - 80, 20), u8"");
+	ImGui::PopStyleColor(2); // 恢复颜色设置
+
 	ImGui::End();
 
-	ImGui::SetNextWindowBgAlpha(0.5);
-	ImGui::Begin("SelectedWeapon", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
-	ImGui::SetWindowSize(ImVec2(120, 120));
-	ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - 130, io.DisplaySize.y - 130));
-	ImGui::SetCursorPos(ImVec2(10, 10));
-	ImGui::Image(s_image_radioactive, ImVec2(100, 100));
-	ImGui::End();	
+
 
 	s_selected_gui.render_gui(io);
+	s_menu_gui.render_gui(io);
 }
 
 void render_main_game_pass() {
@@ -231,16 +352,22 @@ void render_main_game_pass() {
 	}
 
 	// 核辐射标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, 5, 1 && selected);
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, 10, s_selected_weapon == NUCLEAR_MISSILE && selected);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, s_image_radioactive);
+	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_radioactive);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_radioactive"), 0);
 
 	// 攻击目标标识
-	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_attack_target"), gridX, gridY, 0 && selected);
+	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_attack_target"), gridX, gridY, s_selected_weapon == ARMY && selected);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, s_image_attack_target);
+	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_attack_target);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_attack_target"), 1);
+
+	// 散弹炸弹标识
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_scatter_target"), gridX, gridY, 20, s_selected_weapon == SCATTER_BOMB && selected);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_scatter);
+	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_scatter_target"), 2);
 
 	// 渲染！
 	glDrawArrays(GL_QUADS, 0, map_mash.vertexs.size());
@@ -260,6 +387,8 @@ void prepare_render() {
 	camera.clampZ(-6, 4, timer.getTime());
 
 	map_rotation.update(timer.getTime());
+
+	s_menu_gui.update(timer);
 }
 
 void render_gaussian_blur() {
@@ -289,6 +418,7 @@ void render_gaussian_blur() {
 
 		glActiveTexture(GL_TEXTURE0);
 		g_main_game_pass_fbo.bind_texture();
+		glGenerateMipmap(GL_TEXTURE_2D);
 		glActiveTexture(GL_TEXTURE1);
 		g_gaussian_blur_vertical_pass_fbo.bind_texture();
 
@@ -462,6 +592,10 @@ void render() {
 	g_gaussian_blur_vertical_pass_fbo.bind_texture();
 	glUseProgram(s_main_game_pass_program);
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
+
+	// 菜单模糊/泛光
+	glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_menu_gui.getX());
+
 	glDrawArrays(GL_QUADS, 0, s_mash.vertexs.size());
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
@@ -472,6 +606,9 @@ void render() {
 }
 
 void KeyProcess() {
+	if (s_menu_gui.is_open()) {
+		return;
+	}
 
 	float dx = 0, dz = 0;
 
@@ -489,9 +626,7 @@ void KeyProcess() {
 	if (keys[GLFW_KEY_D]) {
 		dx = -speed;
 	}
-	if (keys[GLFW_KEY_SPACE]) {
 
-	}
 	if (dx != 0 || dz != 0) {
 		dx *= timer.dt;
 		dz *= timer.dt;
@@ -505,6 +640,23 @@ void KeyProcess() {
 		scale_map_camera.move_to(0, 0, -6, timer.getTime());
 		camera.rotate_to(0, 0, -1.5 / (1 + 2 * exp(-0.05 * -6 * -6)), timer.getTime());
 		map_rotation.newEndPosition(-(exp(-0.01 * pow(-6 * -6, 2))), timer.getTime());
+	}
+}
+
+void KeyRelease(int key) {
+	if(key == GLFW_KEY_ESCAPE)
+		s_menu_gui.open_gui(!s_menu_gui.is_open(), timer);
+	
+	if (s_menu_gui.is_open()) {
+		return;
+	}
+	switch (key)
+	{
+	case GLFW_KEY_SPACE:
+		s_selected_weapon = (SelectedWeapon)((s_selected_weapon + 1) % 3);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -579,11 +731,10 @@ void init() {
 
 	DEBUG::DebugOutput("SSBO Created");
 	DEBUG::DebugOutput("Loading Textures...");
-	s_image_radioactive = LoadPNG("resources/textures/radioactivity.png");
-	s_image_attack_target = LoadPNG("resources/textures/target.png");
+	TEXTURE::s_image_radioactive = LoadPNG("resources/textures/radioactivity.png");
+	TEXTURE::s_image_attack_target = LoadPNG("resources/textures/target.png");
+	TEXTURE::s_image_scatter = LoadPNG("resources/textures/scatter.png");
 	DEBUG::DebugOutput("Textures Loaded");
-
-
 	timer.setTime(glfwGetTime());
 
 }
@@ -605,11 +756,14 @@ void destroy() {
 	g_gaussian_blur_vertical_pass_fbo.release();
 	g_main_game_pass_fbo.release();
 
-	if (s_image_radioactive != GLFW_INVALID_VALUE) {
-		glDeleteTextures(1, &s_image_radioactive);
+	if (TEXTURE::s_image_radioactive != GLFW_INVALID_VALUE) {
+		glDeleteTextures(1, &TEXTURE::s_image_radioactive);
 	}
-	if (s_image_attack_target != GLFW_INVALID_VALUE) {
-		glDeleteTextures(1, &s_image_attack_target);
+	if (TEXTURE::s_image_attack_target != GLFW_INVALID_VALUE) {
+		glDeleteTextures(1, &TEXTURE::s_image_attack_target);
+	}
+	if (TEXTURE::s_image_scatter != GLFW_INVALID_VALUE) {
+		glDeleteTextures(1, &TEXTURE::s_image_scatter);
 	}
 }
 
@@ -643,7 +797,9 @@ int main() {
 
 	
 
-	io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
@@ -673,7 +829,7 @@ int main() {
 
 	int width, height;
 	glfwGetFramebufferSize(glfw_win, &width, &height);
-	g_main_game_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
+	g_main_game_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F, true);
 	g_gaussian_blur_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
 	g_gaussian_blur_vertical_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
 
@@ -687,8 +843,6 @@ int main() {
 
 	while (!glfwWindowShouldClose(glfw_win))
 	{
-
-		
 
 		glfwPollEvents();
 		if (glfwGetWindowAttrib(glfw_win, GLFW_ICONIFIED) != 0)
@@ -744,18 +898,27 @@ void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int 
 	{
 		switch (key)
 		{
-		case GLFW_KEY_ESCAPE:
-			glfwSetWindowShouldClose(glfw_win, GLFW_TRUE); break;
+		//case GLFW_KEY_ESCAPE:
+			//glfwSetWindowShouldClose(glfw_win, GLFW_TRUE); break;
 		default:
 			break;
 
 		}
 		return;
 	}
-
+	// 按键松开
+	if (action == GLFW_RELEASE) {
+		switch (key)
+		{
+		//case GLFW_KEY_ESCAPE:
+			//break;
+		default:
+			KeyRelease(key);
+		}
+	}
 }
 void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
-	s_mouse_position[0] = xpos; s_mouse_position[1] = ypos;
+
 }
 
 // 滚轮事件
@@ -768,7 +931,7 @@ void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {
 	try {
 		glViewport(0, 0, width, height);
-		g_main_game_pass_fbo.resize(width, height);
+		g_main_game_pass_fbo.resize(width, height, true);
 		g_gaussian_blur_pass_fbo.resize(width, height);
 		g_gaussian_blur_vertical_pass_fbo.resize(width, height);
 		s_pause_rendering = false;

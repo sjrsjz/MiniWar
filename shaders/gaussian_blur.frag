@@ -33,7 +33,23 @@ vec4 sampleLod(sampler2D tex, vec2 uv, float lod, float scale){
 	return color / weight * scale;
 }
 
+vec4 sampleData_mipmap(sampler2D tex,vec2 uv){
+	uv = 0.5 * uv + 0.5;
+	return texture(tex, uv, 4);
+}
 
+vec4 sampleLod_mipmap(sampler2D tex, vec2 uv, float lod, float scale){
+	vec4 color = vec4(0);
+	float weight = 0;
+	for(int i = -1; i <= 1; i++){
+		for(int j = -1; j <= 1; j++){
+			float w = exp(-float(i * i + j * j) );
+			color += w * sampleData_mipmap(tex, uv + vec2(i, j * g_w_div_h) * lod);
+			weight += w;
+		}
+	}
+	return color / weight * scale;
+}
 
 void main(){
 	
@@ -62,11 +78,11 @@ void main(){
 	}else{
 	
 		if(g_from_origin){
-			color += sampleLod(g_main_game_pass, uv, 0.05 * g_step, 0.25);
-			color += sampleLod(g_main_game_pass, uv, 0.005 * g_step, 0.75);
+			color += sampleLod_mipmap(g_main_game_pass, uv, 0.1 * g_step, 0.25);
+			color += sampleLod_mipmap(g_main_game_pass, uv, 0.005 * g_step, 0.75);
 		}else{
-			color += sampleLod(g_last_blur_pass, uv, 0.01 * g_step, 0.5);
-			color += sampleLod(g_last_blur_pass, uv, 0.005 * g_step, 0.5);
+			color += sampleLod(g_last_blur_pass, uv, 0.01 * g_step, 0.25);
+			color += sampleLod(g_last_blur_pass, uv, 0.005 * g_step, 0.75);
 		}
 	}	
 	fragColor = color;

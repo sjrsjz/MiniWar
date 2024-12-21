@@ -11,7 +11,7 @@ public:
 	void setTime(double t) {
 		dt = t - lt; lt = t;
 	}
-	double getTime() {
+	double getTime() const{
 		return lt;
 	}
 };

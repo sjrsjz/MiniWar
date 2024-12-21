@@ -13,6 +13,8 @@ uniform ivec2 g_mouse_selected;
 
 uniform vec4 g_radioactive_selected; // [center_x, center_y, radius, selected]
 uniform vec3 g_attack_target; // [center_x, center_y, selected]
+uniform vec4 g_scatter_target; // [center_x, center_y, radius, selected]
+
 
 uniform mat4 g_model_trans_mat;
 uniform mat4 g_model_trans_mat_inv;
@@ -21,6 +23,7 @@ uniform ivec2 g_map_size;
 
 layout(binding = 0) uniform sampler2D g_tex_radioactive;
 layout(binding = 1) uniform sampler2D g_tex_attack_target;
+layout(binding = 2) uniform sampler2D g_tex_scatter_target;
 
 struct RegionData{
 	vec2 cell_center;
@@ -45,10 +48,11 @@ vec4 uv_to_cell_position(vec2 uv){
 	return vec4(floor(uv), fract(uv));
 }
 
-vec3 get_identity_color(float identity){
-	if(identity == 0) return vec3(0.1);
-	if(identity == 1) return mix(vec3(0.1),vec3(10,0,0),pow(1 - 0.65 * abs(sin(2 * g_time)),4));
-	if(identity == 2) return vec3(0,1,1);
+vec3 get_identity_color(float identity, vec3 region_normal, vec3 sky_color){
+    vec3 region_color = vec3(region_normal.y * 0.1);
+	if(identity == 0) return region_color;
+	if(identity == 1) return mix(region_color, vec3(10,0,0), pow(1 - 0.65 * abs(sin(2 * g_time)),4));
+	if(identity == 2) return mix(region_color, vec3(0,1,1), 0.5);
 	if(identity == 3) return vec3(0,0,1);
 	return vec3(1,1,1);
 }
@@ -218,12 +222,19 @@ CellIndex calculateCellIndex(vec2 uv) {
     return result;
 }
 
-vec4 doPlaneColoring(vec2 uv){
+vec3 sun_light_dir = normalize(vec3(-1,0.03,-1));
+
+vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     CellIndex cell_idx = calculateCellIndex(uv);
     
     vec3 color = vec3(0);
     RegionData region = getRegion(cell_idx.real_idx.x, cell_idx.real_idx.y);
-    color = get_identity_color(region.identity);
+
+    vec3 region_normal = normalize(vec3(region.cell_center.x - 0.5, 1, region.cell_center.y-0.5));
+
+    color = get_identity_color(region.identity, region_normal, sky_color);
+
+    //color *= sky_color * max(dot(region_normal,sun_light_dir),0.1);
     
     // 区块中心
     // color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
@@ -231,7 +242,7 @@ vec4 doPlaneColoring(vec2 uv){
     // 当前选中
     bool is_selected = cell_idx.real_idx.x == g_selected.x && cell_idx.real_idx.y == g_selected.y;
     
-    if(g_radioactive_selected.w < 0.5 && g_attack_target.z < 0.5){
+    if(g_radioactive_selected.w < 0.5 && g_attack_target.z < 0.5 && g_scatter_target.w < 0.5){
         is_selected = is_selected || cell_idx.real_idx.x == g_mouse_selected.x && cell_idx.real_idx.y == g_mouse_selected.y;
     }
     if(is_selected){
@@ -245,7 +256,7 @@ vec4 doPlaneColoring(vec2 uv){
         float dist = length(vec2(cell_idx.real_idx) - center);
         if(dist < radius){
             float weight = pow(0.65 + 0.35 * sin(g_time*5),3) * exp(-7*dist/(radius+1e-3));
-            color = mix(color, vec3(10,10,0), weight);
+            color = mix(color, vec3(20,20,0), weight);
             vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
             vec2 d_uv = (uv - region_uv) * g_map_size / radius * 1.25 * 0.25 + 0.5;
 
@@ -269,8 +280,23 @@ vec4 doPlaneColoring(vec2 uv){
         }
      }
 
+     if(g_scatter_target.w > 0.5){
+         vec2 center = g_scatter_target.xy;
+         float radius = g_scatter_target.z;
+         float dist = length(vec2(cell_idx.real_idx) - center);
+         if(dist < radius){
+		     float weight = pow(0.65 + 0.35 * sin(g_time*5),3);//* exp(-7*dist/(radius+1e-3));
+		     color = mix(color, vec3(0.5,0,0), weight);
+		     vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
+		     vec2 d_uv = (uv - region_uv) * g_map_size / radius * 1.25 * 0.25 + 0.5;
+
+		     vec4 color_scatter_target = texture(g_tex_scatter_target, d_uv);
+		     color_scatter_target *= float(d_uv.x>=0 && d_uv.x <= 1 && d_uv.y >= 0 && d_uv.y <= 1);
+		     color = mix(color, vec3(50,0,0) * color_scatter_target.a, color_scatter_target.a * weight);
+	     }
+    }
     // 边界线
-    color = mix(mix(vec3(0,0,0),vec3(0,50,0),cell_idx.diff_identity) * float(cell_idx.sdf<0.025), 
+    color = mix(mix(vec3(0,0,0),vec3(0,500,0),cell_idx.diff_identity) * float(cell_idx.sdf<0.025), 
                 color, 
                 0.5 + 0.95 * float(cell_idx.sdf>=0.0125));
     return vec4(color, 1);
@@ -305,13 +331,14 @@ vec4 render(){
 	vec3 transformed_rayOrigin = (g_model_trans_mat_inv * vec4(rayOrigin, 1)).xyz;
 	vec3 transformed_rayDir = normalize((g_model_trans_mat_inv * vec4(rayDir, 0)).xyz);
 
-	vec4 color = vec4(getSkyColor(vec3(10),vec3(0.1),transformed_rayOrigin,transformed_rayDir,normalize(vec3(-1,0.03,-1))),0);
+    vec3 sky_color = getSkyColor(vec3(10),vec3(0.1),transformed_rayOrigin,transformed_rayDir,sun_light_dir);
+	vec4 color = vec4(sky_color,0);
 
 
 	vec2 base_box = boxIntersection(transformed_rayOrigin + vec3(0,0.875+1e-3,0), transformed_rayDir, vec3(1 + max_padding_board.x ,0.25, 1 + max_padding_board.y), box_normal);
 	if(base_box.x > 0){
 		vec3 p = transformed_rayOrigin + base_box.x * transformed_rayDir;
-		vec4 box_color = vec4(1)* pow(clamp(1.5+p.y,0.,1.),4);
+		vec4 box_color = vec4(0.1,0.1,0.1,1)* pow(clamp(1.55+p.y,0.,1.),4);
 		color = mix(color, box_color, box_color.a);
 		dist = min(dist, base_box.x);
 	}
@@ -323,7 +350,7 @@ vec4 render(){
 
 	PlaneIntersection pi = intersectPlane(transformed_rayOrigin, transformed_rayDir, g_plane_u, g_plane_v, g_plane_pos);
 
-	vec4 map = doPlaneColoring(pi.uv) * float(pi.t > 0) * float(abs(pi.uv.x)<=1 + max_padding_board.x &&abs(pi.uv.y)<=1 + max_padding_board.y);
+	vec4 map = doPlaneColoring(pi.uv, sky_color) * float(pi.t > 0) * float(abs(pi.uv.x)<=1 + max_padding_board.x &&abs(pi.uv.y)<=1 + max_padding_board.y);
 
 	//float board = max(abs(pi.uv.x),abs(pi.uv.y));
 	//map += step(1 + max_padding_board.x,board)*pow(smoothstep(1.5, 1. + max_padding_board.x,board),2)*vec4(0.125);
@@ -333,7 +360,7 @@ vec4 render(){
 		dist = min(dist, pi.t);
 
 
-	color.xyz = getFogColor(vec3(10),vec3(0.1),rayOrigin,rayDir,normalize(vec3(-1,0.03,-1)),dist*500000,color.xyz);
+	color.xyz = getFogColor(vec3(10),vec3(0.1),rayOrigin,rayDir,sun_light_dir,dist*500000,color.xyz);
 
 	return color;
 }
