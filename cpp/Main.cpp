@@ -48,7 +48,7 @@ GLuint direct_tex_vertex_shader, direct_tex_fragment_shader, s_direct_tex_progra
 
 GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_program;
 mash map_mash;
-RegionSSBOBuffer map_info(64, 64);
+RegionSSBOBuffer map_info;
 
 SmoothMove map_rotation;
 
@@ -62,6 +62,19 @@ vec3 s_mouse_position;
 int s_current_selected_grid[2] = { -1,-1 };
 bool s_is_selected = false;
 
+namespace GAMESTATUS {
+	bool s_in_game = false;
+}
+
+namespace LEVELDATA {
+	const char* s_levels[] = { u8"简单(16x16)", u8"普通(32x32)", u8"困难(64x64)", u8"噩梦(128x128)"};
+	enum Level {
+		EASY,
+		NORMAL,
+		HARD,
+		CRAZY,
+	}s_selected_level;
+}
 
 namespace TEXTURE {
 	GLuint s_image_radioactive;
@@ -112,91 +125,6 @@ public:
 	}
 
 }s_selected_gui;
-
-class MenuGui {
-	bool open = false;
-	SmoothMove x{};
-public:
-	MenuGui() {
-		x.setTotalDuration(0.5);
-	}
-	void open_gui(bool open, const Timer& timer) {
-		this->open = open;
-		if (open) {
-			x.newEndPosition(1, timer.getTime());
-		}
-		else {
-			x.newEndPosition(0, timer.getTime());
-		}
-	}
-	bool is_activitied() {
-		return x.getX() > 1e-3;
-	}
-	void render_gui(ImGuiIO& io) {
-		if (!is_activitied()) {
-			return;
-		}
-		ImGui::SetNextWindowBgAlpha(0.25 * x.getX());
-		// 设置边框宽度为0
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-
-		ImGui::Begin("Menu", nullptr,
-			ImGuiWindowFlags_NoTitleBar |
-			ImGuiWindowFlags_NoResize |
-			ImGuiWindowFlags_NoMove |
-			//ImGuiWindowFlags_NoCollapse |
-			ImGuiWindowFlags_NoScrollbar
-		);
-
-		int x_pos = 0;
-		ImGui::SetWindowPos(ImVec2(x_pos, 0));
-		ImGui::SetWindowSize(io.DisplaySize);
-		// 调整字体大小(不使用缩放而是直接使用大号字体）
-		ImGui::PushFont(UIFonts::menu_font);
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, x.getX()));
-		const char* tilte = u8"菜单";
-		ImVec2 title_size = ImGui::CalcTextSize(tilte);
-		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - title_size.x) / 2 + x_pos, 50));
-		ImGui::Text(tilte);
-		ImGui::PopStyleColor();
-		ImGui::PopFont();
-
-		// 按钮
-		ImGui::PushFont(UIFonts::large_font);
-
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25, 0.25, 0.25, 0.25 * x.getX()));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35, 0.35, 0.35, x.getX()));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15, 0.15, 0.15, x.getX()));
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, x.getX()));
-		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 200));
-		if (ImGui::Button(u8"继续游戏", ImVec2(400, 100))) {
-			open_gui(false, timer);
-		}
-
-		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 360));
-		if (ImGui::Button(u8"退出游戏", ImVec2(400, 100))) {
-			glfwSetWindowShouldClose(glfw_win, true);
-		}
-		ImGui::PopStyleColor(4);
-		ImGui::PopFont();
-		ImGui::End();
-		// 恢复样式
-		ImGui::PopStyleVar();
-	}
-	void update(const Timer& timer) {
-		x.update(timer.getTime());
-	}
-	bool is_open() const{
-		return open;
-	}
-	void set_move_time(double time) {
-		x.setTotalDuration(time);
-	}
-	double getX() {
-		return x.getX();
-	}
-} s_menu_gui;
-
 class StatusGui {
 private:
 	SmoothMove resources_amount{};
@@ -230,7 +158,7 @@ public:
 	}
 	void render_gui(ImGuiIO& io) {
 		ImGui::Begin("Status", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground);
-		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x/4, 200));
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 200));
 		ImGui::SetWindowPos(ImVec2(50, io.DisplaySize.y - 250));
 
 		// 资源条
@@ -255,6 +183,262 @@ public:
 	}
 
 }s_status_gui;
+
+struct LevelConfig {
+	int map_width = 16;
+	int map_height = 16;
+
+};
+
+float randfloat() {
+	return (float)rand() / RAND_MAX;
+}
+
+void load_new_game(const LevelConfig& level_config) {
+
+	DEBUG::DebugOutput("Loading new game..");
+	DEBUG::DebugOutput("Map Width", level_config.map_width);
+	DEBUG::DebugOutput("Map Height", level_config.map_height);
+
+	map_info.create(level_config.map_width, level_config.map_height);
+
+	DEBUG::DebugOutput("Creating SSBO..");
+	for (int i{}; i < level_config.map_width; i++) {
+		for (int j{}; j < level_config.map_height; j++) {
+			RegionData region;
+			region.cell_center_x = randfloat();
+			region.cell_center_y = randfloat();
+			region.identity = (int)(i * i + j * j < 400) + (int)(i * i + j * j < 200);
+			region.padding_1 = 0;
+			map_info.setRegion(i, j, region);
+		}
+	}
+	map_info.create_ssbo();
+	map_info.update();
+	DEBUG::DebugOutput("SSBO Created");
+	GAMESTATUS::s_in_game = true;
+	DEBUG::DebugOutput("Game loaded");
+}
+
+void exit_game() {
+	DEBUG::DebugOutput("Exiting game..");
+	GAMESTATUS::s_in_game = false;
+	map_info.release();
+	DEBUG::DebugOutput("Game exited");
+}
+
+
+
+class MenuGui {
+public:
+	enum GuiMode {
+		StartGame,
+		SelectLevel,
+		Pause,
+	};
+private:
+	bool open = false;
+	GuiMode m_gui_mode;
+	SmoothMove x{};
+public:
+	MenuGui() {
+		x.setTotalDuration(0.5);
+		x.setStartPosition(1, 0);
+
+		// 默认开始游戏
+		m_gui_mode = StartGame;
+		open = true;
+	}
+	GuiMode get_gui_mode() {
+		return m_gui_mode;
+	}
+	void open_gui(bool open, const Timer& timer) {
+		this->open = open;
+		if (open) {
+			x.newEndPosition(1, timer.getTime());
+		}
+		else {
+			x.newEndPosition(0, timer.getTime());
+		}
+	}
+	bool is_activitied() {
+		return x.getX() > 1e-3;
+	}
+	void render_gui(ImGuiIO& io) {
+		if (!is_activitied()) {
+			return;
+		}
+		ImGui::SetNextWindowBgAlpha(0.25 * x.getX());
+		// 设置边框宽度为0
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+		ImGui::Begin("Menu", nullptr,
+			ImGuiWindowFlags_NoTitleBar |
+			ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoScrollbar
+		);
+
+		int x_pos = 0;
+		ImGui::SetWindowPos(ImVec2(x_pos, 0));
+		ImGui::SetWindowSize(io.DisplaySize);
+		// 调整字体大小(不使用缩放而是直接使用大号字体）
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25, 0.25, 0.25, 0.25 * x.getX()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35, 0.35, 0.35, x.getX()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15, 0.15, 0.15, x.getX()));
+		
+		// 列表框的
+		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.25f, 0.25f, 0.25f, 0.55f));        // 选中项背景
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.35f, 0.35f, 0.35f, 0.55f)); // 悬停时背景
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.15f, 0.15f, 0.15f, 0.55f));  // 激活时背景
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.1f, 0.1f, 0.25f));         // 列表框背景色
+
+		
+
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, x.getX()));
+
+		const char* title = "MiniWar";
+
+		switch (m_gui_mode)
+		{
+		case MenuGui::StartGame:
+			ImGui::SetWindowFontScale(64. / 48);
+			ImGui::PushFont(UIFonts::large_font);
+			break;
+		case MenuGui::SelectLevel:
+			ImGui::SetWindowFontScale(1);
+			ImGui::PushFont(UIFonts::menu_font);
+			title = u8"模式";
+			break;
+		case MenuGui::Pause:
+			ImGui::SetWindowFontScale(1);
+			ImGui::PushFont(UIFonts::menu_font);
+			title = u8"暂停";
+			break;
+		default:
+			break;
+		}
+
+		ImVec2 title_size = ImGui::CalcTextSize(title);
+		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - title_size.x) / 2 + x_pos, 50));
+		ImGui::Text(title);
+		ImGui::SetWindowFontScale(1);
+		ImGui::PopFont();
+
+		switch (m_gui_mode)
+		{
+		case MenuGui::StartGame:
+			ImGui::PushFont(UIFonts::large_font);
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 200));
+			if (ImGui::Button(u8"开始游戏", ImVec2(400, 100))) {
+				m_gui_mode = MenuGui::SelectLevel;
+			}
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 360));
+			if (ImGui::Button(u8"退出游戏", ImVec2(400, 100))) {
+				glfwSetWindowShouldClose(glfw_win, true);
+			}
+			ImGui::PopFont();
+			break;
+		case MenuGui::SelectLevel:
+			ImGui::PushFont(UIFonts::large_font);
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - io.DisplaySize.x/3) / 2 + x_pos, 200));
+			
+			if (ImGui::BeginListBox("##LevelSelectionListBox", ImVec2(io.DisplaySize.x / 3, 400))) {
+				for (int n = 0; n < IM_ARRAYSIZE(LEVELDATA::s_levels); n++) {
+					const bool is_selected = (LEVELDATA::s_selected_level == n);
+
+					// 计算文本宽度
+					float text_width = ImGui::CalcTextSize(LEVELDATA::s_levels[n]).x;
+					float item_width = ImGui::GetContentRegionAvail().x;
+					float indent = (item_width - text_width) * 0.5f;
+
+					// 添加占位缩进
+					ImGui::Dummy(ImVec2(indent, 0));
+					ImGui::SameLine();
+
+					// 使用SpanAllColumns确保背景色占满整行
+					if (ImGui::Selectable(LEVELDATA::s_levels[n], is_selected,
+						ImGuiSelectableFlags_SpanAllColumns))
+						LEVELDATA::s_selected_level = (LEVELDATA::Level)n;
+
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndListBox();
+			}
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 660));
+
+			if (ImGui::Button(u8"载入游戏", ImVec2(400, 100))) {
+				m_gui_mode = MenuGui::Pause;
+				switch (LEVELDATA::s_selected_level)
+				{
+				case LEVELDATA::EASY:
+					load_new_game({ 16, 16 });
+					break;
+				case LEVELDATA::NORMAL:
+					load_new_game({ 32, 32 });
+					break;
+				case LEVELDATA::HARD:
+					load_new_game({ 64, 64 });
+					break;
+				case LEVELDATA::CRAZY:
+					load_new_game({ 128, 128 });
+					break;
+				default:
+					break;
+				}
+				open_gui(false, timer);
+			}
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 820));
+
+			if (ImGui::Button(u8"返回主界面", ImVec2(400, 100))) {
+				m_gui_mode = MenuGui::StartGame;
+			}
+			ImGui::PopFont();
+			break;
+		case MenuGui::Pause:
+			ImGui::PushFont(UIFonts::large_font);
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 200));
+			if (ImGui::Button(u8"继续游戏", ImVec2(400, 100))) {
+				open_gui(false, timer);
+			}
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 360));
+			if (ImGui::Button(u8"返回主界面", ImVec2(400, 100))) {
+				exit_game();
+				m_gui_mode = MenuGui::StartGame;
+			}
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 520));
+			if (ImGui::Button(u8"退出游戏", ImVec2(400, 100))) {
+				exit_game();
+				glfwSetWindowShouldClose(glfw_win, true);
+			}
+			ImGui::PopFont();
+			break;
+		default:
+			break;
+		}
+
+		ImGui::PopStyleColor(8);
+		ImGui::End();
+
+		// 恢复样式
+		ImGui::PopStyleVar();
+
+	}
+	void update(const Timer& timer) {
+		x.update(timer.getTime());
+	}
+	bool is_open() const{
+		return open;
+	}
+	void set_move_time(double time) {
+		x.setTotalDuration(time);
+	}
+	double getX() {
+		return x.getX();
+	}
+} s_menu_gui;
+
 
 void render_imgui(ImGuiIO& io) {
 	if (!s_menu_gui.is_activitied()) {
@@ -372,7 +556,7 @@ void render_main_game_pass() {
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_width"), W);
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_height"), H);
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.getTime());
-	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), 64, 64);
+	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), map_info.getWidth(), map_info.getHeight());
 
 
 	Camera model_camera;
@@ -380,7 +564,7 @@ void render_main_game_pass() {
 	model_camera.setRot(0, -map_rotation.getX(), 0);
 	mat4x4 model_mat;
 	model_camera.getMat4(model_mat);
-	mat4x4_scale(model_mat, model_mat, 0.25);
+	mat4x4_scale(model_mat, model_mat, 0.25 );
 	glUniformMatrix4fv(glGetUniformLocation(s_map_renderer_program, "g_model_trans_mat"), 1, GL_FALSE, (const GLfloat*)model_mat);
 
 	mat4x4 model_mat_inv_rot;
@@ -674,9 +858,10 @@ void render() {
 	//glEnable(GL_FRAMEBUFFER_SRGB);
 	//glEnable(GL_COLOR_LOGIC_OP);
 
-	render_main_game_pass();
-	render_gaussian_blur();
-
+	if (!s_menu_gui.is_activitied() && GAMESTATUS::s_in_game) {
+		render_main_game_pass();
+		render_gaussian_blur();
+	}
 	g_final_mix_pass_fbo.bind_frameBuffer();
 	int W, H;
 	float ratio;
@@ -759,7 +944,9 @@ void KeyProcess() {
 
 void KeyRelease(int key) {
 	if(key == GLFW_KEY_ESCAPE)
-		s_menu_gui.open_gui(!s_menu_gui.is_open(), timer);
+		if (s_menu_gui.get_gui_mode() == MenuGui::GuiMode::Pause) {
+			s_menu_gui.open_gui(!s_menu_gui.is_open(), timer);
+		}
 	
 	if (s_menu_gui.is_open()) {
 		return;
@@ -790,10 +977,6 @@ bool compileShaders() {
 	s_direct_tex_program = CompileShader(direct_tex_pass_vert, direct_tex_pass_frag, nullptr, &direct_tex_vertex_shader, &direct_tex_fragment_shader, nullptr);
 	if (s_direct_tex_program == -1) return false;
 	DEBUG::DebugOutput("Shaders Compiled");
-}
-
-float randfloat() {
-	return (float)rand() / RAND_MAX;
 }
 
 void init() {
@@ -830,26 +1013,7 @@ void init() {
 	map_mash.build(s_map_renderer_program, "vPos", nullptr, nullptr, nullptr);
 	DEBUG::DebugOutput("Meshes built");
 
-	DEBUG::DebugOutput("Creating SSBO..");
 
-
-
-	for (int i{}; i < 64; i++) {
-		for (int j{}; j < 64; j++) {
-			RegionData region;
-			region.cell_center_x = randfloat();
-			region.cell_center_y = randfloat();
-			region.identity = (int)(i * i + j * j < 400) + (int)(i * i + j * j < 200);
-			region.padding_1 = 0;
-			map_info.setRegion(i, j, region);
-		}
-	}
-	map_info.create_ssbo();
-	map_info.update();
-
-
-
-	DEBUG::DebugOutput("SSBO Created");
 	DEBUG::DebugOutput("Loading Textures...");
 	TEXTURE::s_image_radioactive = LoadPNG("resources/textures/radioactivity.png");
 	TEXTURE::s_image_attack_target = LoadPNG("resources/textures/target.png");
@@ -914,6 +1078,7 @@ int main() {
 	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
 	glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", primary, NULL);
+	//glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", 0, NULL);
 
 	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
 	glfwSetCursorPosCallback(glfw_win, (GLFWcursorposfun)glfwMouseCallback);
@@ -1081,7 +1246,7 @@ void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
 // 滚轮事件
 void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-	if (s_menu_gui.is_open()) {
+	if (s_menu_gui.is_open() || !GAMESTATUS::s_in_game) {
 		return;
 	}
 	scale_map_camera.move(0, 0, yoffset, timer.getTime());

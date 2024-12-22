@@ -10,11 +10,16 @@ class RegionSSBOBuffer
 
 public:
 	RegionSSBOBuffer() : regions(nullptr), mapWidth(0), mapHeight(0) {}
-	RegionSSBOBuffer(int width, int height) : mapWidth(width), mapHeight(height) {
-		regions = new RegionData[width * height];
-		
-	}
 	~RegionSSBOBuffer() {
+	}
+
+	void create(int width, int height) {
+		regions = new RegionData[width * height];
+		mapWidth = width;
+		mapHeight = height;
+	}
+
+	void release() {
 		if (regions) {
 			delete[] regions;
 			regions = nullptr;
