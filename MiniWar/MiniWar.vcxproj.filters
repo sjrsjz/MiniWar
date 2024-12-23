@@ -43,6 +43,9 @@
     <ClCompile Include="..\cpp\Logic\Weapon.cpp">
       <Filter>cpp\Logic</Filter>
     </ClCompile>
+    <ClCompile Include="..\cpp\Logic\AI.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\Camera.h">

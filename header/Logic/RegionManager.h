@@ -37,12 +37,9 @@ private:
 	double current_time{};
 	
 	void clear_building(Region& region);
+	RegionManager();
+	
 public:
-	inline RegionManager() {
-		// default constructor
-
-
-	}
 	RegionManager(int width, int height);
 	~RegionManager();
 	Weapon& get_weapon(int id);
@@ -55,4 +52,5 @@ public:
 	void attack_region_army(Point start, Point end, int amount);
 	Array<Region>& get_regions();
 	Region& get_region(int x, int y);
+	static RegionManager& getInstance();
 };

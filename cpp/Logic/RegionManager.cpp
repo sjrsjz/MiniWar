@@ -3,6 +3,8 @@
 #include <vector>
 
 
+RegionManager::RegionManager() {
+}
 
 RegionManager::RegionManager(int width, int height) : width(width), height(height), regions(width, height), moving_missles(), moving_armies(){
 	//players = std::vector<Player>(player_amount);
@@ -68,7 +70,6 @@ void RegionManager::attack_region_army(Point start, Point end, int amount) {
 	Region& end_region = get_region(end.getX(), end.getY());
 	MovingArmy army;
 	army.amount = amount;
-	Region end_region = get_region(end.getX(), end.getY());
 	moving_armies.push(army);
 	
 	//count time
@@ -90,6 +91,10 @@ Region& RegionManager::get_region(int x, int y) {
 	return regions(x, y);
 }
 
+RegionManager& RegionManager::getInstance() {
+	static RegionManager instance;
+	return instance;
+}
 void RegionManager::clear_building(Region& region) {
 	region.getBuilding().remove();
 }
