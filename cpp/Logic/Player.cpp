@@ -1,7 +1,7 @@
 #include "../../header/Logic/Player.h"
 #include "../../header/Logic/RegionManager.h"
 
-Player:: Player(){
+Player:: Player(): regionmanager(RegionManager::getInstance()){
     id = 0;
 }
 
@@ -381,25 +381,25 @@ void Player::remove_building(Point location) {
     switch (building.getLevel())
     {
     case 1:
-		gold += 0.6 * Level1Cost[0];
-		oil += 0.6 * Level1Cost[1];
-		steel += 0.6 * Level1Cost[2];
-		electricity += 0.6 * Level1Cost[3];
-		labor += 0.6 * Level1Cost[4];
+		gold += std::floor(0.6 * Level1Cost[0]);
+		oil += std::floor(0.6 * Level1Cost[1]);
+		steel += std::floor(0.6 * Level1Cost[2]);
+		electricity += std::floor(0.6 * Level1Cost[3]);
+		labor += std::floor(0.6 * Level1Cost[4]);
 		break;
     case 2:
-        gold += 0.6 * (Level1Cost[0] + Level2Cost[0]);
-        oil += 0.6 * (Level1Cost[1] + Level2Cost[1]);
-        steel += 0.6 * (Level1Cost[2] + Level2Cost[2]);
-        electricity += 0.6 * (Level1Cost[3] + Level2Cost[3]);
-        labor += 0.6 * (Level1Cost[4] + Level2Cost[4]);
+        gold += std::floor(0.6 * (Level1Cost[0] + Level2Cost[0]));
+        oil += std::floor(0.6 * (Level1Cost[1] + Level2Cost[1]));
+        steel += std::floor(0.6 * (Level1Cost[2] + Level2Cost[2]));
+        electricity += std::floor(0.6 * (Level1Cost[3] + Level2Cost[3]));
+        labor += std::floor(0.6 * (Level1Cost[4] + Level2Cost[4]));
         break;
     case 3:
-		gold += 0.6 * (Level1Cost[0] + Level2Cost[0] + Level3Cost[0]);
-		oil += 0.6 * (Level1Cost[1] + Level2Cost[1] + Level3Cost[1]);
-		steel += 0.6 * (Level1Cost[2] + Level2Cost[2] + Level3Cost[2]);
-		electricity += 0.6 * (Level1Cost[3] + Level2Cost[3] + Level3Cost[3]);
-		labor += 0.6 * (Level1Cost[4] + Level2Cost[4] + Level3Cost[4]);
+		gold += std::floor(0.6 * (Level1Cost[0] + Level2Cost[0] + Level3Cost[0]));
+		oil += std::floor(0.6 * (Level1Cost[1] + Level2Cost[1] + Level3Cost[1]));
+		steel += std::floor(0.6 * (Level1Cost[2] + Level2Cost[2] + Level3Cost[2]));
+		electricity += std::floor(0.6 * (Level1Cost[3] + Level2Cost[3] + Level3Cost[3]));
+		labor += std::floor(0.6 * (Level1Cost[4] + Level2Cost[4] + Level3Cost[4]));
 		break;
     }
 }
