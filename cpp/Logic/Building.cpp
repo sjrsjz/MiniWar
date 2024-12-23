@@ -10,10 +10,9 @@ Building::Building(std::string name) {
 Building::~Building() {
 }
 
-bool Building::upLevel(int MaxLevel, int labor) {
+bool Building::upLevel(int MaxLevel) {
 	if (this->level < MaxLevel) {
 		this->level++;
-		this->labor += labor;
 		return true;
 	}
 	return false;

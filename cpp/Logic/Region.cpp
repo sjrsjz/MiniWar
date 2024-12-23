@@ -5,7 +5,20 @@
 #include <type_traits>
 #include <random>
 
+Region::Region() {
+	//TODO
+	//this->hp = maxHp
+	//this->maxHp = ?;
 
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(0.0, 1.0);
+	float X = dis(gen);
+	float Y = dis(gen);
+	this->owner = -1;
+	this->weapons = std::vector<int>(3, 0);
+	this->position = Point(X, Y);
+}
 
 Region::Region(int x, int y){
 	//TODO
@@ -118,3 +131,7 @@ Army& Region::getArmy() {
 	return this->army;
 }
 
+bool Region::removeBuilding() {
+	//TODO
+	return this->building.remove();
+}

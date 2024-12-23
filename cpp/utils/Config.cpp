@@ -25,37 +25,8 @@ const json& Config::getConfig() {
 	return config;
 }
 
-/* template<typename T, typename... Args> */
-/* const json Config::getConfig(const T& first, const Args&... args) { */
-/* 	try { */
-/* 		const json* tmp = &config; */
-/* 		getKey(tmp, std::string(first)); */
-/* 		(getKey(tmp, std::string(args)), ...); */
-/* 		return *tmp; */
-/* 		/1* return tmp->get<json>(); *1/ */
-/* 		/1* if constexpr (std::is_same<T, nlohmann::json>::value) { *1/ */
-/* 		/1* return *tmp; *1/ */
-/* 	/1* } else { *1/ */
-/* 		/1* return tmp->get<T>(); *1/ */
-/* 	/1* } *1/ */
-/* 	} catch (std::out_of_range& e) { */
-/* 		throw std::runtime_error(e.what()); */
-/* 	} */
-/* } */
 
-
-/* void Config::getKey(const json*& tmp, const std::string& key) { */
-/* 	if (tmp->find(key) == tmp->end()) { */
-/* 		throw std::out_of_range("Key not found: " + key); */
-/* 	} */
-/* 	tmp = &(*tmp)[key]; */
-/* } */
-
-
-/* template<typename T> */
 const json Config::getConfig(std::initializer_list<std::string> args) {
-/* const json Config::getConfig(std::string s){ */
-	/* return this->config[s]; */
 	try {
 		json tmp = config;
 		for (auto& arg : args) {
@@ -70,4 +41,24 @@ const json Config::getConfig(std::initializer_list<std::string> args) {
 	} catch (std::out_of_range& e) {
 		throw std::runtime_error(e.what());
 	}	
+}
+
+const json Config::getMapSize() {
+	return getConfig({"mapSize"});
+}
+
+const json Config::getWeapons() {
+	return getConfig({"Weapon"});
+}
+
+const json Config::getRegions() {
+	return getConfig({"Region"});
+}
+
+const json Config::getBuildings() {
+	return getConfig({"Building"});
+}
+
+const json Config::getResearch() {
+	return getConfig({"ResearchInstitution"});
 }

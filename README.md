@@ -121,7 +121,7 @@ Labor: int
             "UpLevelCost2": [80000, 10000, 20000, 4000, 60]
         },
     },
-    "ReasearchInstitution":{
+    "ResearchInstitution":{
         "BuildCost": 200000,
         "OUpLevelCost": {
             "PowerStation": [100000, 300000],

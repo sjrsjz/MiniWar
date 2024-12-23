@@ -2,23 +2,12 @@
 #include "../../header/Logic/Player.h"
 #include <vector>
 
-struct MovingArmy {
-	int amount;
-	double time;
-	std::vector<std::tuple<int,int>> path;
-};
 
-struct MovingMissle {
-	int damage;
-	double time;
-	std::tuple<int, int> start_point;
-	std::tuple<int, int> end_point;
-};
 
 RegionManager::RegionManager(int width, int height, int player_amount) : regions(width, height), moving_missles(), moving_armies(){
-	players = std::vector<Player>(player_amount);
+	//players = std::vector<Player>(player_amount);
 
-	players.reserve(player_amount);
+	//players.reserve(player_amount);
 	for (int i = 0; i < player_amount; i++) {
 		players.emplace_back(*this, i);//create player in vector
 	}
@@ -72,7 +61,7 @@ void RegionManager::owner_alter() {
 	//change owner
 }
 
-Array<Region> RegionManager::get_regions() {
+Array<Region>& RegionManager::get_regions() {
 	return regions;
 }
 
