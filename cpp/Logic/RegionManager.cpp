@@ -43,7 +43,7 @@ void RegionManager::move_army(int amount, double time, std::vector<std::tuple<in
 	Region end_region = get_region(std::get<0>(path.back()), std::get<1>(path.back()));
 
 	army.path = path;
-	moving_armies.push_back(army);
+	moving_armies.push(army);
 	//count time
 	//if time is up, move
 	end_region.addArmy(amount);
@@ -57,7 +57,7 @@ void RegionManager::attack_region_missle(int weapon_id, Point start, Point end, 
 	missle.time = time;
 	missle.start_point = std::make_tuple(start.getX(), start.getY());
 	missle.end_point = std::make_tuple(end.getX(), end.getY());
-	moving_missles.push_back(missle);
+	moving_missles.push(missle);
 	//count time
 	//if time is up, attack
 	//if time is up, remove missle
@@ -69,7 +69,7 @@ void RegionManager::attack_region_army(Point start, Point end, int amount) {
 	MovingArmy army;
 	army.amount = amount;
 	Region end_region = get_region(end.getX(), end.getY());
-	moving_armies.push_back(army);
+	moving_armies.push(army);
 	
 	//count time
 	//if time is up, attack
