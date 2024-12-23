@@ -53,6 +53,8 @@ void RegionManager::move_army(int amount, double time, std::vector<std::tuple<in
 }
 
 void RegionManager::attack_region(int weapon_id, Point start, Point end, double time, int damage) {
+	Region start_region = get_region(start.getX(), start.getY());
+	Region end_region = get_region(end.getX(), end.getY());
 	MovingMissle missle;
 	missle.damage = damage;
 	missle.time = time;
