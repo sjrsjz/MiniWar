@@ -29,11 +29,12 @@ layout(binding = 2) uniform sampler2D g_tex_scatter_target;
 
 struct RegionData{
 	vec2 cell_center;
+    vec2 army_position; // 标记的军队位置，用于显示军队，当 x = -1e6 时表示没有军队
 	float identity;
 	float padding_1;
 };
 RegionData empty_region(){
-	return RegionData(vec2(1000000), 0, 0);	
+	return RegionData(vec2(1000000), vec2(-1e6), 0, 0);	
 }
 layout(std430, binding = 0) buffer MapBuffer{
 	RegionData region[];
@@ -115,11 +116,11 @@ vec3 getFogColor(vec3 b_Sun, vec3 b_Moon, in vec3 pos, in vec3 n, in vec3 lightD
 
 vec3 getRayDir(float x, float y){ // x, y in [-1, 1]
 	float aspect = g_frame_width / g_frame_height;
-	y /= aspect;
+	x *= aspect;
 	vec3 dir = vec3(x, y, g_fov);
 	dir = normalize(dir);
 
-	return (g_trans_mat * vec4(dir, 0)).xyz;
+	return normalize((g_trans_mat * vec4(dir, 0)).xyz);
 }
 
 struct PlaneIntersection{
@@ -129,18 +130,27 @@ struct PlaneIntersection{
 };
 
 
-vec3 cell(vec2 cell_uv, vec2 cell_center[3][3]){
+mat2x3 cell(vec2 cell_uv, vec2 cell_center[3][3], vec2 army_center[3][3]){
     float min_dist = 1e6;
     vec2 idx = vec2(0);
+
+    float army_dist = 1e6;
+    vec2 army_idx = vec2(0);
     for(int i = 0; i < 3; i++){
         for(int j = 0; j < 3; j++){
             vec2 test_cell_uv = cell_center[i][j] + vec2(i, j) - 1;
             float dist = length(cell_uv - test_cell_uv);
             idx = mix(idx, vec2(i, j), float(dist < min_dist));
             min_dist = min(min_dist, dist);
+
+            vec2 test_army_uv = army_center[i][j] + vec2(i, j) - 1;
+            float dist_army = length(cell_uv - test_army_uv);
+            army_idx = mix(army_idx, vec2(i, j), float(dist_army < army_dist));
+            army_dist = min(army_dist, dist_army);
+
         }
     }
-    return vec3(ivec2(idx) - 1, min_dist);    
+    return mat2x3(vec3(ivec2(idx) - 1, min_dist), vec3(ivec2(army_idx) - 1, army_dist));
 }
 
 vec2 cell_sdf(vec2 cell_uv, vec3 cell_center[5][5]){
@@ -180,7 +190,6 @@ vec2 boxIntersection( in vec3 ro, in vec3 rd, vec3 boxSize, out vec3 outNormal )
     vec3 t2 = -n + k;
     float tN = max( max( t1.x, t1.y ), t1.z );
     float tF = min( min( t2.x, t2.y ), t2.z );
-    #line 0
 	if( tN>tF || tF<0.0) return vec2(-1.0); // no intersection
     outNormal = (tN>0.0) ? step(vec3(tN),t1): // ro ouside the box
                            step(t2,vec3(tF));  // ro inside the box
@@ -192,9 +201,10 @@ struct CellIndex {
     ivec2 base_idx;      // 基础网格索引 
     ivec2 real_idx;      // 实际区块索引
     vec2 cell_uv;        // 区块内UV坐标
-    vec3 cell_data;      // 区块数据(偏移xy + 中心标记z)
+    vec3 cell_data;      // 区块数据(偏移xy + 距离)
     float sdf;           // 距离场
     float diff_identity; // 身份差异
+    vec3 army_data; // 军队数据
 };
 
 CellIndex calculateCellIndex(vec2 uv) {
@@ -207,13 +217,16 @@ CellIndex calculateCellIndex(vec2 uv) {
     
     // 3x3网格中心点计算
     vec2 cell_center[3][3];
+    vec2 army_center[3][3];
     for(int i = -1; i <= 1; i++){
         for(int j = -1; j <= 1; j++){
             cell_center[i+1][j+1] = getRegion(result.base_idx.x + i, result.base_idx.y + j).cell_center;
+            army_center[i+1][j+1] = getRegion(result.base_idx.x + i, result.base_idx.y + j).army_position;
         }
     }
-    
-    result.cell_data = cell(result.cell_uv, cell_center);
+    mat2x3 cell_ = cell(result.cell_uv, cell_center, army_center);
+    result.cell_data = cell_[0];
+    result.army_data = cell_[1];
     result.real_idx = result.base_idx + ivec2(result.cell_data.xy);
 
     // 5x5网格SDF计算
@@ -248,6 +261,9 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     
     // 区块中心
     // color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
+
+    // 军队位置
+    color = mix(color, vec3(10,10,10), float(cell_idx.army_data.z < 0.05));
 
     // 当前选中
     bool is_selected = cell_idx.real_idx.x == g_selected.x && cell_idx.real_idx.y == g_selected.y;
@@ -329,17 +345,17 @@ vec3 rot3D(vec3 v, vec3 axis, float angle){
 	return rotMat * v;
 }
 
-vec4 render(){
+vec4 render(out float depth){
 	vec3 rayDir = getRayDir(texCoord.x, texCoord.y);
 	vec3 rayOrigin = (g_trans_mat * vec4(0, 0, 0, 1)).xyz;
-	vec2 max_padding_board = 1.0/g_map_size;
+	vec2 max_padding_board = 1.0 / g_map_size;
 
 
 	float dist = 1e6;
 
 	vec3 box_normal = vec3(0);
 	vec3 transformed_rayOrigin = (g_model_trans_mat_inv * vec4(rayOrigin, 1)).xyz;
-	vec3 transformed_rayDir = normalize((g_model_trans_mat_inv * vec4(rayDir, 0)).xyz);
+	vec3 transformed_rayDir = (g_model_trans_mat_inv * vec4(rayDir, 0)).xyz;
 
     vec3 sky_color = getSkyColor(vec3(10),vec3(0.1),transformed_rayOrigin,transformed_rayDir,sun_light_dir);
 	vec4 color = vec4(sky_color,0);
@@ -354,23 +370,27 @@ vec4 render(){
 	}
 	
 	
-	vec3 g_plane_u = vec3(1,0,0);//(g_model_trans_mat*vec4(1,0,0,0)).xyz;
-	vec3 g_plane_v = vec3(0,0,1);//(g_model_trans_mat*vec4(0,0,1,0)).xyz;
-	vec3 g_plane_pos = vec3(0,-0.625,0);//(g_model_trans_mat*vec4(0,0,0,1)).xyz;
+	vec3 g_plane_u = vec3(1,0,0);
+	vec3 g_plane_v = vec3(0,0,1);
+	vec3 g_plane_pos = vec3(0,-0.625,0);
 
 	PlaneIntersection pi = intersectPlane(transformed_rayOrigin, transformed_rayDir, g_plane_u, g_plane_v, g_plane_pos);
 
-	vec4 map = doPlaneColoring(pi.uv, sky_color) * float(pi.t > 0) * float(abs(pi.uv.x)<=1 + max_padding_board.x &&abs(pi.uv.y)<=1 + max_padding_board.y);
+    bool in_plane = pi.t > 0 && abs(pi.uv.x)<=1 + max_padding_board.x && abs(pi.uv.y) <= 1 + max_padding_board.y;
+
+	vec4 map = doPlaneColoring(pi.uv, sky_color) * float(in_plane);
 
 	//float board = max(abs(pi.uv.x),abs(pi.uv.y));
 	//map += step(1 + max_padding_board.x,board)*pow(smoothstep(1.5, 1. + max_padding_board.x,board),2)*vec4(0.125);
 
-	if(pi.t <= base_box.x || base_box.x < 0)
+	if((pi.t <= base_box.x || base_box.x < 0) && in_plane){
 		color = mix(color, map, map.a);
 		dist = min(dist, pi.t);
+    }
+    // 计算depth
+    depth = dist;
 
-
-	color.xyz = getFogColor(vec3(10),vec3(0.1),rayOrigin,rayDir,sun_light_dir,dist*500000,color.xyz);
+	color.xyz = getFogColor(vec3(10),vec3(0.1),rayOrigin,rayDir,sun_light_dir,min(dist,5)*50000,color.xyz);
 
 	return color;
 }
@@ -378,7 +398,9 @@ vec4 render(){
 
 layout (location = 0) out vec4 fragColor;
 void main(){
-	fragColor = render();
+    float depth;
+   	fragColor = render(depth);
+    gl_FragDepth = depth/(1+depth);
 }
 )";
 #endif

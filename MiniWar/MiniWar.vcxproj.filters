@@ -183,6 +183,9 @@
     <ClInclude Include="..\header\passes\FlameRenderPass.h">
       <Filter>headers\passes</Filter>
     </ClInclude>
+    <ClInclude Include="..\header\points.h">
+      <Filter>headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
@@ -214,6 +217,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\direct_tex.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\points_renderer.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\points_renderer.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

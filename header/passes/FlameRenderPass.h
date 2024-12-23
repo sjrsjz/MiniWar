@@ -66,7 +66,6 @@ public:
 		mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
 		mat4x4_mul(mvp, p, m);
 
-		glBindBuffer(GL_ARRAY_BUFFER, quad.vertex_buffer);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, mix_tex);
 		glUseProgram(m_program);
@@ -76,10 +75,11 @@ public:
 		glUniform1i(glGetUniformLocation(m_program, "iChannel0"), 0);
 		glUniform2f(glGetUniformLocation(m_program, "iResolution"), m_fbo.width(), m_fbo.height());
 		glUniform1f(glGetUniformLocation(m_program, "mix_strength"), mix_strength);
-		glDrawArrays(GL_QUADS, 0, quad.vertexs.size());
+
+		quad.render(m_program, "vPos", nullptr, nullptr, nullptr);
+
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glUseProgram(0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		m_fbo.unbind_frameBuffer();
 	}
 };

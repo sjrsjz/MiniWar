@@ -20,6 +20,8 @@ private:
 		RegionData region;
 		region.cell_center_x = 0;
 		region.cell_center_y = 0;
+        region.army_position_x = 0;
+		region.army_position_y = 0;
 		region.identity = 0;
 		region.padding_1 = 0;
 		return region;
@@ -67,7 +69,7 @@ public:
 
         // 射线方向计算
         float aspect = this->width / this->height;
-        vec3 dir = { ndcX, ndcY / aspect, this->fov };
+        vec3 dir = { ndcX * aspect, ndcY , this->fov };
         vec3_norm(dir, dir);
 
         vec4 dirWorld;

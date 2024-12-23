@@ -36,6 +36,7 @@
     <ClInclude Include="..\header\passes\FragmentBuffer.h" />
     <ClInclude Include="..\header\passes\SSBO.h" />
     <ClInclude Include="..\header\passes\SSBOByteArray.h" />
+    <ClInclude Include="..\header\points.h" />
     <ClInclude Include="..\header\shader.h" />
     <ClInclude Include="..\header\Timer.h" />
     <ClInclude Include="..\header\utils\Array.h" />
@@ -94,6 +95,8 @@
     <None Include="..\shaders\map_renderer.vert" />
     <None Include="..\shaders\normal_gl.frag" />
     <None Include="..\shaders\normal_gl.vert" />
+    <None Include="..\shaders\points_renderer.frag" />
+    <None Include="..\shaders\points_renderer.vert" />
     <Text Include="..\shaders\main_game_pass.frag">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </ExcludedFromBuild>

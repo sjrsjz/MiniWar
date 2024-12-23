@@ -37,7 +37,7 @@ vec4 sampleLod(sampler2D tex, vec2 uv, float lod, float scale){
 
 vec4 sampleData_mipmap(sampler2D tex,vec2 uv){
 	uv = 0.5 * uv + 0.5;
-	return texture(tex, uv, 4);
+	return texture(tex, uv, 5);
 }
 
 vec4 sampleLod_mipmap(sampler2D tex, vec2 uv, float lod, float scale){
@@ -80,7 +80,7 @@ void main(){
 	}else{
 	
 		if(g_from_origin){
-			color += sampleLod_mipmap(g_main_game_pass, uv, 0.1 * g_step, 0.25);
+			color += sampleLod_mipmap(g_main_game_pass, uv, 0.025 * g_step, 0.25);
 			color += sampleLod_mipmap(g_main_game_pass, uv, 0.005 * g_step, 0.75);
 		}else{
 			color += sampleLod(g_last_blur_pass, uv, 0.01 * g_step, 0.25);
