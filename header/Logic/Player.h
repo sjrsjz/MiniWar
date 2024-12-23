@@ -21,14 +21,14 @@ private:
 	int labor{};
 	int steel{};
 	int id{};
-	std::tuple<int, int> capital;
-	std::vector<int> arm_level;//0: army, 1: CM 2: MRBM 3: ICBM
-	std::vector<int> institution_level_limit;//0: powerstation, 1: steelmill, 2: oilwell, 3: civilian_factory, 4: military_factory
-	RegionManager& regionmanager;
+	std::tuple<int, int> capital = std::make_tuple(-1,-1);
+	std::vector<int> arm_level = {1,0,0,0};//0: army, 1: CM 2: MRBM 3: ICBM
+	std::vector<int> institution_level_limit = {1,1,1,1,0};//0: powerstation, 1: steelmill, 2: oilwell, 3: civilian_factory, 4: military_factory
+	RegionManager& regionmanager = RegionManager::getInstance();
 	double calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path);
 	double calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end);
 public:
-	Player(RegionManager& Manager, int id);
+	Player();
 	~Player();
 	int get_gold();
 	int get_electricity();

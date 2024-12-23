@@ -4,6 +4,7 @@
 #include "Weapon.h"
 #include "Army.h"
 #include "Player.h"
+#include "../utils/Config.h"
 #include "../utils/Point.h"
 class Region {
 private:
