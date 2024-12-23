@@ -38,6 +38,8 @@ private:
 	
 	void clear_building(Region& region);
 	RegionManager();
+
+	double calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end);
 	
 public:
 	RegionManager(int width, int height);
@@ -47,9 +49,14 @@ public:
 	int get_map_height();
 	Player& get_player();
 	void update();
+
 	void move_army(int amount, double time, std::vector<std::tuple<int, int>>& path);
+	void move_army(Point start, Point end, int amount);
 	void attack_region_missle(int weapon_id, Point start, Point end, double time, int damage);
 	void attack_region_army(Point start, Point end, int amount);
+
+	double calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path);
+
 	Array<Region>& get_regions();
 	Region& get_region(int x, int y);
 	static RegionManager& getInstance();

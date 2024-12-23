@@ -46,6 +46,9 @@
     <ClCompile Include="..\cpp\Logic\AI.cpp">
       <Filter>cpp\Logic</Filter>
     </ClCompile>
+    <ClCompile Include="..\cpp\utils\GlobalTimer.cpp">
+      <Filter>cpp\utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\Camera.h">
@@ -133,6 +136,9 @@
       <Filter>headers\passes</Filter>
     </ClInclude>
     <ClInclude Include="..\header\utils\Config.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\GlobalTimer.h">
       <Filter>headers\utils</Filter>
     </ClInclude>
   </ItemGroup>
