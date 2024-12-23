@@ -20,7 +20,29 @@ private:
 	/* int allElectricity; */
 
 public:
+	Region();
 	Region(int x, int y);
+	inline Region(Region& region) {
+		// copy constructor
+		this->building = region.building;
+		this->hp = region.hp;
+		this->maxHp = region.maxHp;
+		this->owner = region.owner;
+		this->position = region.position;
+		this->weapons = region.weapons;
+		this->army = region.army;
+	}
+	Region(const Region& region) {
+		// copy constructor
+		this->building = region.building;
+		this->hp = region.hp;
+		this->maxHp = region.maxHp;
+		this->owner = region.owner;
+		this->position = region.position;
+		this->weapons = region.weapons;
+		this->army = region.army;
+
+	}
 	~Region();
 	bool setOwner(int owner);//in manage to judge if exists this player
 	int getOwner();

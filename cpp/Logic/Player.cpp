@@ -11,7 +11,7 @@ Player:: Player(RegionManager& Manager, int id) : regionmanager(Manager), id(id)
     institution_level_limit = {1, 1, 1, 1, 1, 0};
 }
 
-Player:: ~Player(){
+Player:: ~Player() {
 }
 
 double Player::calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end) {
@@ -25,7 +25,7 @@ double Player::calculate_Euclidean_distance(std::tuple<int, int> start, std::tup
 double Player::calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path) {
 	double distance = 0;
 
-    Array<Region> regions = regionmanager.get_regions();
+    Array<Region>& regions = regionmanager.get_regions();
     int *player_region_martix = new int[regions.get_width() * regions.get_height()];
     for(int i = 0; i<regions.get_width(); i++){
         for(int j = 0; j<regions.get_height(); j++){
