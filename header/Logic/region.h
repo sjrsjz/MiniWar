@@ -59,6 +59,8 @@ public:
 	bool addArmy(int num);
 	Army& getArmy();
 	bool removeBuilding();
+	bool setHp(float hp);
+	bool setMaxHp(float hp);
 	/* int getAvailableLabor(); */
 	/* int getAllLabor(); */
 	/* int getAvailableElectricity(); */

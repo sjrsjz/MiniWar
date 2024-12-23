@@ -1,8 +1,19 @@
 #include "../../header/Logic/Weapon.h"
-//#include "../../header/utils/Config.h"
+#include "../../header/utils/Config.h"
+
+using json = nlohmann::json;
 
 Weapon::Weapon(int id) {
 	//		
+	Config& config = Config::getInstance();
+	std::string ID = std::to_string(id);
+	const json j = config.getConfig({ "weapon", ID});
+	this->damage = j["damage"].get<float>();
+	this->damageRange = j["damageRange"].get<float>();
+	this->attackSpeed = j["attackSpeed"].get<float>();
+	this->attackRange = std::make_tuple(j["attackRange"][0].get<float>(), j["attackRange"][1].get<float>());
+	this->cost = j["cost"].get<std::vector<int>>();
+	this->id = id;
 }
 
 Weapon::~Weapon() {
@@ -28,5 +39,9 @@ std::tuple<float, float> Weapon::getAttackRange(int level){
 
 int Weapon::getId(){
 	return this->id;
+}
+
+std::vector<int> Weapon::getCost() {
+	return this->cost;
 }
 

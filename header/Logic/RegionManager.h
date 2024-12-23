@@ -40,4 +40,5 @@ public:
 	void owner_alter();
 	Array<Region>& get_regions();
 	Region& get_region(int x, int y);
+	static RegionManager& getInstance();
 };

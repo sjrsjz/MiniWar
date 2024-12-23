@@ -62,3 +62,8 @@ const json Config::getBuildings() {
 const json Config::getResearch() {
 	return getConfig({"ResearchInstitution"});
 }
+
+Config& Config::getInstance() {
+	static Config instance("../../MiniWar/config.json");
+	return instance;
+}

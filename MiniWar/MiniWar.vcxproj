@@ -51,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cpp\globals.cpp" />
+    <ClCompile Include="..\cpp\Logic\AI.cpp" />
     <ClCompile Include="..\cpp\Logic\Army.cpp" />
     <ClCompile Include="..\cpp\Logic\Building.cpp" />
     <ClCompile Include="..\cpp\Logic\Player.cpp" />

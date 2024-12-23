@@ -66,3 +66,8 @@ Array<Region>& RegionManager::get_regions() {
 Region& RegionManager::get_region(int x, int y) {
 	return regions(x, y);
 }
+
+ RegionManager& RegionManager::getInstance() {
+	static RegionManager instance;
+	return instance;
+}

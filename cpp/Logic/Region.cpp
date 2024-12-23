@@ -1,14 +1,17 @@
 #include "../../header/Logic/Region.h"
 #include "../../header/Exception/FullHpException.h"
 #include "../../header/Exception/SurrenderNotAttackedException.h"
+#include "../../header/utils/Config.h"
+#include "../../header/Logic/RegionManager.h"
 #include <sstream>
 #include <type_traits>
 #include <random>
+#include <tuple>
 
 Region::Region() {
-	//TODO
-	//this->hp = maxHp
-	//this->maxHp = ?;
+	Config& config = Config::getInstance();
+	std::tuple<int, int> hpRange = config.getConfig({ "Region", "hp" }).template get<std::tuple<int ,int>>();
+	std::tuple<int, int> armyRange = config.getConfig({ "Region", "Army" }).template get<std::tuple<int ,int>>();
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -18,12 +21,21 @@ Region::Region() {
 	this->owner = -1;
 	this->weapons = std::vector<int>(3, 0);
 	this->position = Point(X, Y);
+	std::uniform_int_distribution<> disHp(std::get<0>(hpRange), std::get<1>(hpRange));
+	std::uniform_int_distribution<> disArmy(std::get<0>(armyRange), std::get<1>(armyRange));
+	int armyForce = disArmy(gen);
+	this->army = Army(armyForce);
+	this->hp = disHp(gen);
+	this->maxHp = this->hp;
 }
 
 Region::Region(int x, int y){
 	//TODO
 	//this->hp = maxHp
 	//this->maxHp = ?;
+	Config config = Config::getInstance();
+	std::tuple<int, int> hpRange = config.getConfig({ "region", "hp" }).template get<std::tuple<int ,int>>();
+
 	
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -33,6 +45,9 @@ Region::Region(int x, int y){
 	this->owner = -1; 
 	this->weapons = std::vector<int>(3, 0);
 	this->position = Point(X + x, Y + y);
+	std::uniform_int_distribution<> disHp(std::get<0>(hpRange), std::get<1>(hpRange));
+	this->hp = disHp(gen);
+	this->maxHp = this->hp;
 }
 
 Region::~Region() {
@@ -134,4 +149,14 @@ Army& Region::getArmy() {
 bool Region::removeBuilding() {
 	//TODO
 	return this->building.remove();
+}
+
+bool Region::setHp(float hp) {
+	this->hp = hp;
+	return true;
+}
+
+bool Region::setMaxHp(float maxHp) {
+	this->maxHp = maxHp;
+	return true;
 }
