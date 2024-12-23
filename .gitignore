@@ -6,3 +6,5 @@ MiniWar/MiniWar.vcxproj.filters
 MiniWar/MiniWar.vcxproj.user
 
 *.gitmodules
+/.vscode/settings.json
+/.vscode/settings.json

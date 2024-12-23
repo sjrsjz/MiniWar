@@ -10,5 +10,6 @@ public:
 	~Building();
 	bool upLevel(int MaxLevel);
 	std::string getName();
+	int getLevel();
 	bool remove();
 };

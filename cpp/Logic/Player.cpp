@@ -1,22 +1,16 @@
 #include "../../header/Logic/Player.h"
 #include "../../header/Logic/RegionManager.h"
 
-Player:: Player(RegionManager& Manager, int id) : regionmanager(Manager), id(id){
-    gold = 0;
-    oil = 0;
-    electricity = 0;
-    labor = 0;
-    steel = 0;
-    arm_level = {1, 0, 0, 0};
-    institution_level_limit = {1, 1, 1, 1, 1, 0};
+Player:: Player(){
+    id = 0;
 }
 
 Player:: ~Player() {
 }
 
 double Player::calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end) {
-    Region start_region = regionmanager.get_region(std::get<0>(start), std::get<1>(start));
-    Region end_region = regionmanager.get_region(std::get<0>(end), std::get<1>(end));
+    Region& start_region = regionmanager.get_region(std::get<0>(start), std::get<1>(start));
+    Region& end_region = regionmanager.get_region(std::get<0>(end), std::get<1>(end));
     Point start_region_position = start_region.getPosition();
     Point end_region_position = end_region.getPosition();
     return sqrt(pow(start_region_position.getX() - end_region_position.getX(), 2) + pow(start_region_position.getY() - end_region_position.getY(), 2));
@@ -310,8 +304,8 @@ void Player:: move_army(Point start, Point end, int amount){
     int end_x = std::floor(end.getX());
     int end_y = std::floor(end.getY());
 
-    Region start_region = regionmanager.get_region(start_x, start_y);
-    Region end_region = regionmanager.get_region(end_x, end_y);
+    Region& start_region = regionmanager.get_region(start_x, start_y);
+    Region& end_region = regionmanager.get_region(end_x, end_y);
 
     double time = distance / start_region.getArmy().getSpeed();
 
@@ -326,7 +320,7 @@ void Player::attack(Point start, Point end, int weapon_id) {
     int start_x = std::floor(start.getX());
     int start_y = std::floor(start.getY());
 
-    Region start_region = regionmanager.get_region(start_x, start_y);
+    Region& start_region = regionmanager.get_region(start_x, start_y);
 
 	Weapon weapon = regionmanager.get_weapon(weapon_id);
 
@@ -335,11 +329,11 @@ void Player::attack(Point start, Point end, int weapon_id) {
 
 	start_region.removeWeapon(weapon_id);
 
-	regionmanager.attack_region(weapon_id, start, end, time, damage);
+	regionmanager.attack_region_missle(weapon_id, start, end, time, damage);
 }
 
 void Player::build(std::string building_name, Point location) {
-	Region region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
+	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
 	if (region.getOwner() != id) {
 		throw "Not your region";
 	}
@@ -350,7 +344,7 @@ void Player::build(std::string building_name, Point location) {
 }
 
 void Player::upgrade_building(Point location) {
-	Region region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
+	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
     if (region.getBuilding().getName() == "none") {
         throw "No building exits";
     }
@@ -366,7 +360,7 @@ void Player::upgrade_building(Point location) {
 }
 
 void Player::remove_building(Point location) {
-	Region region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
+	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
     if (region.getOwner() != id) {
 		throw "Not your region";
 	}
@@ -375,10 +369,43 @@ void Player::remove_building(Point location) {
 	}
 	region.removeBuilding();
 	//return the cost of the building
+
+	Building& building = region.getBuilding();
+	Config configer = Config::getInstance();
+    json BuildCost = configer.getConfig({ "Building",building.getName(), "BuildCost" });
+    json UpLevelCost1 = configer.getConfig({ "Building",building.getName(), "UpLevelCost1" });
+    json UpLevelCost2 = configer.getConfig({ "Building",building.getName(), "UpLevelCost2" });
+    std::vector<int> Level1Cost = BuildCost.template get<std::vector<int>>();
+    std::vector<int> Level2Cost = UpLevelCost1.template get<std::vector<int>>();
+    std::vector<int> Level3Cost = UpLevelCost2.template get<std::vector<int>>();
+    switch (building.getLevel())
+    {
+    case 1:
+		gold += 0.6 * Level1Cost[0];
+		oil += 0.6 * Level1Cost[1];
+		steel += 0.6 * Level1Cost[2];
+		electricity += 0.6 * Level1Cost[3];
+		labor += 0.6 * Level1Cost[4];
+		break;
+    case 2:
+        gold += 0.6 * (Level1Cost[0] + Level2Cost[0]);
+        oil += 0.6 * (Level1Cost[1] + Level2Cost[1]);
+        steel += 0.6 * (Level1Cost[2] + Level2Cost[2]);
+        electricity += 0.6 * (Level1Cost[3] + Level2Cost[3]);
+        labor += 0.6 * (Level1Cost[4] + Level2Cost[4]);
+        break;
+    case 3:
+		gold += 0.6 * (Level1Cost[0] + Level2Cost[0] + Level3Cost[0]);
+		oil += 0.6 * (Level1Cost[1] + Level2Cost[1] + Level3Cost[1]);
+		steel += 0.6 * (Level1Cost[2] + Level2Cost[2] + Level3Cost[2]);
+		electricity += 0.6 * (Level1Cost[3] + Level2Cost[3] + Level3Cost[3]);
+		labor += 0.6 * (Level1Cost[4] + Level2Cost[4] + Level3Cost[4]);
+		break;
+    }
 }
 
 void Player::research(int selection) {
-	Region region = regionmanager.get_region(get_capital_x(), get_capital_y());
+	Region& region = regionmanager.get_region(get_capital_x(), get_capital_y());
     if (region.getOwner() != id) {
 		throw "Not your capital";
 	}

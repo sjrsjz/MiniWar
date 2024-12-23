@@ -22,10 +22,15 @@ std::string Building::getName() {
 	return this->name;
 }
 
+int Building::getLevel() {
+	return this->level;
+}
+
 bool Building::remove() {
 	if (this->name == "none"){
 		return false;
 	} else {
+		this->level = 0;
 		this->name = "none";
 	}
 	return true;
