@@ -37,6 +37,7 @@
     <ClInclude Include="..\header\shader.h" />
     <ClInclude Include="..\header\Timer.h" />
     <ClInclude Include="..\header\utils\Array.h" />
+    <ClInclude Include="..\header\utils\Config.h" />
     <ClInclude Include="..\header\utils\Point.h" />
     <ClInclude Include="..\header\utils\SmoothMove.h" />
     <ClInclude Include="..\include\GLFW\glfw3.h" />
@@ -61,6 +62,7 @@
     <ClCompile Include="..\cpp\output.cpp" />
     <ClCompile Include="..\cpp\shader.cpp" />
     <ClCompile Include="..\cpp\utils\Array.cpp" />
+    <ClCompile Include="..\cpp\utils\Config.cpp" />
     <ClCompile Include="..\cpp\utils\Point.cpp" />
   </ItemGroup>
   <ItemGroup>

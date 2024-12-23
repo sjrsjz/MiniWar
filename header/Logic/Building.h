@@ -4,12 +4,11 @@
 #include <string>
 class Building {
 	int level;
-	int labor;
 	std::string name;
 public:
 	Building(std::string);
 	~Building();
-	bool upLevel(int MaxLevel, int labor);
+	bool upLevel(int MaxLevel);
 	std::string getName();
 	bool remove();
 };

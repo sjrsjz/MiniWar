@@ -37,6 +37,12 @@
     <ClCompile Include="..\cpp\Logic\RegionManager.cpp">
       <Filter>cpp\Logic</Filter>
     </ClCompile>
+    <ClCompile Include="..\cpp\utils\Config.cpp">
+      <Filter>cpp\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Weapon.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\Camera.h">
@@ -122,6 +128,9 @@
     </ClInclude>
     <ClInclude Include="..\header\passes\SSBOByteArray.h">
       <Filter>headers\passes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\Config.h">
+      <Filter>headers\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

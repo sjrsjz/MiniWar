@@ -11,10 +11,11 @@ class Config {
 public:
 	Config(const std::string& path);
 	~Config();
-	/* template<typename T, typename... Args> */
-	/* const json getConfig(const T& first, const Args&... args); */
-	/* template<typename T> */
+	const json getMapSize();
+	const json getWeapons();
+	const json getRegions();
+	const json getBuildings();
+	const json getResearch();
 	const json getConfig(std::initializer_list<std::string> args);
-	const json getConfig(std::string s);
 	const json& getConfig();
 };

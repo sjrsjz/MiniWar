@@ -289,7 +289,7 @@ void Player:: add_steel(int amount){
     steel += amount;
 }
 
-int get_building_level_limit(std::string name) {
+int Player::get_building_level_limit(std::string name) {
     if (name == "PowerStation") return 0;
     if (name == "SteelFactory") return 1;
 	if (name == "Refinery") return 2;

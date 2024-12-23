@@ -118,3 +118,7 @@ Army& Region::getArmy() {
 	return this->army;
 }
 
+bool Region::removeBuilding() {
+	//TODO
+	return this->building.remove();
+}

@@ -16,9 +16,9 @@ struct MovingMissle {
 };
 
 RegionManager::RegionManager(int width, int height, int player_amount) : regions(width, height), moving_missles(), moving_armies(){
-	players = std::vector<Player>(player_amount);
+	//players = std::vector<Player>(player_amount);
 
-	players.reserve(player_amount);
+	//players.reserve(player_amount);
 	for (int i = 0; i < player_amount; i++) {
 		players.emplace_back(*this, i);//create player in vector
 	}
