@@ -50,11 +50,19 @@ vec4 uv_to_cell_position(vec2 uv){
 	return vec4(floor(uv), fract(uv));
 }
 
-vec3 get_identity_color(float identity, vec3 region_normal, vec3 sky_color){
+float hexagon(vec2 position) {    
+    position /= vec2(2.0, sqrt(3.0));
+    position.y -= 0.5;
+    position.x -= fract(floor(position.y) * 0.5);
+    position = abs(fract(position) - 0.5);
+    return abs(1.0 - max(position.x + position.y * 1.5, position.x * 2.0));
+}
+
+vec3 get_identity_color(float identity, vec2 uv, vec3 region_normal, vec3 sky_color){
     vec3 region_color = vec3(region_normal.y * 0.1);
 	if(identity == 0) return region_color;
 	if(identity == 1) return mix(region_color, vec3(10,0,0), pow(1 - 0.65 * abs(sin(2 * g_time)),4));
-	if(identity == 2) return mix(region_color, vec3(0,1,1), 0.5);
+	if(identity == 2) return mix(region_color, vec3(0,1,1) * max(0.1 - hexagon(uv*g_map_size.x), 0) * 20, 0.5 * pow(1 - 0.65 * abs(sin(2 * g_time)),4));
 	if(identity == 3) return vec3(0,0,1);
 	return vec3(1,1,1);
 }
@@ -234,7 +242,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
 
     vec3 region_normal = normalize(vec3(region.cell_center.x - 0.5, 1, region.cell_center.y-0.5));
 
-    color = get_identity_color(region.identity, region_normal, sky_color);
+    color = get_identity_color(region.identity, uv, region_normal, sky_color);
 
     //color *= sky_color * max(dot(region_normal,sun_light_dir),0.1);
     

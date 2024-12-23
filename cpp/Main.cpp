@@ -35,6 +35,8 @@
 #include "../shaders/direct_tex.frag"
 #include "../shaders/direct_tex.vert"
 
+#include <cmath>
+
 mash s_mash;
 SmoothCamera camera;
 SmoothCamera scale_map_camera; // 缩放摄像机
@@ -94,6 +96,7 @@ void KeyProcess();
 void KeyRelease(int key);
 
 enum SelectedWeapon {
+	NONE, // 空
 	NUCLEAR_MISSILE, // 核导弹
 	ARMY, // 军队
 	SCATTER_BOMB, // 散弹炸弹
@@ -104,6 +107,153 @@ namespace UIFonts {
 	ImFont* menu_font;
 	ImFont* large_font;
 }
+inline ImVec2 operator+(const ImVec2& a, const ImVec2& b) {
+	return ImVec2(a.x + b.x, a.y + b.y);
+}
+
+inline ImVec2 operator-(const ImVec2& a, const ImVec2& b) {
+	return ImVec2(a.x - b.x, a.y - b.y);
+}
+
+inline ImVec2 operator*(const ImVec2& v, float f) {
+	return ImVec2(v.x * f, v.y * f);
+}
+
+class TechTreeGui {
+	struct TechNode {
+		const char* name;
+		bool unlocked;
+		std::vector<int> dependencies;  // 依赖节点的索引
+		ImVec2 pos;                    // 节点位置
+	};
+
+	class TechTree {
+	public:
+		std::vector<TechNode> nodes;
+		bool align_center = true;
+		void draw(ImGuiIO& io, double alpha) {
+			ImGui::Begin("Tech Tree");
+
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			ImVec2 offset = align_center ? ImVec2(io.DisplaySize.x / 2, io.DisplaySize.y / 2) : ImGui::GetCursorScreenPos();
+
+			// 绘制连线
+			for (size_t i = 0; i < nodes.size(); i++) {
+				for (int dep : nodes[i].dependencies) {
+					ImVec2 p1 = offset + nodes[dep].pos;
+					ImVec2 p2 = offset + nodes[i].pos;
+					draw_list->AddLine(p1, p2, IM_COL32(200, 200, 200, 128 * alpha), 5.0f);
+				}
+			}
+
+			// 绘制节点
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, alpha));
+			for (auto& node : nodes) {
+				ImGui::SetCursorScreenPos(offset + node.pos);
+
+				ImU32 node_color = node.unlocked ?
+					IM_COL32(100, 255, 100, 128 * alpha) :
+					IM_COL32(255, 100, 100, 128 * alpha);
+				// 居中显示名称
+				auto text_size = ImGui::CalcTextSize(node.name);
+
+				draw_list->AddCircleFilled(
+					offset + node.pos,
+					fmaxf(text_size.x, text_size.y) / 2 + 10,
+					node_color
+				);
+				float L = fmaxf(text_size.x, text_size.y) + 20;
+				ImGui::SetCursorScreenPos(offset + node.pos - ImVec2(L / 2, L / 2));
+				if (ImGui::InvisibleButton(node.name, ImVec2(L, L))) {
+
+					// 处理点击
+					// 如果父节点都解锁了，那么解锁当前节点
+					bool unlock = true;
+					for (int dep : node.dependencies) {
+						if (!nodes[dep].unlocked) {
+							unlock = false;
+							break;
+						}
+					}
+					if (unlock) {
+						node.unlocked = true;
+					}
+				}
+				ImGui::SetCursorScreenPos(
+					offset + node.pos - ImVec2(text_size.x / 2, text_size.y / 2)
+				);
+				ImGui::Text("%s", node.name);
+			}
+			ImGui::PopStyleColor();
+			ImGui::End();
+		}
+	};
+
+	TechTree tree{};
+	SmoothMove show{};
+public:
+	TechTreeGui() {
+		show.setTotalDuration(0.25);
+		show.setStartPosition(0, 0);
+		// 辐射状科技树
+		tree.nodes.push_back({ "Tech.0.0", true, {} , ImVec2(0,0)});
+		
+		// level1
+		tree.nodes.push_back({ "Tech.1.1", false, {0} , ImVec2(200,0) });
+		tree.nodes.push_back({ "Tech.1.2", false, {0} , ImVec2(0,200) });
+		tree.nodes.push_back({ "Tech.1.3", false, {0} , ImVec2(-200,0) });
+		tree.nodes.push_back({ "Tech.1.4", false, {0} , ImVec2(0,-200) });
+
+		// level2
+		// 2.x -> 1.1
+		tree.nodes.push_back({ "Tech.2.1", false, {1} , ImVec2(400,0) });
+		tree.nodes.push_back({ "Tech.2.2", false, {1} , ImVec2(200,200) });
+		tree.nodes.push_back({ "Tech.2.3", false, {1} , ImVec2(0,400) });
+		
+		tree.nodes.push_back({ "Tech.2.4", false, {3} , ImVec2(-200,200) });
+		tree.nodes.push_back({ "Tech.2.5", false, {4} , ImVec2(-400,0) });
+		tree.nodes.push_back({ "Tech.2.6", false, {4} , ImVec2(-200,-200) });
+
+
+
+
+
+	}
+	bool is_active() {
+		return show.getX() > 1e-3;
+	}
+	void render_gui(ImGuiIO& io) {
+		if (!is_active()) return;
+
+		ImGui::SetNextWindowBgAlpha(0.75 * show.getX());
+		ImGui::Begin("Tech Tree", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
+		ImGui::SetWindowPos(ImVec2(0, 0));
+
+		tree.draw(io, show.getX());
+
+		ImGui::End();
+	}
+
+	void update(const Timer& timer) {
+		show.update(timer.getTime());
+	}
+
+	void open(bool open, const Timer& timer) {
+		if (open) {
+			show.newEndPosition(1, timer.getTime());
+		}
+		else {
+			show.newEndPosition(0, timer.getTime());
+		}
+	}
+	bool is_open() {
+		return show.getX() > 1e-3;
+	}
+	double getX() {
+		return show.getX();
+	}
+} s_tech_tree_gui;
 
 
 class SelectedGui {
@@ -130,22 +280,24 @@ private:
 	SmoothMove resources_amount{};
 	SmoothMove resources_amount_back{};
 
-	void render_bar(ImGuiIO& io, const SmoothMove& f, const SmoothMove& b, const char* title, GLuint tex, int scale) {
+	void render_bar(ImGuiIO& io, const SmoothMove& f, const SmoothMove& b, const char* title, GLuint tex, int scale, const ImVec4& fc, const ImVec4& bc) {
 		ImGui::Image(tex, ImVec2(30, 30));
 		ImGui::SameLine();
-		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 0.0f, 0.0f, 0.5f)); // 前景色
+		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, bc); // 前景色
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.25f));	   // 背景色
 		ImVec2 pos = ImGui::GetCursorPos();
 		ImGui::ProgressBar(b.getX(), ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
 		ImGui::PopStyleColor(2); // 恢复颜色设置
-		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 1.0f, 0.0f, 0.5f)); // 前景色
+		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, fc); // 前景色
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.0f));	   // 背景色
 		ImGui::SetCursorPos(pos);
 		ImGui::ProgressBar(f.getX(), ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
 		ImGui::PopStyleColor(2); // 恢复颜色设置
 		ImVec2 text_size = ImGui::CalcTextSize(title);
 		ImGui::SetCursorPos(ImVec2(pos.x + 5, pos.y + 30 - text_size.y));
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.15,0.15,0.15,0.5)); // 前景色
 		ImGui::Text(title, (int)(f.getX() * scale));
+		ImGui::PopStyleColor(1);
 	}
 
 public:
@@ -157,15 +309,13 @@ public:
 		}
 	}
 	void render_gui(ImGuiIO& io) {
-		ImGui::Begin("Status", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground);
+		ImGui::Begin("Status", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoCollapse);
 		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 200));
 		ImGui::SetWindowPos(ImVec2(50, io.DisplaySize.y - 250));
 
 		// 资源条
-		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100);
-		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100);
-		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100);
-		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100);
+		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5));
+		render_bar(io, resources_amount, resources_amount_back, u8"已占有:%d", TEXTURE::s_image_lightning, 100, ImVec4(1, 1, 1, 1), ImVec4(1, 0.25, 0.25, 0.5));
 
 		ImGui::End();
 	}
@@ -195,6 +345,7 @@ float randfloat() {
 }
 
 void load_new_game(const LevelConfig& level_config) {
+
 
 	DEBUG::DebugOutput("Loading new game..");
 	DEBUG::DebugOutput("Map Width", level_config.map_width);
@@ -276,7 +427,8 @@ public:
 			ImGuiWindowFlags_NoTitleBar |
 			ImGuiWindowFlags_NoResize |
 			ImGuiWindowFlags_NoMove |
-			ImGuiWindowFlags_NoScrollbar
+			ImGuiWindowFlags_NoScrollbar | 
+			ImGuiWindowFlags_NoCollapse
 		);
 
 		int x_pos = 0;
@@ -363,6 +515,8 @@ public:
 
 					if (is_selected)
 						ImGui::SetItemDefaultFocus();
+					// 添加下边距
+					ImGui::Dummy(ImVec2(0, 5));  // 调整数值可改变行距
 				}
 				ImGui::EndListBox();
 			}
@@ -507,18 +661,11 @@ void render_imgui(ImGuiIO& io) {
 			s_mouse_position[0] = mouse_pos.x; s_mouse_position[1] = mouse_pos.y;
 		}
 
-		// 在最上方画一个双色进度条来显示已占区块数量和未占区块数量
-		ImGui::SetCursorPos(ImVec2(40, 20));
-
-		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(1.0f, 1.0f, 1.0f, 0.5f)); // 前景色
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.5f));	   // 背景色
-		ImGui::ProgressBar((1 + sin(timer.getTime())) * 0.5, ImVec2(io.DisplaySize.x - 80, 20), u8"");
-		ImGui::PopStyleColor(2); // 恢复颜色设置
-
 		ImGui::End();
 
 		s_selected_gui.render_gui(io);
 		s_status_gui.render_gui(io);
+		s_tech_tree_gui.render_gui(io);
 	}
 	s_menu_gui.render_gui(io);
 }
@@ -645,6 +792,7 @@ void prepare_render() {
 
 	s_menu_gui.update(timer);
 	s_status_gui.update(timer);
+	s_tech_tree_gui.update(timer);
 }
 
 void render_gaussian_blur() {
@@ -887,8 +1035,14 @@ void render() {
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
 	// 菜单模糊/泛光
-	glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_menu_gui.getX());
-
+	if (s_menu_gui.is_activitied())
+		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_menu_gui.getX());
+	else if (s_tech_tree_gui.is_active()) {
+		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_tech_tree_gui.getX());
+	}
+	else {
+		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05);
+	}
 	glDrawArrays(GL_QUADS, 0, s_mash.vertexs.size());
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
@@ -902,6 +1056,14 @@ void render() {
 	//glDisable(GL_FRAMEBUFFER_SRGB);
 	//glfwSwapBuffers(glfw_win);
 
+}
+
+void reset_camera() {
+	camera.move_to(0, 0, -2, timer.getTime());
+	camera.rotate_to(0, 0, -1.5, timer.getTime());
+	scale_map_camera.move_to(0, 0, -6, timer.getTime());
+	camera.rotate_to(0, 0, -1.5 / (1 + 2 * exp(-0.05 * -6 * -6)), timer.getTime());
+	map_rotation.newEndPosition(-(exp(-0.01 * pow(-6 * -6, 2))), timer.getTime());
 }
 
 void KeyProcess() {
@@ -934,11 +1096,7 @@ void KeyProcess() {
 	}
 	if (keys[GLFW_KEY_R]) {
 		// 重置摄像机
-		camera.move_to(0, 0, -2, timer.getTime());
-		camera.rotate_to(0, 0, -1.5, timer.getTime());
-		scale_map_camera.move_to(0, 0, -6, timer.getTime());
-		camera.rotate_to(0, 0, -1.5 / (1 + 2 * exp(-0.05 * -6 * -6)), timer.getTime());
-		map_rotation.newEndPosition(-(exp(-0.01 * pow(-6 * -6, 2))), timer.getTime());
+		reset_camera();
 	}
 }
 
@@ -954,10 +1112,13 @@ void KeyRelease(int key) {
 	switch (key)
 	{
 	case GLFW_KEY_SPACE:
-		s_selected_weapon = (SelectedWeapon)((s_selected_weapon + 1) % 3);
+		s_selected_weapon = (SelectedWeapon)((s_selected_weapon + 1) % 4);
 		break;
 	case GLFW_KEY_F:
 		s_status_gui.set_resources_amout(fmod(s_status_gui.get_resources_amount() + 0.1,1), timer);
+		break;
+	case GLFW_KEY_T:
+		s_tech_tree_gui.open(!s_tech_tree_gui.is_open(), timer);
 	default:
 		break;
 	}
@@ -991,7 +1152,7 @@ void init() {
 	map_rotation.setStartPosition(-1, timer.getTime());
 	map_rotation.setTotalDuration(0.25);
 
-	glfwScrollCallback(glfw_win, 0, 0);
+	reset_camera();
 
 	DEBUG::DebugOutput("Building meshes..");
 
