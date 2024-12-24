@@ -23,7 +23,7 @@ private:
 	int gold{};
 	int oil{};
 	int electricity{};
-	int labor{};
+	int ocupied_labor{};
 	int steel{};
 	int id{};
 	int labor_limit{};
@@ -38,7 +38,8 @@ public:
 	~Player();
 	int get_gold();
 	int get_electricity();
-	int get_labor();
+	int get_labor_limit();
+	int get_ocupied_labor();
 	int get_steel();
 	int get_oil();
 	int get_capital_x();
