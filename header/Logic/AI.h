@@ -514,7 +514,8 @@ private:
 			auto [from, to, force] = transaction;
 			Point start = Point(std::get<0>(from), std::get<1>(from));
 			Point end = Point(std::get<0>(to), std::get<1>(to));
-			maxTime = std::max(maxTime, regionManager.move_army(start, end, force));
+			int armyLevel = this->arm_level[0];
+			maxTime = std::max(maxTime, regionManager.move_army(start, end, force, armyLevel));
 		}
 
 		std::thread t([this, maxTime](){
@@ -538,9 +539,10 @@ private:
 					curForce +=	tmp.getForce() * 0.7;
 					regionlist.push_back(Point(start.getX() + i, start.getY() + j));
 					double maxTime = 0;
+					int armyLevel = this->arm_level[0];
 					if (curForce >= amount) {
 						for (auto region : regionlist) {
-							maxTime = std::max(maxTime, regionManager.move_army(region, start, tmp.getForce() * 0.7));
+							maxTime = std::max(maxTime, regionManager.move_army(region, start, tmp.getForce() * 0.7, armyLevel));
 						}
 						this->canMove = false;
 						std::this_thread::sleep_for(std::chrono::milliseconds((int)(maxTime * 1100)));
