@@ -64,6 +64,6 @@ const json Config::getResearch() {
 }
 
 Config& Config::getInstance() {
-	static Config instance("../../MiniWar/config.json");
+	static Config instance("./config.json");
 	return instance;
 }
