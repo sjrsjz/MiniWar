@@ -18,6 +18,11 @@ RegionManager::RegionManager(int width, int height) : width(width), height(heigh
 			regions(x, y) = Region(x, y);
 		}
 	}
+
+	for (int i = 0; i <= 2; i++) {
+		Weapon weapon(i);
+		weapons.push_back(weapon);
+	}
 }
 
 RegionManager::~RegionManager() {

@@ -43,9 +43,6 @@
     <ClCompile Include="..\cpp\Logic\Weapon.cpp">
       <Filter>cpp\Logic</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\Logic\AI.cpp">
-      <Filter>cpp\Logic</Filter>
-    </ClCompile>
     <ClCompile Include="..\cpp\utils\GlobalTimer.cpp">
       <Filter>cpp\utils</Filter>
     </ClCompile>
@@ -143,6 +140,9 @@
     </ClInclude>
     <ClInclude Include="..\header\utils\GlobalTimer.h">
       <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\AI.h">
+      <Filter>headers\Logic</Filter>
     </ClInclude>
     <ClInclude Include="..\header\Engine.h">
       <Filter>headers</Filter>

@@ -7,13 +7,14 @@ Weapon::Weapon(int id) {
 	//		
 	Config& config = Config::getInstance();
 	std::string ID = std::to_string(id);
-	const json j = config.getConfig({ "weapon", ID});
+	const json j = config.getConfig({ "Weapon", ID});
 	this->damage = j["damage"].get<float>();
 	this->damageRange = j["damageRange"].get<float>();
 	this->attackSpeed = j["attackSpeed"].get<float>();
 	this->attackRange = std::make_tuple(j["attackRange"][0].get<float>(), j["attackRange"][1].get<float>());
 	this->cost = j["cost"].get<std::vector<int>>();
 	this->id = id;
+	this->AICost = j["AICost"].get<int>();
 }
 
 Weapon::~Weapon() {
@@ -33,7 +34,7 @@ float Weapon::getAttackSpeed(int level){
 	return this->attackSpeed;
 }
 
-std::tuple<float, float> Weapon::getAttackRange(int level){
+std::tuple<float, float> Weapon::getAttackRange(){
 	return this->attackRange;
 }
 
@@ -43,5 +44,9 @@ int Weapon::getId(){
 
 std::vector<int> Weapon::getCost() {
 	return this->cost;
+}
+
+int Weapon::getAICost() {
+	return this->AICost;
 }
 
