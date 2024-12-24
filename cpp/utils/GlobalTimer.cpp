@@ -1,4 +1,4 @@
-#include "GlobalTimer.h"
+#include "../../header/utils/GlobalTimer.h"
 
 GlobalTimer& GlobalTimer::getInstance()
 {
@@ -7,10 +7,12 @@ GlobalTimer& GlobalTimer::getInstance()
 }
 
 void GlobalTimer::start() {
+	is_running_ = true;
 	start_time_ = std::chrono::steady_clock::now();
 }
 
 void GlobalTimer::stop() {
+	is_running_ = false;
 	end_time_ = std::chrono::steady_clock::now();
 }
 

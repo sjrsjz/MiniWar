@@ -4,6 +4,7 @@
 #include "../../header/Logic/Weapon.h"
 
 #include "../../header/Logic/Army.h"
+#include "../../header/utils/GlobalTimer.h"
 
 #include <string>
 #include <cmath>
@@ -25,9 +26,10 @@ private:
 	int labor{};
 	int steel{};
 	int id{};
+	int labor_limit{};
 	std::tuple<int, int> capital = std::make_tuple(-1,-1);
 	std::vector<int> arm_level = {1,0,0,0};//0: army, 1: CM 2: MRBM 3: ICBM
-	std::vector<int> institution_level_limit = {1,1,1,1,0};//0: powerstation, 1: steelmill, 2: oilwell, 3: civilian_factory, 4: military_factory
+	std::vector<int> institution_level_limit = {1,1,1,1,1};//0: powerstation, 1: refinery, 2: steelfactory, 3: civilian_factory, 4: military_factory
 	RegionManager& regionmanager;
 	//double calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path);
 	//double calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end);
@@ -62,6 +64,6 @@ public:
 	void research(int selection);
 	void remove_building(Point location);
 
-	void update(Timer timer);
+	void update(GlobalTimer& timer);
 };
 

@@ -1,6 +1,7 @@
 #include "../../header/Logic/RegionManager.h"
 #include "../../header/Logic/Player.h"
 #include <vector>
+#include <random>
 
 
 RegionManager::RegionManager() {
@@ -41,14 +42,16 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 	double distance = 0.f;
 
 	Array<Region>& regions = get_regions();
-	int* player_region_martix = new int[regions.get_width() * regions.get_height()];
+	std::vector<int> player_region_matrix(regions.get_width() * regions.get_height());
 	for (int i = 0; i < regions.get_width(); i++) {
 		for (int j = 0; j < regions.get_height(); j++) {
-			if (regions(i, j).getOwner() == id) {
-				player_region_martix[i + j * regions.get_width()] = 1;
+			if (regions(i, j).getOwner() == id || regions(i,j).getOwner() == -1 || (i == end_x&&j==end_y)) {
+				player_region_matrix[i + j * regions.get_width()] = 1;
 			}
 			else
-				player_region_martix[i + j * regions.get_width()] = 0;
+			{
+				player_region_matrix[i + j * regions.get_width()] = 0;
+			}
 		}
 	}
 
@@ -98,14 +101,14 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 			up = false;
 		}
 		if (up) {
-			if (player_region_martix[temp_x + (temp_y + 1) * regions.get_width()] == 1) {
+			if (player_region_matrix[temp_x + (temp_y + 1) * regions.get_width()] == 1) {
 				cost_list[0] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
 			}
 			else {
 				cost_list[0] = NOT_AVALIABLE;
 			}
 			if (left) {
-				if (player_region_martix[temp_x - 1 + (temp_y + 1) * regions.get_width()] == 1) {
+				if (player_region_matrix[temp_x - 1 + (temp_y + 1) * regions.get_width()] == 1) {
 					cost_list[1] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
 				}
 				else {
@@ -113,7 +116,7 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 				}
 			}
 			if (right) {
-				if (player_region_martix[temp_x + 1 + (temp_y + 1) * regions.get_width()] == 1) {
+				if (player_region_matrix[temp_x + 1 + (temp_y + 1) * regions.get_width()] == 1) {
 					cost_list[2] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
 				}
 				else {
@@ -122,14 +125,14 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 			}
 		}
 		if (down) {
-			if (player_region_martix[temp_x + (temp_y - 1) * regions.get_width()] == 1) {
+			if (player_region_matrix[temp_x + (temp_y - 1) * regions.get_width()] == 1) {
 				cost_list[5] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
 			}
 			else {
 				cost_list[5] = NOT_AVALIABLE;
 			}
 			if (left) {
-				if (player_region_martix[temp_x - 1 + (temp_y - 1) * regions.get_width()] == 1) {
+				if (player_region_matrix[temp_x - 1 + (temp_y - 1) * regions.get_width()] == 1) {
 					cost_list[6] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
 				}
 				else {
@@ -137,7 +140,7 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 				}
 			}
 			if (right) {
-				if (player_region_martix[temp_x + 1 + (temp_y - 1) * regions.get_width()] == 1) {
+				if (player_region_matrix[temp_x + 1 + (temp_y - 1) * regions.get_width()] == 1) {
 					cost_list[7] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
 				}
 				else {
@@ -146,7 +149,7 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 			}
 		}
 		if (left) {
-			if (player_region_martix[temp_x - 1 + temp_y * regions.get_width()] == 1) {
+			if (player_region_matrix[temp_x - 1 + temp_y * regions.get_width()] == 1) {
 				cost_list[3] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
 			}
 			else {
@@ -154,7 +157,7 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 			}
 		}
 		if (right) {
-			if (player_region_martix[temp_x + 1 + temp_y * regions.get_width()] == 1) {
+			if (player_region_matrix[temp_x + 1 + temp_y * regions.get_width()] == 1) {
 				cost_list[4] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
 			}
 			else {
@@ -211,7 +214,7 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 			distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y + 1));
 			break;
 		}
-		player_region_martix[temp_x + temp_y * regions.get_width()] = 0;
+		player_region_matrix[temp_x + temp_y * regions.get_width()] = 0;
 	}
 	return distance;
 }
@@ -232,20 +235,20 @@ Player& RegionManager::get_player() {
 	return player;
 }
 
-void RegionManager::move_army(int amount, double time, std::vector<std::tuple<int, int>>& path) {
-	MovingArmy army;
-	army.amount = amount;
-	army.time = time;
-	Region end_region = get_region(std::get<0>(path.back()), std::get<1>(path.back()));
+//void RegionManager::move_army(int amount, double time, std::vector<std::tuple<int, int>>& path) {
+//	MovingArmy army;
+//	army.amount = amount;
+//	army.time = time;
+//	Region end_region = get_region(std::get<0>(path.back()), std::get<1>(path.back()));
+//
+//	army.path = path;
+//	moving_armies.push(army);
+//	//count time
+//	//if time is up, move
+//	end_region.addArmy(amount);
+//}
 
-	army.path = path;
-	moving_armies.push(army);
-	//count time
-	//if time is up, move
-	end_region.addArmy(amount);
-}
-
-void RegionManager::move_army(Point start, Point end, int amount) {
+double RegionManager::move_army(Point start, Point end, int amount) {
 	std::vector<std::tuple<int, int>> path;
 
 	double distance = calculate_distance(start, end, path);
@@ -266,14 +269,15 @@ void RegionManager::move_army(Point start, Point end, int amount) {
 	start_region.removeArmy(amount);
 
 	MovingArmy army;
+	army.owner_id = start_region.getOwner();
 	army.amount = amount;
-	army.time = time;
+	army.time = current_time + time;
 	army.path = path;
 	moving_armies.push(army);
 
 	//count time
 	//if time is up, move
-	end_region.addArmy(amount);
+	return time;
 }
 
 void RegionManager::attack_region_missle(int weapon_id, Point start, Point end, double time, int damage) {
@@ -281,7 +285,7 @@ void RegionManager::attack_region_missle(int weapon_id, Point start, Point end, 
 	Region& end_region = get_region(end.getX(), end.getY());
 	MovingMissle missle;
 	missle.damage = damage;
-	missle.time = time;
+	missle.time = current_time + time;
 	missle.start_point = std::make_tuple(start.getX(), start.getY());
 	missle.end_point = std::make_tuple(end.getX(), end.getY());
 	moving_missles.push(missle);
@@ -289,35 +293,46 @@ void RegionManager::attack_region_missle(int weapon_id, Point start, Point end, 
 	//if time is up, attack
 	//if time is up, remove missle
 
-	int rest_hp = end_region.getHp() - damage;
-	if (rest_hp <= 0) {
-		end_region.setOwner(-1);
-		end_region.setHp(0);
-		end_region.getWeapons().clear();
-		clear_building(end_region);
-	}
-	else {
-		end_region.setHp(rest_hp);
-	}
+	//int rest_hp = end_region.getHp() - damage;
+	//if (rest_hp <= 0) {
+	//	end_region.setOwner(-1);
+	//	end_region.setHp(0);
+	//	end_region.getWeapons().clear();
+	//	clear_building(end_region);
+	//}
+	//else {
+	//	end_region.setHp(rest_hp);
+	//}
 }
 
 void RegionManager::attack_region_army(Point start, Point end, int amount) {
+	std::vector<std::tuple<int, int>> path;
+	double distance = calculate_distance(start, end, path);
+
 	Region& start_region = get_region(start.getX(), start.getY());
 	Region& end_region = get_region(end.getX(), end.getY());
+
+	double time = distance / start_region.getArmy().getSpeed();
+
 	MovingArmy army;
 	army.amount = amount;
+	army.path = path;
+	army.time = current_time + time;
+	army.owner_id = start_region.getOwner();
+
+	start_region.removeArmy(amount);
 	moving_armies.push(army);
 	
 	//count time
 	//if time is up, attack
 	//if time is up, remove army
 	
-	int rest_army = amount - end_region.getArmy().getForce();
+	/*int rest_army = amount - end_region.getArmy().getForce();
 	end_region.setOwner(start_region.getOwner());
 	end_region.getArmy().removeArmy(end_region.getArmy().getForce());
 	end_region.getArmy().addArmy(rest_army);
 	end_region.getWeapons().clear();
-	clear_building(end_region);
+	clear_building(end_region);*/
 }
 
 Array<Region>& RegionManager::get_regions() {
@@ -334,4 +349,115 @@ RegionManager& RegionManager::getInstance() {
 }
 void RegionManager::clear_building(Region& region) {
 	region.getBuilding().remove();
+}
+
+void RegionManager::update(GlobalTimer& timer) {
+	current_time += timer.get_elapsed_time();
+	while (!moving_armies.empty() && moving_armies.top().time <= current_time) {
+		MovingArmy army = moving_armies.top();
+		moving_armies.pop();
+		Region& end_region = get_region(std::get<0>(army.path.back()), std::get<1>(army.path.back()));
+		Region& start_region = get_region(std::get<0>(army.path.front()), std::get<1>(army.path.front()));
+		if (end_region.getOwner() == start_region.getOwner())
+		{
+			end_region.addArmy(army.amount);
+		}
+		else{
+			int rest_army = army.amount - end_region.getArmy().getForce();
+			end_region.setOwner(start_region.getOwner());
+			end_region.getArmy().removeArmy(end_region.getArmy().getForce());
+			end_region.getArmy().addArmy(rest_army);
+			end_region.getWeapons().clear();
+			clear_building(end_region);
+		}
+	}
+
+	while (!moving_missles.empty() && moving_missles.top().time <= current_time) {
+		MovingMissle missle = moving_missles.top();
+		moving_missles.pop();
+		Region& end_region = get_region(std::get<0>(missle.end_point), std::get<1>(missle.end_point));
+		int rest_hp = end_region.getHp() - missle.damage;
+		if (rest_hp <= 0) {
+			end_region.setOwner(-1);
+			std::random_device rd;
+			std::mt19937 gen(rd());
+			std::uniform_int_distribution<> dis(200, 300);
+			end_region.setHp(dis(gen));
+			end_region.getWeapons().clear();
+			clear_building(end_region);
+		}
+		else {
+			end_region.setHp(rest_hp);
+		}
+	}
+}
+
+void RegionManager::calculate_delta_resources(std::vector<int> delta_resourcce, double delta_t, int player_id) {
+	int owned_regions = 0;
+	Config& configer = Config::getInstance();
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < height; j++) {
+			Region& region = get_region(i, j);
+			int PowerStation_product = configer.getConfig({ "Building","PowerStation","Product" }).template get<std::vector<int>>()[3];
+			int Refinery_product = configer.getConfig({ "Building","Refinery","Product" }).template get<std::vector<int>>()[1];
+			int SteelFactory_product = configer.getConfig({ "Building","SteelFactory","Product" }).template get<std::vector<int>>()[2];
+			int CivilFactory_product = configer.getConfig({ "Building","CivilFactory","Product" }).template get<std::vector<int>>()[0];
+			float UpLevelFactor1 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<float>>()[0];
+			float UpLevelFactor2 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<float>>()[1];
+			if (region.getOwner() == player_id) {
+				owned_regions++;
+				if (region.getBuilding().getName() != "none") {
+					if (region.getBuilding().getName() == "PowerStation") {
+						int delta = PowerStation_product * delta_t;
+						if (region.getBuilding().getLevel() == 1) {
+							delta_resourcce[3] += delta;
+						}
+						else if (region.getBuilding().getLevel() == 2) {
+							delta_resourcce[3] += delta * UpLevelFactor1;
+						}
+						else if (region.getBuilding().getLevel() == 3) {
+							delta_resourcce[3] += delta * UpLevelFactor1 * UpLevelFactor2;
+						}
+					}
+					else if (region.getBuilding().getName() == "Refinery") {
+						int delta = Refinery_product * delta_t;
+						if (region.getBuilding().getLevel() == 1) {
+							delta_resourcce[1] += delta;
+						}
+						else if (region.getBuilding().getLevel() == 2) {
+							delta_resourcce[1] += delta * UpLevelFactor1;
+						}
+						else if (region.getBuilding().getLevel() == 3) {
+							delta_resourcce[1] += delta * UpLevelFactor1 * UpLevelFactor2;
+						}
+					}
+					else if (region.getBuilding().getName() == "SteelFactory") {
+						int delta = SteelFactory_product * delta_t;
+						if (region.getBuilding().getLevel() == 1) {
+							delta_resourcce[2] += delta;
+						}
+						else if (region.getBuilding().getLevel() == 2) {
+							delta_resourcce[2] += delta * UpLevelFactor1;
+						}
+						else if (region.getBuilding().getLevel() == 3) {
+							delta_resourcce[2] += delta * UpLevelFactor1 * UpLevelFactor2;
+						}
+					}
+					else if (region.getBuilding().getName() == "CivilFactory") {
+						int delta = CivilFactory_product * delta_t;
+						if (region.getBuilding().getLevel() == 1) {
+							delta_resourcce[0] += delta;
+						}
+						else if (region.getBuilding().getLevel() == 2) {
+							delta_resourcce[0] += delta * UpLevelFactor1;
+						}
+						else if (region.getBuilding().getLevel() == 3) {
+							delta_resourcce[0] += delta * UpLevelFactor1 * UpLevelFactor2;
+						}
+					}
+				}
+			}
+		}
+	}
+	delta_resourcce[4] = owned_regions * 30;
 }

@@ -22,6 +22,7 @@
     <ClInclude Include="..\header\ByteArray.h" />
     <ClInclude Include="..\header\Camera.h" />
     <ClInclude Include="..\header\debug.h" />
+    <ClInclude Include="..\header\Engine.h" />
     <ClInclude Include="..\header\globals.h" />
     <ClInclude Include="..\header\Logic\Building.h" />
     <ClInclude Include="..\header\Logic\Player.h" />
@@ -51,6 +52,7 @@
     <ClInclude Include="..\include\linmath.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\cpp\Engine.cpp" />
     <ClCompile Include="..\cpp\globals.cpp" />
     <ClCompile Include="..\cpp\Logic\AI.cpp" />
     <ClCompile Include="..\cpp\Logic\Army.cpp" />

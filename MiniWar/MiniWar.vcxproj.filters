@@ -49,6 +49,9 @@
     <ClCompile Include="..\cpp\utils\GlobalTimer.cpp">
       <Filter>cpp\utils</Filter>
     </ClCompile>
+    <ClCompile Include="..\cpp\Engine.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\Camera.h">
@@ -140,6 +143,9 @@
     </ClInclude>
     <ClInclude Include="..\header\utils\GlobalTimer.h">
       <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Engine.h">
+      <Filter>headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

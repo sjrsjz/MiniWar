@@ -230,35 +230,35 @@ int Player::get_capital_y() {
 
 void Player:: gold_cost(int cost){
     if (gold < cost){
-        throw "Not enough gold";
+        throw new std::exception("Not enough gold");
     }
     gold -= cost;
 }
 
 void Player:: oil_cost(int cost){
     if (oil < cost){
-        throw "Not enough oil";
+        throw new std::exception("Not enough oil");
     }
     oil -= cost;
 }
 
 void Player:: electricity_cost(int cost){
     if (electricity < cost){
-        throw "Not enough electricity";
+        throw new std::exception("Not enough electricity");
     }
     electricity -= cost;
 }
 
 void Player:: labor_cost(int cost){
     if (labor < cost){
-        throw "Not enough labor";
+        throw new std::exception("Not enough labor");
     }
     labor -= cost;
 }
 
 void Player:: steel_cost(int cost){
     if (steel < cost){
-        throw "Not enough steel";
+        throw new std::exception("Not enough steel");
     }
     steel -= cost;
 }
@@ -285,8 +285,8 @@ void Player:: add_steel(int amount){
 
 int Player::get_building_level_limit(std::string name) {
     if (name == "PowerStation") return 0;
-    if (name == "SteelFactory") return 1;
-	if (name == "Refinery") return 2;
+	if (name == "Refinery") return 1;
+    if (name == "SteelFactory") return 2;
 	if (name == "CivilFactory") return 3;
 	if (name == "MilitaryFactory") return 4;
 	return -1;
@@ -358,6 +358,19 @@ void Player::build(std::string building_name, Point location) {
 		throw "Already has a building";
 	}
     //wait for configure.h complete
+	Config& configer = Config::getInstance();
+	json BuildCost = configer.getConfig({ "Building",building_name, "BuildCost" });
+	std::vector<int> Level1Cost = BuildCost.template get<std::vector<int>>();
+	if (gold < Level1Cost[0] || oil < Level1Cost[1] || steel < Level1Cost[2] || electricity < Level1Cost[3] || labor < Level1Cost[4]) {
+		throw "Not enough resource";
+	}
+	gold -= Level1Cost[0];
+	oil -= Level1Cost[1];
+	steel -= Level1Cost[2];
+	electricity -= Level1Cost[3];
+	labor -= Level1Cost[4];
+	Building building(building_name);
+	region.setBuilding(building);
 }
 
 void Player::upgrade_building(Point location) {
@@ -371,9 +384,30 @@ void Player::upgrade_building(Point location) {
 
 	//wait for configure.h complete
 	//make sure cost is enough, then uplevel
-    if (!region.getBuilding().upLevel(institution_level_limit[get_building_level_limit(region.getBuilding().getName())])) {
+    if (region.getBuilding().getLevel() == institution_level_limit[get_building_level_limit(region.getBuilding().getName())]) {
         throw "Already reach your level limit!";
     }
+
+	Config& configer = Config::getInstance();
+    switch (region.getBuilding().getLevel())
+    {
+    case 1:
+		gold -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Gold" }).get<int>();
+		oil -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Oil" }).get<int>();
+		steel -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Steel" }).get<int>();
+		electricity -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Electricity" }).get<int>();
+		labor -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Labor" }).get<int>();
+		break;  
+	case 2:
+		gold -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Gold" }).get<int>();
+		oil -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Oil" }).get<int>();
+		steel -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Steel" }).get<int>();
+		electricity -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Electricity" }).get<int>();
+		labor -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Labor" }).get<int>();
+		break;
+    }
+
+    region.getBuilding().upLevel(institution_level_limit[get_building_level_limit(region.getBuilding().getName())]);
 }
 
 void Player::remove_building(Point location) {
@@ -388,7 +422,7 @@ void Player::remove_building(Point location) {
 	//return the cost of the building
 
 	Building& building = region.getBuilding();
-	Config configer = Config::getInstance();
+	Config& configer = Config::getInstance();
     json BuildCost = configer.getConfig({ "Building",building.getName(), "BuildCost" });
     json UpLevelCost1 = configer.getConfig({ "Building",building.getName(), "UpLevelCost1" });
     json UpLevelCost2 = configer.getConfig({ "Building",building.getName(), "UpLevelCost2" });
@@ -402,21 +436,21 @@ void Player::remove_building(Point location) {
 		oil += std::floor(0.6 * Level1Cost[1]);
 		steel += std::floor(0.6 * Level1Cost[2]);
 		electricity += std::floor(0.6 * Level1Cost[3]);
-		labor += std::floor(0.6 * Level1Cost[4]);
+		labor += Level1Cost[4];
 		break;
     case 2:
         gold += std::floor(0.6 * (Level1Cost[0] + Level2Cost[0]));
         oil += std::floor(0.6 * (Level1Cost[1] + Level2Cost[1]));
         steel += std::floor(0.6 * (Level1Cost[2] + Level2Cost[2]));
         electricity += std::floor(0.6 * (Level1Cost[3] + Level2Cost[3]));
-        labor += std::floor(0.6 * (Level1Cost[4] + Level2Cost[4]));
+        labor += Level1Cost[4] + Level2Cost[4];
         break;
     case 3:
 		gold += std::floor(0.6 * (Level1Cost[0] + Level2Cost[0] + Level3Cost[0]));
 		oil += std::floor(0.6 * (Level1Cost[1] + Level2Cost[1] + Level3Cost[1]));
 		steel += std::floor(0.6 * (Level1Cost[2] + Level2Cost[2] + Level3Cost[2]));
 		electricity += std::floor(0.6 * (Level1Cost[3] + Level2Cost[3] + Level3Cost[3]));
-		labor += std::floor(0.6 * (Level1Cost[4] + Level2Cost[4] + Level3Cost[4]));
+		labor += Level1Cost[4] + Level2Cost[4] + Level3Cost[4];
 		break;
     }
 }
@@ -431,8 +465,243 @@ void Player::research(int selection) {
 	}
 	//wait for configure.h complete
 	//make sure cost is enough, then research
+    Config& configer = Config::getInstance();
+	switch (selection) {
+	case 0:
+		if (institution_level_limit[0] == 3) {
+			throw "Already reach max level";
+		}
+		else {
+			if (institution_level_limit[0] == 1) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","PowerStation" })[0]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","PowerStation" })[0];
+					institution_level_limit[0] = 2;
+				}
+			}
+			if (institution_level_limit[0] == 2) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","PowerStation" })[1]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","PowerStation" })[1];
+					institution_level_limit[0] = 3;
+				}
+			}
+		}
+		break;
+	case 1:
+		if (institution_level_limit[1] == 3) {
+			throw "Already reach max level";
+		}
+		else {
+			if (institution_level_limit[1] == 1) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","Refinery" })[0]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","Refinery" })[0];
+					institution_level_limit[1] = 2;
+				}
+			}
+			if (institution_level_limit[1] == 2) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","Refinery" })[1]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","Refinery" })[1];
+					institution_level_limit[1] = 3;
+				}
+			}
+		}
+		break;
+	case 2:
+		if (institution_level_limit[2] == 3) {
+			throw "Already reach max level";
+		}
+		else {
+			if (institution_level_limit[2] == 1) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","SteelFactory" })[0]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","SteelFactory" })[0];
+					institution_level_limit[2] = 2;
+				}
+			}
+			if (institution_level_limit[2] == 2) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","SteelFactory" })[1]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","SteelFactory" })[1];
+					institution_level_limit[2] = 3;
+				}
+			}
+		}
+		break;
+	case 3:
+		if (institution_level_limit[3] == 3) {
+			throw "Already reach max level";
+		}
+		else {
+			if (institution_level_limit[3] == 1) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","CivilFactory" })[0]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","CivilFactory" })[0];
+					institution_level_limit[3] = 2;
+				}
+			}
+			if (institution_level_limit[3] == 2) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","CivilFactory" })[1]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","CivilFactory" })[1];
+					institution_level_limit[3] = 3;
+				}
+			}
+		}
+		break;
+	case 4:
+		if (institution_level_limit[4] == 3) {
+			throw "Already reach max level";
+		}
+		else {
+			if (institution_level_limit[4] == 1) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","MilitaryFactory" })[0]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","MilitaryFactory" })[0];
+					institution_level_limit[4] = 2;
+				}
+			}
+			if (institution_level_limit[4] == 2) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","MilitaryFactory" })[1]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","MilitaryFactory" })[1];
+					institution_level_limit[4] = 3;
+				}
+			}
+		}
+		break;
+	case 5:
+		if (arm_level[0] == 3) {
+			throw "Already reach max level";
+		}
+		else {
+			if (arm_level[0] == 1) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","Army" })[0]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","Army" })[0];
+					arm_level[0] = 2;
+				}
+			}
+			if (arm_level[0] == 2) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","Army" })[1]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","Army" })[1];
+					arm_level[0] = 3;
+				}
+			}
+		}
+		break;
+	case 6:
+		if (arm_level[1] == 3) {
+			throw "Already reach max level";
+		}
+		else {
+			if (arm_level[1] == 1) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","0" })[0]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","0" })[0];
+					arm_level[1] = 2;
+				}
+			}
+			if (arm_level[1] == 2) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","0" })[1]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","0" })[1];
+					arm_level[1] = 3;
+				}
+			}	
+		}
+		break;
+	case 7 :
+		if (arm_level[2] == 3) {
+			throw "Already reach max level";
+		}
+		else {
+			if (arm_level[2] == 1) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" })[0]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" })[0];
+					arm_level[2] = 2;
+				}
+			}
+			if (arm_level[2] == 2) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" })[1]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" })[1];
+					arm_level[2] = 3;
+				}
+			}
+		}
+		break;
+	case 8:
+		if (arm_level[3] == 3) {
+			throw "Already reach max level";
+		}
+		else {
+			if (arm_level[3] == 1) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" })[0]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" })[0];
+					arm_level[3] = 2;
+				}
+			}
+			if (arm_level[3] == 2) {
+				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" })[1]) {
+					throw "Not enough gold";
+				}
+				else {
+					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" })[1];
+					arm_level[3] = 3;
+				}
+			}
+		}
+		break;
+	}
 }
 
-void Player:: update(Timer timer){
-
+void Player:: update(GlobalTimer& timer){
+	std::vector<int> delta_resource = { 0,0,0,0,0 };
+	double delta_t = timer.get_elapsed_time();
+	regionmanager.calculate_delta_resources(delta_resource, delta_t, id);
+	gold += delta_resource[0];
+	oil += delta_resource[1];
+	steel += delta_resource[2];
+	electricity += delta_resource[3];
+	labor_limit = delta_resource[4];
 }

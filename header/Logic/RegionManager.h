@@ -3,10 +3,12 @@
 #include "../../header/Logic/Region.h"
 #include "../../header/utils/Config.h"
 #include  "../../header/Logic/Player.h"
+#include "../../header/utils/GlobalTimer.h"
 #include <vector>
 #include <queue>
 
 struct MovingArmy {
+	int owner_id{ -1 };
 	int amount{};
 	double time{};
 	std::vector<std::tuple<int, int>> path{};
@@ -48,10 +50,12 @@ public:
 	int get_map_width();
 	int get_map_height();
 	Player& get_player();
-	void update();
+
+	void calculate_delta_resources(std::vector<int> delta_resource, double delta_t, int player_id);
+	void update(GlobalTimer& timer);
 
 	void move_army(int amount, double time, std::vector<std::tuple<int, int>>& path);
-	void move_army(Point start, Point end, int amount);
+	double move_army(Point start, Point end, int amount);
 	void attack_region_missle(int weapon_id, Point start, Point end, double time, int damage);
 	void attack_region_army(Point start, Point end, int amount);
 
