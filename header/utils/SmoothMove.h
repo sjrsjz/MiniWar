@@ -72,4 +72,13 @@ public:
     inline double getX() const {
         return x1;
     }
+
+	inline void clamp(double min, double max, double time) {
+		if (getX() < min) {
+			newEndPosition(min, time);
+		}
+		if (getX() > max) {
+			newEndPosition(max, time);
+		}
+	}
 };

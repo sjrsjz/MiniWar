@@ -1,0 +1,28 @@
+float rand(vec2 pos){
+    return fract(sin(dot(pos.xy*0.123 ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+
+vec3 ToRGB(float _A_,float _B_,vec3 _RGB_,vec3 _RGB2_){
+    float _co_=max(_A_+1.0- log(.5*log(_B_)),0);
+    _co_ = sqrt(_co_/256.0);
+    return _RGB2_*vec3(.5+.5*cos(6.2831*_co_+_RGB_.x),.5+.5*cos(6.2831*_co_+_RGB_.y),.5+.5*cos(6.2831*_co_+_RGB_.z));
+}
+vec2 cMul(vec2 a, vec2 b) {
+	return vec2(a.x*b.x-a.y*b.y,a.x*b.y+a.y*b.x);
+}
+vec2 cLog(vec2 a) {
+	float b =  atan(a.y,a.x);
+	if (b<0.0) b+=2.0*3.1415926535;
+	return vec2(log(length(a)),b);
+}
+vec2 cExp(vec2 z) {
+	return exp(z.x) * vec2(cos(z.y), sin(z.y));
+}
+vec2 cPow(vec2 z, vec2 a) {
+	return cExp(cMul(cLog(z), a));
+}
+vec2 cDiv(vec2 a, vec2 b){
+  float d = dot(b,b);
+  return vec2(dot(a,b),a.y*b.x-a.x*b.y)/d;
+}

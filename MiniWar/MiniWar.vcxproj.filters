@@ -186,6 +186,9 @@
     <ClInclude Include="..\header\points.h">
       <Filter>headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\bass\bass.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />

@@ -21,6 +21,7 @@
 #include "../include/imgui/imgui.h"
 #include "../include/imgui/imgui_impl_glfw.h"
 #include "../include/imgui/imgui_impl_opengl3.h"
+#include "../include/bass/bass.h"
 
 #include "../header/utils/ImageLoader.h"
 
@@ -40,45 +41,165 @@
 
 #include <cmath>
 
-mash s_mash;
-SmoothCamera camera;
-SmoothCamera scale_map_camera; // 缩放摄像机
-Timer timer(0);
+static mash s_mash;
+static SmoothCamera camera;
+static SmoothCamera scale_map_camera; // 缩放摄像机
+static Timer timer(0);
 
-GLuint vertex_shader, fragment_shader, s_main_game_pass_program;
-GLuint normal_gl_vertex_shader, normal_gl_fragment_shader, s_normal_gl_program;
+static GLuint vertex_shader, fragment_shader, s_main_game_pass_program;
+static GLuint normal_gl_vertex_shader, normal_gl_fragment_shader, s_normal_gl_program;
 
-GLuint points_vertex_shader, points_fragment_shader, s_points_program;
-PointRenderer point_renderer;
+static GLuint points_vertex_shader, points_fragment_shader, s_points_program;
+static PointRenderer point_renderer;
 
 
 // 直接渲染纹理
-GLuint direct_tex_vertex_shader, direct_tex_fragment_shader, s_direct_tex_program;
+static GLuint direct_tex_vertex_shader, direct_tex_fragment_shader, s_direct_tex_program;
 
-GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_program;
-mash map_mash;
-RegionSSBOBuffer map_info;
+static GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_program;
+static mash map_mash;
+static RegionSSBOBuffer map_info;
 
-SmoothMove map_rotation;
+static SmoothMove map_rotation;
 
-GLuint gaussian_blur_vertex_shader, gaussian_blur_fragment_shader, s_gaussian_blur_program;
+static GLuint gaussian_blur_vertex_shader, gaussian_blur_fragment_shader, s_gaussian_blur_program;
 
 
-GLFWwindow* glfw_win;
-bool keys[512];
-vec3 s_mouse_position;
+static GLFWwindow* glfw_win;
+static bool keys[512];
+static vec3 s_mouse_position;
 
-int s_current_selected_grid[2] = { -1,-1 };
-bool s_is_selected = false;
+static int s_current_selected_grid[2] = { -1,-1 };
+static bool s_is_selected = false;
+
+namespace GAMESOUND {
+	static const wchar_t* s_sound_background[] = {
+		L"resources/sounds/background/background1.mp3",
+		L"resources/sounds/background/background2.mp3",
+	};
+	static const wchar_t* s_sound_click[] = {
+		L"resources/sounds/interact/click1.mp3"
+	};
+	static const wchar_t* s_sound_popup[] = {
+		L"resources/sounds/interact/popup1.mp3"
+	};
+	static const wchar_t* s_sound_nuclear_launch[] = {
+		L"resources/sounds/interact/nuclear_launch.mp3"
+	};
+
+	static int s_sound_background_idx = 0;
+	static HSTREAM s_background_stream;
+
+	static const int MAX_SOUND_CHANNELS = 16;  // 最大同时播放数
+	static HSTREAM s_sound_streams[MAX_SOUND_CHANNELS];
+	static int s_current_sound_idx = 0;
+
+	void init_bass() {
+		if (!BASS_Init(-1, 44100, 0, 0, NULL)) {
+			DEBUG::DebugOutput("Bass Init Error");
+		}
+	}
+	void play_background() {
+		s_background_stream = BASS_StreamCreateFile(FALSE, s_sound_background[s_sound_background_idx], 0, 0, 0);
+		s_sound_background_idx = (s_sound_background_idx + 1) % (sizeof(s_sound_background) / sizeof(s_sound_background[0]));
+		if (s_background_stream) {
+			BASS_ChannelPlay(s_background_stream, FALSE);
+		}
+	}
+	void check_if_need_play_next() {
+		if (!BASS_ChannelIsActive(s_background_stream)) {
+			BASS_StreamFree(s_background_stream);
+			play_background();
+
+		}
+	}
+	void release() {
+		// 释放背景音乐
+		if (s_background_stream) {
+			BASS_StreamFree(s_background_stream);
+		}
+		// 释放所有音效
+		for (int i = 0; i < MAX_SOUND_CHANNELS; i++) {
+			if (s_sound_streams[i]) {
+				BASS_StreamFree(s_sound_streams[i]);
+			}
+		}
+		BASS_Free();
+	}
+	void play_click_sound() {
+		// 释放已经播放完的音效
+		if (s_sound_streams[s_current_sound_idx] &&
+			!BASS_ChannelIsActive(s_sound_streams[s_current_sound_idx])) {
+			BASS_StreamFree(s_sound_streams[s_current_sound_idx]);
+		}
+
+		// 创建新的音效流
+		int rand_idx = rand() % (sizeof(s_sound_click) / sizeof(s_sound_click[0]));
+		s_sound_streams[s_current_sound_idx] = BASS_StreamCreateFile(
+			FALSE, s_sound_click[rand_idx], 0, 0, 0);
+
+		if (s_sound_streams[s_current_sound_idx]) {
+			BASS_ChannelSetAttribute(s_sound_streams[s_current_sound_idx],
+				BASS_ATTRIB_VOL, 1.0f);  // 设置音量
+			BASS_ChannelPlay(s_sound_streams[s_current_sound_idx], FALSE);
+		}
+
+		// 循环使用通道
+		s_current_sound_idx = (s_current_sound_idx + 1) % MAX_SOUND_CHANNELS;
+	}
+	void play_popup_sound() {
+		// 释放已经播放完的音效
+		if (s_sound_streams[s_current_sound_idx] &&
+			!BASS_ChannelIsActive(s_sound_streams[s_current_sound_idx])) {
+			BASS_StreamFree(s_sound_streams[s_current_sound_idx]);
+		}
+
+		// 创建新的音效流
+		int rand_idx = rand() % (sizeof(s_sound_popup) / sizeof(s_sound_popup[0]));
+		s_sound_streams[s_current_sound_idx] = BASS_StreamCreateFile(
+			FALSE, s_sound_popup[rand_idx], 0, 0, 0);
+
+		if (s_sound_streams[s_current_sound_idx]) {
+			BASS_ChannelSetAttribute(s_sound_streams[s_current_sound_idx],
+				BASS_ATTRIB_VOL, 1.0f);  // 设置音量
+			BASS_ChannelPlay(s_sound_streams[s_current_sound_idx], FALSE);
+		}
+
+		// 循环使用通道
+		s_current_sound_idx = (s_current_sound_idx + 1) % MAX_SOUND_CHANNELS;
+	}
+
+	void play_nuclear_launch_sound() {
+		// 释放已经播放完的音效
+		if (s_sound_streams[s_current_sound_idx] &&
+			!BASS_ChannelIsActive(s_sound_streams[s_current_sound_idx])) {
+			BASS_StreamFree(s_sound_streams[s_current_sound_idx]);
+		}
+
+		// 创建新的音效流
+		int rand_idx = rand() % (sizeof(s_sound_nuclear_launch) / sizeof(s_sound_nuclear_launch[0]));
+		s_sound_streams[s_current_sound_idx] = BASS_StreamCreateFile(
+			FALSE, s_sound_nuclear_launch[rand_idx], 0, 0, 0);
+
+		if (s_sound_streams[s_current_sound_idx]) {
+			BASS_ChannelSetAttribute(s_sound_streams[s_current_sound_idx],
+				BASS_ATTRIB_VOL, 1.0f);  // 设置音量
+			BASS_ChannelPlay(s_sound_streams[s_current_sound_idx], FALSE);
+		}
+
+		// 循环使用通道
+		s_current_sound_idx = (s_current_sound_idx + 1) % MAX_SOUND_CHANNELS;
+	}
+}
 
 namespace GAMESTATUS {
-	bool s_in_game = false;
-	bool s_enable_control = false;
+	static bool s_in_game = false;
+	static bool s_enable_control = false;
 }
 
 namespace LEVELDATA {
-	const char* s_levels[] = { u8"简单(16x16)", u8"普通(32x32)", u8"困难(64x64)", u8"噩梦(128x128)"};
-	enum Level {
+	static const char* s_levels[] = { u8"简单(16x16)", u8"普通(32x32)", u8"困难(64x64)", u8"噩梦(128x128)"};
+	static enum Level {
 		EASY,
 		NORMAL,
 		HARD,
@@ -87,13 +208,14 @@ namespace LEVELDATA {
 }
 
 namespace TEXTURE {
-	GLuint s_image_radioactive;
-	GLuint s_image_attack_target;
-	GLuint s_image_scatter;
-	GLuint s_image_lightning;
+	static GLuint s_image_radioactive;
+	static GLuint s_image_attack_target;
+	static GLuint s_image_scatter;
+	static GLuint s_image_lightning;
+	static GLuint s_image_guard;
 }
 
-bool s_pause_rendering = false;
+static bool s_pause_rendering = false;
 
 void glfwErrorCallBack(int error, const char* str);
 void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int mods);
@@ -103,7 +225,7 @@ void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void KeyProcess();
 void KeyRelease(int key);
 
-enum SelectedWeapon {
+static enum SelectedWeapon {
 	NONE, // 空
 	NUCLEAR_MISSILE, // 核导弹
 	ARMY, // 军队
@@ -111,9 +233,9 @@ enum SelectedWeapon {
 } s_selected_weapon;
 
 namespace UIFonts {
-	ImFont* default_font;
-	ImFont* menu_font;
-	ImFont* large_font;
+	static ImFont* default_font;
+	static ImFont* menu_font;
+	static ImFont* large_font;
 }
 inline ImVec2 operator+(const ImVec2& a, const ImVec2& b) {
 	return ImVec2(a.x + b.x, a.y + b.y);
@@ -127,7 +249,12 @@ inline ImVec2 operator*(const ImVec2& v, float f) {
 	return ImVec2(v.x * f, v.y * f);
 }
 
-class TechTreeGui {
+inline ImVec2 normalize(const ImVec2& v) {
+	float len = sqrt(v.x * v.x + v.y * v.y);
+	return ImVec2(v.x / len, v.y / len);
+}
+
+static class TechTreeGui {
 	struct TechNode {
 		const char* name;
 		bool unlocked;
@@ -135,22 +262,32 @@ class TechTreeGui {
 		ImVec2 pos;                    // 节点位置
 	};
 
+	SmoothMove tree_offset_X{};
+	SmoothMove tree_offset_Y{};
+
 	class TechTree {
 	public:
 		std::vector<TechNode> nodes;
 		bool align_center = true;
-		void draw(ImGuiIO& io, double alpha) {
+		void draw(ImGuiIO& io, double alpha, ImVec2 tree_offset) {
 			ImGui::Begin("Tech Tree");
 
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
-			ImVec2 offset = align_center ? ImVec2(io.DisplaySize.x / 2, io.DisplaySize.y / 2) : ImGui::GetCursorScreenPos();
+			ImVec2 offset = tree_offset + (align_center ? ImVec2(io.DisplaySize.x / 2, io.DisplaySize.y / 2) : ImGui::GetCursorScreenPos());
 
 			// 绘制连线
 			for (size_t i = 0; i < nodes.size(); i++) {
 				for (int dep : nodes[i].dependencies) {
-					ImVec2 p1 = offset + nodes[dep].pos;
-					ImVec2 p2 = offset + nodes[i].pos;
-					draw_list->AddLine(p1, p2, IM_COL32(200, 200, 200, 128 * alpha), 5.0f);
+					auto text_size_1 = ImGui::CalcTextSize(nodes[i].name);
+					auto text_size_2 = ImGui::CalcTextSize(nodes[dep].name);
+					float r1 = fmaxf(text_size_1.x, text_size_1.y) / 2 + 10;
+					float r2 = fmaxf(text_size_2.x, text_size_2.y) / 2 + 10;
+					ImVec2 p1 = offset + nodes[dep].pos + normalize(nodes[i].pos - nodes[dep].pos) * r2;
+					ImVec2 p2 = offset + nodes[i].pos + normalize(nodes[dep].pos - nodes[i].pos) * r1;
+					if (nodes[dep].unlocked && nodes[i].unlocked)
+						draw_list->AddLine(p1, p2, IM_COL32(100, 255, 100, 128 * alpha), 5.0f);
+					else
+						draw_list->AddLine(p1, p2, IM_COL32(200, 200, 200, 128 * alpha), 5.0f);
 				}
 			}
 
@@ -160,8 +297,8 @@ class TechTreeGui {
 				ImGui::SetCursorScreenPos(offset + node.pos);
 
 				ImU32 node_color = node.unlocked ?
-					IM_COL32(100, 255, 100, 128 * alpha) :
-					IM_COL32(255, 100, 100, 128 * alpha);
+					IM_COL32(100, 255, 100, 64 * alpha) :
+					IM_COL32(255, 100, 100, 64 * alpha);
 				// 居中显示名称
 				auto text_size = ImGui::CalcTextSize(node.name);
 
@@ -184,6 +321,7 @@ class TechTreeGui {
 						}
 					}
 					if (unlock) {
+						GAMESOUND::play_click_sound();
 						node.unlocked = true;
 					}
 				}
@@ -203,28 +341,53 @@ public:
 	TechTreeGui() {
 		show.setTotalDuration(0.25);
 		show.setStartPosition(0, 0);
-		// 辐射状科技树
-		tree.nodes.push_back({ "Tech.0.0", true, {} , ImVec2(0,0)});
-		
-		// level1
-		tree.nodes.push_back({ "Tech.1.1", false, {0} , ImVec2(200,0) });
-		tree.nodes.push_back({ "Tech.1.2", false, {0} , ImVec2(0,200) });
-		tree.nodes.push_back({ "Tech.1.3", false, {0} , ImVec2(-200,0) });
-		tree.nodes.push_back({ "Tech.1.4", false, {0} , ImVec2(0,-200) });
+		tree_offset_X.setTotalDuration(0.125);
+		tree_offset_Y.setTotalDuration(0.125);
+		tree_offset_X.setStartPosition(0, 0);
+		tree_offset_Y.setStartPosition(0, 0);
 
-		// level2
-		// 2.x -> 1.1
-		tree.nodes.push_back({ "Tech.2.1", false, {1} , ImVec2(400,0) });
-		tree.nodes.push_back({ "Tech.2.2", false, {1} , ImVec2(200,200) });
-		tree.nodes.push_back({ "Tech.2.3", false, {1} , ImVec2(0,400) });
-		
-		tree.nodes.push_back({ "Tech.2.4", false, {3} , ImVec2(-200,200) });
-		tree.nodes.push_back({ "Tech.2.5", false, {4} , ImVec2(-400,0) });
-		tree.nodes.push_back({ "Tech.2.6", false, {4} , ImVec2(-200,-200) });
+		tree.nodes.push_back({ u8"发电站", true, {} , ImVec2(-450,400)});
+		tree.nodes.push_back({ u8"炼油厂", true, {} , ImVec2(-500,200) });
+		tree.nodes.push_back({ u8"炼钢厂", true, {} , ImVec2(-600,0) });
+		tree.nodes.push_back({ u8"民生工厂", true, {} , ImVec2(-500,-200) });
+		tree.nodes.push_back({ u8"军事工厂", true, {} , ImVec2(-450,-400) });
 
+		tree.nodes.push_back({ u8"研究所",false, {0, 1, 2, 3, 4, 25}, ImVec2(0,0) });
 
+		tree.nodes.push_back({ u8"发电站二级", false, {5}, ImVec2(300,400) });
+		tree.nodes.push_back({ u8"炼油厂二级", false, {5}, ImVec2(400,200) });
+		tree.nodes.push_back({ u8"炼钢厂二级", false, {5}, ImVec2(500,0) });
+		tree.nodes.push_back({ u8"民生工厂二级", false, {5}, ImVec2(400,-200) });
+		tree.nodes.push_back({ u8"军事工厂二级", false, {5}, ImVec2(300,-400) });
 
+		// 三级
+		tree.nodes.push_back({ u8"发电站三级", false, {6}, ImVec2(600,400) });
+		tree.nodes.push_back({ u8"炼油厂三级", false, {7}, ImVec2(700,200) });
+		tree.nodes.push_back({ u8"炼钢厂三级", false, {8}, ImVec2(800,0) });
+		tree.nodes.push_back({ u8"民生工厂三级", false, {9}, ImVec2(700,-200) });
+		tree.nodes.push_back({ u8"军事工厂三级", false, {10}, ImVec2(600,-400) });
 
+		// 导弹
+		tree.nodes.push_back({ u8"短程核导弹", false, {5}, ImVec2(0,300) });
+		tree.nodes.push_back({ u8"中程核导弹", false, {16}, ImVec2(300,600) });
+		tree.nodes.push_back({ u8"长程核导弹", false, {17}, ImVec2(100,1000) });
+
+		// 短程2、3级
+		tree.nodes.push_back({ u8"短程二级", false, {16}, ImVec2(-100,450) });
+		tree.nodes.push_back({ u8"短程三级", false, {19}, ImVec2(-100,600) });
+
+		// 中程2、3级
+		tree.nodes.push_back({ u8"中程二级", false, {17}, ImVec2(300,850) });
+		tree.nodes.push_back({ u8"中程三级", false, {21}, ImVec2(500,850) });
+
+		// 长程2、3级
+		tree.nodes.push_back({ u8"长程二级", false, {18}, ImVec2(100,1200) });
+		tree.nodes.push_back({ u8"长程三级", false, {23}, ImVec2(300,1200) });
+
+		// 军队
+		tree.nodes.push_back({ u8"军队", true, {}, ImVec2(-200,-400) });
+		tree.nodes.push_back({ u8"军队二级", false, {5}, ImVec2(0,-300) });
+		tree.nodes.push_back({ u8"军队三级", false, {26}, ImVec2(-100,-500) });
 
 	}
 	bool is_active() {
@@ -238,18 +401,45 @@ public:
 		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
 		ImGui::SetWindowPos(ImVec2(0, 0));
 
-		tree.draw(io, show.getX());
+		tree.draw(io, show.getX(), ImVec2(1000 * tree_offset_X.getX(), 1000 * tree_offset_Y.getX()));
 
 		ImGui::End();
 	}
 
 	void update(const Timer& timer) {
-		show.update(timer.getTime());
+		show.update_sin(timer.getTime());
+		
+
+		
+		tree_offset_X.update_sin(timer.getTime());
+		tree_offset_Y.update_sin(timer.getTime());
+
+		tree_offset_X.clamp(-1, 1, timer.getTime());
+		tree_offset_Y.clamp(-1, 1, timer.getTime());
+
+		if (is_active()) {
+			float speed = 50 * timer.dt;
+			if (keys[GLFW_KEY_W]) {
+				tree_offset_Y.newEndPosition(tree_offset_Y.getX() + speed, timer.getTime());
+			}
+			if (keys[GLFW_KEY_S]) {
+				tree_offset_Y.newEndPosition(tree_offset_Y.getX() - speed, timer.getTime());
+			}
+			if (keys[GLFW_KEY_A]) {
+				tree_offset_X.newEndPosition(tree_offset_X.getX() + speed, timer.getTime());
+			}
+			if (keys[GLFW_KEY_D]) {
+				tree_offset_X.newEndPosition(tree_offset_X.getX() - speed, timer.getTime());
+			}
+		}
 	}
 
 	void open(bool open, const Timer& timer) {
 		if (open) {
+			GAMESOUND::play_popup_sound();
 			show.newEndPosition(1, timer.getTime());
+			tree_offset_X.newEndPosition(0, timer.getTime());
+			tree_offset_Y.newEndPosition(0, timer.getTime());
 		}
 		else {
 			show.newEndPosition(0, timer.getTime());
@@ -264,29 +454,59 @@ public:
 } s_tech_tree_gui;
 
 
-class SelectedGui {
+static class SelectedGui {
 public:
 	int grid[2]{}; // 选中的格子
 	bool is_selected = false; // 是否选中
 	
+	SmoothMove shake;
+	
+	SelectedGui() {
+		shake.setTotalDuration(1);
+		shake.setStartPosition(0, 0);
+	}
+
 	void render_gui(ImGuiIO& io) {
+		if (shake.getX() > 1e-3) {
+			ImVec2 shake_offset = ImVec2(sin(shake.getX() * 50) * 10, (1 + sin(shake.getX() * 25)) * 10);
+			ImGui::SetNextWindowBgAlpha(0.5);
+			ImGui::Begin("Weapon Warning", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
+			ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, 0) + shake_offset);
+			ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 50));
+			ImGui::Text("Weapon Launched!!!");
+			ImGui::End();
+		}
+
+
 		if (!is_selected) return;
 		ImGui::SetNextWindowBgAlpha(0.5);
 		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
 		// 移动到最低端
+
 		ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, io.DisplaySize.y - 200));
 		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 200));
-
 
 		ImGui::Text("Selected Grid: %d, %d", grid[0], grid[1]);
 		ImGui::End();
 	}
 
+	void update(const Timer& timer) {
+		shake.update_sin(timer.getTime());
+		shake.newEndPosition(0, timer.getTime());
+
+	}
+
+	void shake_gui(const Timer& timer) {
+		shake.setStartPosition(1, timer.getTime());
+	}
+
 }s_selected_gui;
-class StatusGui {
+static class StatusGui {
 private:
 	SmoothMove resources_amount{};
 	SmoothMove resources_amount_back{};
+	SmoothMove occupation_amount{};
+	SmoothMove occupation_amount_back{}; // 已占有资源
 
 	void render_bar(ImGuiIO& io, const SmoothMove& f, const SmoothMove& b, const char* title, GLuint tex, int scale, const ImVec4& fc, const ImVec4& bc) {
 		ImGui::Image(tex, ImVec2(30, 30));
@@ -314,6 +534,10 @@ public:
 		{
 			resources_amount.setTotalDuration(0.125);
 			resources_amount_back.setTotalDuration(0.5);
+
+			occupation_amount.setTotalDuration(1);
+			occupation_amount_back.setTotalDuration(2);
+
 		}
 	}
 	void render_gui(ImGuiIO& io) {
@@ -323,26 +547,33 @@ public:
 
 		// 资源条
 		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5));
-		render_bar(io, resources_amount, resources_amount_back, u8"已占有:%d", TEXTURE::s_image_lightning, 100, ImVec4(1, 1, 1, 1), ImVec4(1, 0.25, 0.25, 0.5));
+		render_bar(io, occupation_amount, occupation_amount_back, u8"已占有:%d", TEXTURE::s_image_guard, 100, ImVec4(1, 1, 1, 1), ImVec4(1, 0.25, 0.25, 0.5));
 
 		ImGui::End();
 	}
 	void update(const Timer& timer) {
-		resources_amount.update(timer.getTime());
-		resources_amount_back.update(timer.getTime());
+		resources_amount.update_sin(timer.getTime());
+		resources_amount_back.update_sin(timer.getTime());
+		occupation_amount.update_sin(timer.getTime());
+		occupation_amount_back.update_sin(timer.getTime());
 	}
 
 	void set_resources_amout(double x, const Timer& timer) {
 		resources_amount.newEndPosition(x, timer.getTime());
 		resources_amount_back.newEndPosition(x, timer.getTime());
+		occupation_amount.newEndPosition(x, timer.getTime());
+		occupation_amount_back.newEndPosition(x, timer.getTime());
 	}
 	double get_resources_amount() {
 		return resources_amount.getX();
 	}
+	double get_occupation_amount() {
+		return occupation_amount.getX();
+	}
 
 }s_status_gui;
 
-struct LevelConfig {
+static struct LevelConfig {
 	int map_width = 16;
 	int map_height = 16;
 
@@ -377,6 +608,16 @@ void load_new_game(const LevelConfig& level_config) {
 	map_info.create_ssbo();
 	map_info.update();
 	DEBUG::DebugOutput("SSBO Created");
+
+
+	std::vector<Vertex> vertices;
+	for (int i = 0; i < 1000; i++) {
+		Vertex tmp = { (float)(rand() % 100) / 50 - 1, -0.62, (float)(rand() % 100) / 50 - 1, 1, 1, 0 };
+		vertices.push_back(tmp);
+	}
+
+	point_renderer.update(vertices);
+
 	GAMESTATUS::s_in_game = true;
 	GAMESTATUS::s_enable_control = true;
 	DEBUG::DebugOutput("Game loaded");
@@ -393,7 +634,7 @@ void exit_game() {
 
 
 
-class MenuGui {
+static class MenuGui {
 public:
 	enum GuiMode {
 		StartGame,
@@ -419,6 +660,7 @@ public:
 	void open_gui(bool open, const Timer& timer) {
 		this->open = open;
 		if (open) {
+			GAMESOUND::play_popup_sound();
 			x.newEndPosition(1, timer.getTime());
 		}
 		else {
@@ -497,6 +739,7 @@ public:
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 200));
 			if (ImGui::Button(u8"开始游戏", ImVec2(400, 100))) {
 				m_gui_mode = MenuGui::SelectLevel;
+				GAMESOUND::play_click_sound();
 			}
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 360));
 			if (ImGui::Button(u8"退出游戏", ImVec2(400, 100))) {
@@ -522,9 +765,10 @@ public:
 					ImGui::SameLine();
 
 					// 使用SpanAllColumns确保背景色占满整行
-					if (ImGui::Selectable(LEVELDATA::s_levels[n], is_selected,
-						ImGuiSelectableFlags_SpanAllColumns))
+					if (ImGui::Selectable(LEVELDATA::s_levels[n], is_selected, ImGuiSelectableFlags_SpanAllColumns)) {
+						GAMESOUND::play_click_sound();
 						LEVELDATA::s_selected_level = (LEVELDATA::Level)n;
+					}
 
 					if (is_selected)
 						ImGui::SetItemDefaultFocus();
@@ -536,6 +780,7 @@ public:
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 660));
 
 			if (ImGui::Button(u8"载入游戏", ImVec2(400, 100))) {
+				GAMESOUND::play_click_sound();
 				m_gui_mode = MenuGui::Pause;
 				switch (LEVELDATA::s_selected_level)
 				{
@@ -559,6 +804,7 @@ public:
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 820));
 
 			if (ImGui::Button(u8"返回主界面", ImVec2(400, 100))) {
+				GAMESOUND::play_click_sound();
 				m_gui_mode = MenuGui::StartGame;
 			}
 			ImGui::PopFont();
@@ -567,15 +813,18 @@ public:
 			ImGui::PushFont(UIFonts::large_font);
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 200));
 			if (ImGui::Button(u8"继续游戏", ImVec2(400, 100))) {
+				GAMESOUND::play_click_sound();
 				open_gui(false, timer);
 			}
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 360));
 			if (ImGui::Button(u8"返回主界面", ImVec2(400, 100))) {
+				GAMESOUND::play_click_sound();
 				exit_game();
 				m_gui_mode = MenuGui::StartGame;
 			}
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 520));
 			if (ImGui::Button(u8"退出游戏", ImVec2(400, 100))) {
+				GAMESOUND::play_click_sound();
 				exit_game();
 				glfwSetWindowShouldClose(glfw_win, true);
 			}
@@ -593,7 +842,7 @@ public:
 
 	}
 	void update(const Timer& timer) {
-		x.update(timer.getTime());
+		x.update_sin(timer.getTime());
 	}
 	bool is_open() const{
 		return open;
@@ -664,11 +913,13 @@ void render_imgui(ImGuiIO& io) {
 			// 显示格子信息
 			if (s_is_selected && s_current_selected_grid[0] == s_selected_gui.grid[0] && s_current_selected_grid[1] == s_selected_gui.grid[1]) {
 				s_selected_gui.is_selected = !s_selected_gui.is_selected;
+				GAMESOUND::play_click_sound();
 			}
 			else {
 				s_selected_gui.is_selected = s_is_selected;
 				s_selected_gui.grid[0] = s_current_selected_grid[0];
 				s_selected_gui.grid[1] = s_current_selected_grid[1];
+				GAMESOUND::play_click_sound();
 			}
 		}
 		// 检查鼠标是否移动
@@ -776,20 +1027,22 @@ void render_main_game_pass() {
 		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_mouse_selected"), -1, -1);
 	}
 
+	bool s_if_selected = s_selected_gui.is_selected;
+
 	// 核辐射标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, 10, s_selected_weapon == NUCLEAR_MISSILE && selected);
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, 10, s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_radioactive);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_radioactive"), 0);
 
 	// 攻击目标标识
-	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_attack_target"), gridX, gridY, s_selected_weapon == ARMY && selected);
+	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_attack_target"), gridX, gridY, s_selected_weapon == ARMY && s_if_selected);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_attack_target);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_attack_target"), 1);
 
 	// 散弹炸弹标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_scatter_target"), gridX, gridY, 20, s_selected_weapon == SCATTER_BOMB && selected);
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_scatter_target"), gridX, gridY, 20, s_selected_weapon == SCATTER_BOMB && s_if_selected);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_scatter);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_scatter_target"), 2);
@@ -804,6 +1057,9 @@ void render_main_game_pass() {
 }
 
 void prepare_render() {
+	GAMESOUND::check_if_need_play_next();
+
+
 	scale_map_camera.update(timer.getTime());
 	scale_map_camera.clampZ(-6, 0,timer.getTime());
 
@@ -811,11 +1067,12 @@ void prepare_render() {
 	camera.clampX(-5, 5, timer.getTime());
 	camera.clampZ(-6, 4, timer.getTime());
 
-	map_rotation.update(timer.getTime());
+	map_rotation.update_sin(timer.getTime());
 
 	s_menu_gui.update(timer);
 	s_status_gui.update(timer);
 	s_tech_tree_gui.update(timer);
+	s_selected_gui.update(timer);
 
 	GAMESTATUS::s_enable_control = !s_menu_gui.is_activitied() && !s_tech_tree_gui.is_open();
 }
@@ -1203,8 +1460,10 @@ void KeyRelease(int key) {
 	switch (key)
 	{
 	case GLFW_KEY_SPACE:
-		if (GAMESTATUS::s_enable_control)
-			s_selected_weapon = (SelectedWeapon)((s_selected_weapon + 1) % 4);
+		if (GAMESTATUS::s_enable_control) {
+			GAMESOUND::play_click_sound();
+			s_selected_weapon = (SelectedWeapon)((s_selected_weapon + 1) % 4);		
+		}
 		break;
 	case GLFW_KEY_F:
 		if (GAMESTATUS::s_enable_control)
@@ -1212,6 +1471,32 @@ void KeyRelease(int key) {
 		break;
 	case GLFW_KEY_T:
 		s_tech_tree_gui.open(!s_tech_tree_gui.is_open(), timer);
+		break;
+	case GLFW_KEY_E: // 发动攻击
+		if (GAMESTATUS::s_enable_control) {
+			if (s_selected_gui.is_selected) {
+				switch (s_selected_weapon)
+				{
+				case NUCLEAR_MISSILE:
+					DEBUG::DebugOutput("Nuclear Missile");
+					GAMESOUND::play_nuclear_launch_sound();
+
+					// do something
+					s_selected_gui.shake_gui(timer);
+					s_selected_gui.is_selected = false;
+					break;
+				case ARMY:
+					DEBUG::DebugOutput("Army");
+					break;
+				case SCATTER_BOMB:
+					DEBUG::DebugOutput("Scatter Bomb");
+					break;
+				default:
+					break;
+				}
+			}
+
+		}
 	default:
 		break;
 	}
@@ -1235,6 +1520,11 @@ bool compileShaders() {
 }
 
 void init() {
+	// 初始化
+	// BASS
+	
+	GAMESOUND::init_bass();
+
 	// 启用点精灵
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	glEnable(GL_POINT_SPRITE);
@@ -1273,16 +1563,11 @@ void init() {
 	TEXTURE::s_image_attack_target = LoadPNG("resources/textures/target.png");
 	TEXTURE::s_image_scatter = LoadPNG("resources/textures/scatter.png");
 	TEXTURE::s_image_lightning = LoadPNG("resources/textures/lightning.png");
+	TEXTURE::s_image_guard = LoadPNG("resources/textures/guard.png");
 	DEBUG::DebugOutput("Textures Loaded");
 	timer.setTime(glfwGetTime());
-
-	std::vector<Vertex> vertices;
-	for (int i = 0; i < 1000; i++) {
-		Vertex tmp = { (float)(rand() % 100) / 50 - 1, -0.62 + (float)(rand() % 100) / 50 - 1, (float)(rand() % 100) / 50 - 1, 1, 1, 0 };
-		vertices.push_back(tmp);
-	}
-
-	point_renderer.update(vertices);
+	// 启动背景音乐
+	GAMESOUND::play_background();
 }
 
 void destroy() {
@@ -1326,6 +1611,9 @@ void destroy() {
 	}
 	if (TEXTURE::s_image_lightning != GLFW_INVALID_VALUE) {
 		glDeleteTextures(1, &TEXTURE::s_image_lightning);
+	}
+	if (TEXTURE::s_image_guard != GLFW_INVALID_VALUE) {
+		glDeleteTextures(1, &TEXTURE::s_image_guard);
 	}
 }
 
