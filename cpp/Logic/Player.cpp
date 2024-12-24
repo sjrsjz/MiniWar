@@ -280,8 +280,8 @@ void Player:: add_electricity(int amount){
 }
 
 void Player:: add_labor(int amount){
-    ocupied_labor += amount; // not sure
-}
+    labor_limit += amount; 
+}// not sure
 
 void Player:: add_steel(int amount){
     steel += amount;
@@ -334,7 +334,7 @@ void Player:: move_army(Operation operation, int amount){
 		throw "Not enough army";
 	}
 
-	regionmanager.move_army(start, end, amount);
+	regionmanager.move_army(start, end, amount, arm_level[0]);
 }
 
 void Player::attack(Operation operation) {
@@ -370,7 +370,7 @@ void Player::attack(Operation operation) {
 	start_region.removeWeapon(weapon_id);
 
 	regionmanager.attack_region_missle(weapon_id, start, end, time, damage);
-}
+} //should detect if the weapon can reach the target
 
 void Player::build(Operation operation) {
 
@@ -503,13 +503,19 @@ void Player::remove_building(Operation operation) {
     }
 }
 
-void Player::research(Operation operation) {
-	Region& region = regionmanager.get_region(get_capital_x(), get_capital_y());
-    if (region.getOwner() != id) {
-		throw "Not your capital";
+void Player::set_research(Operation operation) {
+	Config& configer = Config::getInstance();
+	int cost = configer.getConfig({ "ResearchInstitution","BuildCost" }).get<int>();
+	if (gold < cost) {
+		throw "Not enough gold";
 	}
-    if (region.getBuilding().getName() != "ResearchInstitution") {
-		throw "No research center";
+	gold -= cost;
+	have_research_institution = true;
+}
+
+void Player::research(Operation operation) {
+	if (!have_research_institution) {
+		throw "Research institution not built";
 	}
 	//wait for configure.h complete
 	//make sure cost is enough, then research
@@ -750,6 +756,65 @@ void Player::research(Operation operation) {
 				}
 			}
 		}
+		break;
+	}
+}
+
+void Player::product(Operation operation) {
+	Point start = operation.getStart();
+	Point end = operation.getEnd();
+	Region& start_region = regionmanager.get_region(std::floor(start.getX()), std::floor(start.getY()));
+	Region& end_region = regionmanager.get_region(std::floor(end.getX()), std::floor(end.getY()));
+
+	if (start_region.getOwner() != id || end_region.getOwner() != id) {
+		throw "Not your region";
+	}
+	if (start_region.getBuilding().getName() != "MilitaryFactory") {
+		throw "No military factory";
+	}
+	Config& configer = Config::getInstance();
+	switch (operation.getOp())
+	{
+	case Operator::ProductArmy:
+		int cost = configer.getConfig({ "Army","cost" }).get<int>() * operation.getSize();
+		if (gold < cost) {
+			throw "Not enough gold";
+		}
+		gold -= cost;
+		end_region.addArmy(operation.getSize());
+		break;
+	case Operator::ProductWeapon0:
+		std::vector<int> cost0 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
+		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
+			throw "Not enough resource";
+		}
+		gold -= cost0[0];
+		oil -= cost0[1];
+		electricity -= cost0[2];
+		steel -= cost0[3];	
+		end_region.addWeapon(0);
+		break;
+	case Operator::ProductWeapon1:
+		std::vector<int> cost1 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
+		if (gold < cost1[0] || oil < cost1[1] || electricity < cost1[2] || steel < cost1[3] || labor_limit - ocupied_labor < cost1[4]) {
+			throw "Not enough resource";
+		}
+		gold -= cost0[0];
+		oil -= cost0[1];
+		electricity -= cost0[2];
+		steel -= cost0[3];
+		end_region.addWeapon(0);
+		break;
+	case Operator::ProductWeapon2:
+		std::vector<int> cost2 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
+		if (gold < cost2[0] || oil < cost2[1] || electricity < cost2[2] || steel < cost2[3] || labor_limit - ocupied_labor < cost2[4]) {
+			throw "Not enough resource";
+		}
+		gold -= cost0[0];
+		oil -= cost0[1];
+		electricity -= cost0[2];
+		steel -= cost0[3];
+		end_region.addWeapon(0);
 		break;
 	}
 }

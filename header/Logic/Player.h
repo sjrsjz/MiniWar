@@ -28,6 +28,7 @@ private:
 	int steel{};
 	int id{};
 	int labor_limit{};
+	bool have_research_institution = false;
 	std::tuple<int, int> capital = std::make_tuple(-1,-1);
 	std::vector<int> arm_level = {1,0,0,0};//0: army, 1: CM 2: MRBM 3: ICBM
 	std::vector<int> institution_level_limit = {1,1,1,1,1};//0: powerstation, 1: refinery, 2: steelfactory, 3: civilian_factory, 4: military_factory
@@ -63,8 +64,10 @@ public:
 
 	void build(Operation operation);
 	void upgrade_building(Operation operation);
+	void set_research(Operation operation);
 	void research(Operation operation);
 	void remove_building(Operation operation);
+	void product(Operation operation);
 
 	//update function
 	void update(GlobalTimer& timer);
