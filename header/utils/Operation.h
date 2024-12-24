@@ -6,12 +6,23 @@ enum class Operator {
 	Pause,
 	Start,
 	MapSet,
-	SetBuilding,
+	setPowerStation,
+	setRefinery,
+	setSteelFactory,
+	setCivilFactory,
+	setMilitaryFactory,
 	RemoveBuilding,
 	SetResearch,
-	BuildingUpLevel,
-	ResearchUpLevel,
-	WeaponUpLevel,
+	BuildingLevel, //region上的建筑升级
+	PowerStationUpLevel,
+	RefineryUpLevel,
+	SteelFactoryUpLevel,
+	CivilFactoryUpLevel,
+	MilitaryFactoryUpLevel,
+	ArmyUpLevel,
+	Weapon0UpLevel,
+	Weapon1UpLevel,
+	Weapon2UpLevel,
 	Product,
 	ArmyMove,
 	Weapon0Attack,
@@ -25,19 +36,22 @@ class Operation{
 	Point end;
 	Point cur;
 	Operator op;
+	int id{};
 	int size{};
 	float radius{};
 public:
 	Operation();
 	Operation(Operator op);
-	Operation(int size, Operator op);
+	Operation(int id, Operator op);
 	Operation(Point cur, Operator op);
 	Operation(Point cur, float radius, Operator op);
 	Operation(Point start, Point end, Operator op);
+	Operation(Point start, Point end, int size, Operator op);
 	Point getStart();	
 	Point getEnd();
 	Point getCur();
 	Operator getOp();
 	int getSize();
 	float getRadius();
+	int getId();
 };

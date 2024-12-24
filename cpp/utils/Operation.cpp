@@ -7,8 +7,8 @@ Operation::Operation(Operator op) {
 	this->op = op;
 }
 
-Operation::Operation(int size, Operator op) {
-	this->size = size;
+Operation::Operation(int id, Operator op) {
+	this->id = id;
 	this->op = op;
 }
 
@@ -26,6 +26,13 @@ Operation::Operation(Point cur, float radius, Operator op) {
 Operation::Operation(Point start, Point end, Operator op) {
 	this->start = start;
 	this->end = end;
+	this->op = op;
+}
+
+Operation::Operation(Point start, Point end, int size, Operator op) {
+	this->start = start;
+	this->end = end;
+	this->size = size;
 	this->op = op;
 }
 
@@ -51,5 +58,9 @@ int Operation::getSize() {
 
 float Operation::getRadius() {
 	return radius;
+}
+
+int Operation::getId() {
+	return id;
 }
 

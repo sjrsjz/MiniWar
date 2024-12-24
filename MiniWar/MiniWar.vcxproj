@@ -41,6 +41,7 @@
     <ClInclude Include="..\header\utils\Array.h" />
     <ClInclude Include="..\header\utils\Config.h" />
     <ClInclude Include="..\header\utils\GlobalTimer.h" />
+    <ClInclude Include="..\header\utils\Operation.h" />
     <ClInclude Include="..\header\utils\Point.h" />
     <ClInclude Include="..\header\utils\SmoothMove.h" />
     <ClInclude Include="..\include\GLFW\glfw3.h" />
@@ -68,6 +69,7 @@
     <ClCompile Include="..\cpp\utils\Array.cpp" />
     <ClCompile Include="..\cpp\utils\Config.cpp" />
     <ClCompile Include="..\cpp\utils\GlobalTimer.cpp" />
+    <ClCompile Include="..\cpp\utils\Operation.cpp" />
     <ClCompile Include="..\cpp\utils\Point.cpp" />
   </ItemGroup>
   <ItemGroup>

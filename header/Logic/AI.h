@@ -256,6 +256,7 @@ class AI {
 		this->t0 = parameter["t0"].template get<double>();
 	}
 
+private:
 	void attack() {
 		// TODO
 		for (int i = 0; i < weapons.size(); i++) {
@@ -629,9 +630,11 @@ class AI {
 		}
 	}
 
+public:
 	void update(bool isPause = false) {
 		if (isPause) {
 			Timer.pause();
+			return;
 		} else {
 			Timer.resume();
 		}
@@ -641,4 +644,5 @@ class AI {
 		this->defend();
 		this->attack();
 	}
+	
 };
