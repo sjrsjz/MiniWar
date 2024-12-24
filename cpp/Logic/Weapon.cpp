@@ -22,16 +22,18 @@ Weapon::~Weapon() {
 
 float Weapon::getDamage(int level){
 	//formula
-	//
-	return this->damage;
+	float Damage = this->damage * (1 + level * 0.2);
+	return Damage;
 }
 
 float Weapon::getDamageRange(int level){
-	return this->damageRange;
+	float DamageRange = this->damageRange * (1 + level * 0.2);	
+	return DamageRange;
 }
 
 float Weapon::getAttackSpeed(int level){
-	return this->attackSpeed;
+	float AttackSpeed = this->attackSpeed * (1 + level * 0.2);
+	return AttackSpeed; 
 }
 
 std::tuple<float, float> Weapon::getAttackRange(){
