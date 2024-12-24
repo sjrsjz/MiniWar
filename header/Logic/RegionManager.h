@@ -51,7 +51,7 @@ public:
 	void update();
 
 	void move_army(int amount, double time, std::vector<std::tuple<int, int>>& path);
-	void move_army(Point start, Point end, int amount);
+	double move_army(Point start, Point end, int amount);
 	void attack_region_missle(int weapon_id, Point start, Point end, double time, int damage);
 	void attack_region_army(Point start, Point end, int amount);
 
