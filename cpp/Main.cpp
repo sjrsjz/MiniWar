@@ -502,6 +502,8 @@ public:
 	bool is_selected = false; // 是否选中
 	
 	SmoothMove shake;
+
+	std::string message;
 	
 	SelectedGui() {
 		shake.setTotalDuration(1);
@@ -512,31 +514,24 @@ public:
 		if (shake.getX() > 1e-3) {
 			ImVec2 shake_offset = ImVec2(sin(shake.getX() * 50) * 10, (1 + sin(shake.getX() * 25)) * 10);
 			ImGui::SetNextWindowBgAlpha(0.5 * shake.getX());
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 			ImGui::Begin("Weapon Warning", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollbar);
 
-			const char* message = nullptr;
-			switch (s_selected_weapon) {
-			case NUCLEAR_MISSILE:
-				message = u8"核导弹发射!!!";
-				break;
-			case ARMY:
-				message = u8"军队出动!!!";
-				break;
-			case SCATTER_BOMB:
-				message = u8"全面打击!!!";
-				break;
-			}
-			ImVec2 text_size = ImGui::CalcTextSize(message);
+			ImVec2 text_size = ImGui::CalcTextSize(message.c_str());
 			ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, 0) + shake_offset);
 			ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 50));
 			ImGui::SetCursorPosX(io.DisplaySize.x / 8 - text_size.x / 2);			
-			ImGui::Text(message);
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, shake.getX())); // 前景色
+			ImGui::Text(message.c_str());
+			ImGui::PopStyleColor();
 			ImGui::End();
+			ImGui::PopStyleVar();
 		}
 
 
 		if (!is_selected) return;
 		ImGui::SetNextWindowBgAlpha(0.5);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
 		// 移动到最低端
 
@@ -545,6 +540,7 @@ public:
 
 		ImGui::Text("Selected Grid: %d, %d", grid[0], grid[1]);
 		ImGui::End();
+		ImGui::PopStyleVar();
 	}
 
 	void update(const Timer& timer) {
@@ -555,6 +551,12 @@ public:
 
 	void shake_gui(const Timer& timer) {
 		shake.setStartPosition(1, timer.getTime());
+	}
+
+	void get_shake_matrix(mat4x4 m) {
+		Camera cam;
+		cam.setPos(sin(shake.getX() * 50) * 0.025, (1 + sin(shake.getX() * 25)) * 0.025, sin(shake.getX() * 12.5) * 0.025);
+		cam.getMat4(m);
 	}
 
 }s_selected_gui;
@@ -924,6 +926,7 @@ void render_imgui(ImGuiIO& io) {
 
 
 		ImGui::SetNextWindowBgAlpha(0.25);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 		ImGui::Begin("SelectedWeapon", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
 		ImGui::SetWindowSize(ImVec2(120, 120));
 		ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - 130, io.DisplaySize.y - 130));
@@ -948,6 +951,7 @@ void render_imgui(ImGuiIO& io) {
 		}
 
 		ImGui::End();
+		ImGui::PopStyleVar();
 
 		// 设置控件组位置和大小
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -1059,6 +1063,11 @@ void render_main_game_pass() {
 	mat4x4 g_scale_mat;
 	scale_map_camera.getCamera().getMat4(g_scale_mat);
 	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
+
+	mat4x4 shake_camera;
+	s_selected_gui.get_shake_matrix(shake_camera);
+	mat4x4_mul(g_trans_mat, g_trans_mat, shake_camera);
+
 
 	int g_trans_mat_location = glGetUniformLocation(s_map_renderer_program, "g_trans_mat");
 	glUniformMatrix4fv(g_trans_mat_location, 1, GL_FALSE, (const GLfloat*)g_trans_mat);
@@ -1227,6 +1236,11 @@ void render_points() {
 	mat4x4 g_scale_mat;
 	scale_map_camera.getCamera().getMat4(g_scale_mat);
 	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
+
+	mat4x4 shake_camera;
+	s_selected_gui.get_shake_matrix(shake_camera);
+	mat4x4_mul(g_trans_mat, g_trans_mat, shake_camera);
+
 	int g_trans_mat_location = glGetUniformLocation(s_points_program, "g_trans_mat");
 	glUniformMatrix4fv(g_trans_mat_location, 1, GL_FALSE, (const GLfloat*)g_trans_mat);
 
@@ -1571,7 +1585,7 @@ void KeyRelease(int key) {
 				case NUCLEAR_MISSILE:
 					DEBUG::DebugOutput("Nuclear Missile");
 					GAMESOUND::play_nuclear_launch_sound();
-
+					s_selected_gui.message = u8"核导弹已发射";
 					// do something
 					s_selected_gui.shake_gui(timer);
 					s_selected_gui.is_selected = false;
