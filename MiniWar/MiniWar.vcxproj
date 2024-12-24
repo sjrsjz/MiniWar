@@ -23,6 +23,7 @@
     <ClInclude Include="..\header\Camera.h" />
     <ClInclude Include="..\header\debug.h" />
     <ClInclude Include="..\header\globals.h" />
+    <ClInclude Include="..\header\Logic\AI.h" />
     <ClInclude Include="..\header\Logic\Building.h" />
     <ClInclude Include="..\header\Logic\Player.h" />
     <ClInclude Include="..\header\Logic\Region.h" />
@@ -52,7 +53,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cpp\globals.cpp" />
-    <ClCompile Include="..\cpp\Logic\AI.cpp" />
     <ClCompile Include="..\cpp\Logic\Army.cpp" />
     <ClCompile Include="..\cpp\Logic\Building.cpp" />
     <ClCompile Include="..\cpp\Logic\Player.cpp" />
