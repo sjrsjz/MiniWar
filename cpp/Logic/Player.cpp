@@ -296,7 +296,7 @@ int Player::get_building_level_limit(std::string name) {
 	return -1;
 }
 
-void Player:: move_army(Point start, Point end, int amount){
+void Player:: move_army(Operation operation, int amount){
  //   std::vector<std::tuple<int, int>> path;
  //   double distance = calculate_distance(start, end, path);
  //   if (distance == -1) {
@@ -316,6 +316,8 @@ void Player:: move_army(Point start, Point end, int amount){
  //   start_region.removeArmy(amount);
  //   //create a new army to move, when time is up, this army shall be destroyed, and the end region add this army's force
 	//regionmanager.move_army(amount, time, path);
+	Point start = operation.getStart();
+	Point end = operation.getEnd();
 
     int start_x = std::floor(start.getX());
     int start_y = std::floor(start.getY());
@@ -335,13 +337,30 @@ void Player:: move_army(Point start, Point end, int amount){
 	regionmanager.move_army(start, end, amount);
 }
 
-void Player::attack(Point start, Point end, int weapon_id) {
+void Player::attack(Operation operation) {
+	Point start = operation.getStart();
+	Point end = operation.getEnd();
     double distance = sqrt(pow(start.getX() - end.getX(), 2) + pow(start.getY() - end.getY(), 2));
 
     int start_x = std::floor(start.getX());
     int start_y = std::floor(start.getY());
 
     Region& start_region = regionmanager.get_region(start_x, start_y);
+
+	int weapon_id = 0;
+
+	switch (operation.getOp())
+	{
+	case Operator::Weapon0Attack:
+		weapon_id = 0;
+		break;
+	case Operator::Weapon1Attack:
+		weapon_id = 1;
+		break;
+	case Operator::Weapon2Attack:
+		weapon_id = 2;
+		break;
+	}
 
 	Weapon weapon = regionmanager.get_weapon(weapon_id);
 
@@ -353,7 +372,30 @@ void Player::attack(Point start, Point end, int weapon_id) {
 	regionmanager.attack_region_missle(weapon_id, start, end, time, damage);
 }
 
-void Player::build(std::string building_name, Point location) {
+void Player::build(Operation operation) {
+
+	Point location = operation.getCur();
+	std::string building_name = "";
+
+	switch (operation.getOp())
+	{
+	case Operator::SetPowerStation:
+		building_name = "PowerStation";
+		break;
+	case Operator::SetRefinery:
+		building_name = "Refinery";
+		break;
+	case Operator::SetSteelFactory:
+		building_name = "SteelFactory";
+		break;
+	case Operator::SetCivilFactory:
+		building_name = "CivilFactory";
+		break;
+	case Operator::SetMilitaryFactory:
+		building_name = "MilitaryFactory";
+		break;
+	}
+
 	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
 	if (region.getOwner() != id) {
 		throw "Not your region";
@@ -377,7 +419,8 @@ void Player::build(std::string building_name, Point location) {
 	region.setBuilding(building);
 }
 
-void Player::upgrade_building(Point location) {
+void Player::upgrade_building(Operation operation) {
+	Point location = operation.getCur();
 	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
     if (region.getBuilding().getName() == "none") {
         throw "No building exits";
@@ -414,7 +457,8 @@ void Player::upgrade_building(Point location) {
     region.getBuilding().upLevel(institution_level_limit[get_building_level_limit(region.getBuilding().getName())]);
 }
 
-void Player::remove_building(Point location) {
+void Player::remove_building(Operation operation) {
+	Point location = operation.getCur();
 	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
     if (region.getOwner() != id) {
 		throw "Not your region";
@@ -459,7 +503,7 @@ void Player::remove_building(Point location) {
     }
 }
 
-void Player::research(int selection) {
+void Player::research(Operation operation) {
 	Region& region = regionmanager.get_region(get_capital_x(), get_capital_y());
     if (region.getOwner() != id) {
 		throw "Not your capital";
@@ -481,8 +525,8 @@ void Player::research(int selection) {
 	std::vector<int> Uplevelcost_MRBM = configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" }).template get<std::vector<int>>();
 	std::vector<int> Uplevelcost_ICBM = configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" }).template get<std::vector<int>>();
 
-	switch (selection) {
-	case 0:
+	switch (operation.getOp()) {
+	case Operator::PowerStationUpLevel:
 		if (institution_level_limit[0] == 3) {
 			throw "Already reach max level";
 		}
@@ -507,7 +551,7 @@ void Player::research(int selection) {
 			}
 		}
 		break;
-	case 1:
+	case Operator::RefineryUpLevel:
 		if (institution_level_limit[1] == 3) {
 			throw "Already reach max level";
 		}
@@ -532,7 +576,7 @@ void Player::research(int selection) {
 			}
 		}
 		break;
-	case 2:
+	case Operator::SteelFactoryUpLevel:
 		if (institution_level_limit[2] == 3) {
 			throw "Already reach max level";
 		}
@@ -557,7 +601,7 @@ void Player::research(int selection) {
 			}
 		}
 		break;
-	case 3:
+	case Operator::CivilFactoryUpLevel:
 		if (institution_level_limit[3] == 3) {
 			throw "Already reach max level";
 		}
@@ -582,7 +626,7 @@ void Player::research(int selection) {
 			}
 		}
 		break;
-	case 4:
+	case Operator::MilitaryFactoryUpLevel:
 		if (institution_level_limit[4] == 3) {
 			throw "Already reach max level";
 		}
@@ -607,7 +651,7 @@ void Player::research(int selection) {
 			}
 		}
 		break;
-	case 5:
+	case Operator::ArmyUpLevel:
 		if (arm_level[0] == 3) {
 			throw "Already reach max level";
 		}
@@ -632,7 +676,7 @@ void Player::research(int selection) {
 			}
 		}
 		break;
-	case 6:
+	case Operator::Weapon0UpLevel:
 		if (arm_level[1] == 3) {
 			throw "Already reach max level";
 		}
@@ -657,7 +701,7 @@ void Player::research(int selection) {
 			}	
 		}
 		break;
-	case 7 :
+	case Operator::Weapon1UpLevel:
 		if (arm_level[2] == 3) {
 			throw "Already reach max level";
 		}
@@ -682,7 +726,7 @@ void Player::research(int selection) {
 			}
 		}
 		break;
-	case 8:
+	case Operator::Weapon2UpLevel:
 		if (arm_level[3] == 3) {
 			throw "Already reach max level";
 		}

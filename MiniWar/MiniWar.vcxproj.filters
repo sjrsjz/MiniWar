@@ -49,6 +49,9 @@
     <ClCompile Include="..\cpp\Engine.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
+    <ClCompile Include="..\cpp\utils\Operation.cpp">
+      <Filter>cpp\utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\header\Camera.h">
@@ -146,6 +149,9 @@
     </ClInclude>
     <ClInclude Include="..\header\Engine.h">
       <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\Operation.h">
+      <Filter>headers\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
