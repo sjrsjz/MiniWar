@@ -5,6 +5,7 @@
 
 #include "../../header/Logic/Army.h"
 #include "../../header/utils/GlobalTimer.h"
+#include "../../header/utils/Operation.h"
 
 #include <string>
 #include <cmath>
@@ -23,7 +24,7 @@ private:
 	int gold{};
 	int oil{};
 	int electricity{};
-	int labor{};
+	int ocupied_labor{};
 	int steel{};
 	int id{};
 	int labor_limit{};
@@ -38,7 +39,8 @@ public:
 	~Player();
 	int get_gold();
 	int get_electricity();
-	int get_labor();
+	int get_labor_limit();
+	int get_ocupied_labor();
 	int get_steel();
 	int get_oil();
 	int get_capital_x();
@@ -55,15 +57,16 @@ public:
 	void add_steel(int amount);
 
 	int get_building_level_limit(std::string name);
+	//Interaction functions below
+	void move_army(Operation operation, int amount);
+	void attack(Operation operation);
 
-	void move_army(Point start, Point end, int amount);
-	void attack(Point start, Point end, int weapon_id);
+	void build(Operation operation);
+	void upgrade_building(Operation operation);
+	void research(Operation operation);
+	void remove_building(Operation operation);
 
-	void build(std::string building_name, Point location);
-	void upgrade_building(Point location);
-	void research(int selection);
-	void remove_building(Point location);
-
+	//update function
 	void update(GlobalTimer& timer);
 };
 
