@@ -106,6 +106,9 @@ namespace GAMESOUND {
 			BASS_ChannelPlay(s_background_stream, FALSE);
 		}
 	}
+	void set_background_volume(float volume) {
+		BASS_ChannelSetAttribute(s_background_stream, BASS_ATTRIB_VOL, volume);
+	}
 	void check_if_need_play_next() {
 		if (!BASS_ChannelIsActive(s_background_stream)) {
 			BASS_StreamFree(s_background_stream);
@@ -620,8 +623,7 @@ void load_new_game(const LevelConfig& level_config) {
 
 	GAMESTATUS::s_in_game = true;
 	GAMESTATUS::s_enable_control = true;
-	DEBUG::DebugOutput("Game loaded");
-	
+	DEBUG::DebugOutput("Game loaded");	
 }
 
 void exit_game() {
@@ -1047,6 +1049,26 @@ void render_main_game_pass() {
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_scatter);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_scatter_target"), 2);
 
+
+	float attack_range = 0;
+	switch (s_selected_weapon)
+	{
+	case NONE:
+		break;
+	case NUCLEAR_MISSILE:
+		attack_range = 30;
+		break;
+	case ARMY:
+		attack_range = 1e6;
+		break;
+	case SCATTER_BOMB:
+		attack_range = 40;
+		break;
+	default:
+		break;
+	}
+
+	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_valid_attack_range"), attack_range);
 	// 渲染！
 	map_mash.render(s_map_renderer_program, "vPos", nullptr, nullptr, nullptr);
 
@@ -1075,6 +1097,13 @@ void prepare_render() {
 	s_selected_gui.update(timer);
 
 	GAMESTATUS::s_enable_control = !s_menu_gui.is_activitied() && !s_tech_tree_gui.is_open();
+
+	if (GAMESTATUS::s_in_game) {
+		GAMESOUND::set_background_volume(0.25);
+	}
+	else {
+		GAMESOUND::set_background_volume(1);
+	}
 }
 
 void render_points() {

@@ -17,6 +17,7 @@ uniform vec4 g_radioactive_selected; // [center_x, center_y, radius, selected]
 uniform vec3 g_attack_target; // [center_x, center_y, selected]
 uniform vec4 g_scatter_target; // [center_x, center_y, radius, selected]
 
+uniform float g_valid_attack_range;
 
 uniform mat4 g_model_trans_mat;
 uniform mat4 g_model_trans_mat_inv;
@@ -264,6 +265,12 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
 
     // 军队位置
     color = mix(color, vec3(10,10,10), float(cell_idx.army_data.z < 0.05));
+
+
+    if(g_selected.x != -1 && g_selected.y != -1){
+        float s = pow(0.65 + 0.35 * sin(g_time*5),3) * 0.5;
+        color = mix(color, vec3(1,0,0), float(distance(cell_idx.real_idx,g_selected) <= g_valid_attack_range) * s);
+    }
 
     // 当前选中
     bool is_selected = cell_idx.real_idx.x == g_selected.x && cell_idx.real_idx.y == g_selected.y;
