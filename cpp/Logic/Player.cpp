@@ -365,12 +365,17 @@ void Player::attack(Operation operation) {
 
 	Weapon weapon = regionmanager.get_weapon(weapon_id);
 
+	std::tuple<float, float> AttackRange= weapon.getAttackRange();
+
+	if (distance > std::get<1>(AttackRange) || distance < std::get<0>(AttackRange)) {
+		throw "Not in attack range";
+	}
+
     double time = distance / weapon.getAttackSpeed(arm_level[id+1]);
-	int damage = weapon.getDamage(arm_level[id + 1]);
 
 	start_region.removeWeapon(weapon_id);
 
-	regionmanager.attack_region_missle(weapon_id, start, end, time, damage);
+	regionmanager.attack_region_missle(weapon_id, arm_level[weapon_id + 1], start, end, time);
 } //should detect if the weapon can reach the target
 
 void Player::build(Operation operation) {
@@ -796,25 +801,25 @@ void Player::product(Operation operation) {
 		end_region.addWeapon(0);
 		break;
 	case Operator::ProductWeapon1:
-		std::vector<int> cost1 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
+		std::vector<int> cost1 = configer.getConfig({ "Weapon", "1", "cost" }).template get<std::vector<int>>();
 		if (gold < cost1[0] || oil < cost1[1] || electricity < cost1[2] || steel < cost1[3] || labor_limit - ocupied_labor < cost1[4]) {
 			throw "Not enough resource";
 		}
-		gold -= cost0[0];
-		oil -= cost0[1];
-		electricity -= cost0[2];
-		steel -= cost0[3];
+		gold -= cost1[0];
+		oil -= cost1[1];
+		electricity -= cost1[2];
+		steel -= cost1[3];
 		end_region.addWeapon(0);
 		break;
 	case Operator::ProductWeapon2:
-		std::vector<int> cost2 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
+		std::vector<int> cost2 = configer.getConfig({ "Weapon", "2", "cost" }).template get<std::vector<int>>();
 		if (gold < cost2[0] || oil < cost2[1] || electricity < cost2[2] || steel < cost2[3] || labor_limit - ocupied_labor < cost2[4]) {
 			throw "Not enough resource";
 		}
-		gold -= cost0[0];
-		oil -= cost0[1];
-		electricity -= cost0[2];
-		steel -= cost0[3];
+		gold -= cost2[0];
+		oil -= cost2[1];
+		electricity -= cost2[2];
+		steel -= cost2[3];
 		end_region.addWeapon(0);
 		break;
 	}
@@ -860,28 +865,28 @@ void Player::rangeAttack(Operation operation) {
 			float distance = regionPos.distance(target);
 			if (weapons[0] > 0) {
 				float speed = regionmanager.get_weapon(0).getAttackSpeed(arm_level[1]);
-				float damage = regionmanager.get_weapon(0).getDamage(arm_level[1]);
+				/*float damage = regionmanager.get_weapon(0).getDamage(arm_level[1]);*/
 				double time = distance / speed;
 				if (distance <= 0.25 * mapSize) {
-					regionmanager.attack_region_missle(0, regionPos, target, time, damage);
+					regionmanager.attack_region_missle(0, arm_level[1], regionPos, target, time);
 					num--;
 					flag = true;
 				}
 			} else if (weapons[1] > 0) {
 				float speed = regionmanager.get_weapon(1).getAttackSpeed(arm_level[2]);
-				float damage = regionmanager.get_weapon(1).getDamage(arm_level[2]);
+				/*float damage = regionmanager.get_weapon(1).getDamage(arm_level[2]);*/
 				double time = distance / speed;
 				if (distance <= 0.5 * mapSize) {
-					regionmanager.attack_region_missle(1, regionPos, target, time, damage);
+					regionmanager.attack_region_missle(1, arm_level[2], regionPos, target, time);
 					num--;
 					flag = true;
 				}
 			} else if (weapons[2] > 0) {
 				float speed = regionmanager.get_weapon(2).getAttackSpeed(arm_level[3]);
-				float damage = regionmanager.get_weapon(2).getDamage(arm_level[3]);
+				/*float damage = regionmanager.get_weapon(2).getDamage(arm_level[3]);*/
 				double time = distance / speed;
 				if (distance <= 0.75 * mapSize && distance >= 0.2 * mapSize) {
-					regionmanager.attack_region_missle(2, regionPos, target, time, damage);
+					regionmanager.attack_region_missle(2, arm_level[3], regionPos, target, time);
 					num--;
 					flag = true;
 				}
