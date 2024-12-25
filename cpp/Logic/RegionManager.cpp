@@ -544,7 +544,7 @@ void RegionManager::clear_building(Region& region) {
 void RegionManager::update(GlobalTimer& timer) {
 	current_time = timer.get_running_time();
 	army_mutex.lock();
-	DEBUG::DebugOutput("RegionManager::update() called", moving_armies.size());
+	//DEBUG::DebugOutput("RegionManager::update() called", moving_armies.size());
 	while (!moving_armies.empty() && moving_armies.top().time <= current_time) {
 		DEBUG::DebugOutput("Moving army: ", moving_armies.top().amount);
 		MovingArmy army = moving_armies.top();
@@ -611,7 +611,7 @@ void RegionManager::update(GlobalTimer& timer) {
 		MovingArmy army = temp_armies.back();
 		//update current position
 		int side_num = army.path.size() - 1;
-		int current_side = (1 + (current_time - army.reach_time) / army.time) * side_num;
+		int current_side = army.time == 0 ? 0 : (1 + (current_time - army.reach_time) / army.time) * side_num;
 
 		current_side = current_side > side_num ? side_num : current_side;
 

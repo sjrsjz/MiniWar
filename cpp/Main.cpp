@@ -613,6 +613,8 @@ public:
 		}
 
 		ImGui::Text("Selected Grid: %d, %d", grid[0], grid[1]);
+		Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
+
 		ImGui::End();
 		ImGui::PopStyleVar();
 	}

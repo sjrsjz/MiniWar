@@ -131,6 +131,7 @@ void update() {
 }
 
 void main_loop() {
+
 	GlobalTimer::getInstance().reset();
 	while (!s_exit_game) {
 		//DEBUG::DebugOutput("New Loop\n");

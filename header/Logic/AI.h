@@ -373,8 +373,8 @@ public:
 		this->gold += formula(Timer.elapsedSeconds());	
 		delta_t -= 1;
 		int buildArmy = std::min((int)(this->gold * 0.3), 8000);
-		json ArmyInfo = config.getConfig({"Army"});
-		int cost = ArmyInfo["cost"].template get<int>();
+		//json ArmyInfo = config.getConfig({"Army"});
+		int cost = 1000;// ArmyInfo["cost"].template get<int>();
 		Army& army = regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).getArmy();
 		army.addArmy(buildArmy / cost);
 		this->gold -= buildArmy;
@@ -407,7 +407,7 @@ public:
 		if (maxLevelCount == 4) {
 			return;
 		}
-
+		return;
 		int buildLevel = (int)this->gold * 0.2;
 		if (buildLevel >= weaponCost["Army"].template get<std::vector<int>>()[arm_level[0]] && arm_level[0] < maxLevel) {
 			arm_level[0]++;
@@ -434,12 +434,10 @@ public:
 	bool isBorder(int x, int y) {
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
-				try {
+				if (x + i >= 0 && x + i < regionManager.get_map_width() && y + j >= 0 && y + j < regionManager.get_map_height()) {
 					if (regionManager.get_region(x + i, y + j).getOwner() == id) {
 						return true;
 					}
-				} catch (std::exception& e) {
-					continue;
 				}
 			}
 		}
