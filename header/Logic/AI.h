@@ -85,6 +85,7 @@ class AI {
 	double t0 = 50;
 	AITimer Timer;
 	bool canMove = true;
+	bool canDefend = true;
 	double delta_t = 0;
 	double last_t = 0;
 	std::vector<std::tuple<int, int>> AIRegions;
@@ -94,6 +95,7 @@ class AI {
 	double averageForce;
 	double playerAverageForce;
 	json weaponCost;
+	std::list<std::tuple<int, int>> isAttacked;
 
 	const double formula(double t) {
 		return 0.1 * regionSize * A / (1 + exp(-k * (t - t0)));
@@ -284,7 +286,7 @@ public:
 
 	void defend() {
 		// TODO
-		if (canMove) {
+		if (canMove && canDefend) {
 			moveArmy();
 		}
 	}
@@ -341,6 +343,20 @@ public:
 			playerAverageForce += regionArmy.getForce();
 		}
 
+		
+		for (const auto& AIRegion : AIRegions) {
+			auto [AIx, AIy] = AIRegion;
+			for (auto it = isAttacked.begin(); it != isAttacked.end(); ) {
+				auto [x, y] = *it;
+
+				if (x == AIx && y == AIy) {
+					it = isAttacked.erase(it);
+				} else {
+					++it; 
+				}
+			}
+		}
+
 		playerAverageForce /= playerRegionSize;
 	}
 
@@ -350,6 +366,10 @@ public:
 		delta_t += Timer.elapsedSeconds() - last_t;
 		last_t = Timer.elapsedSeconds();
 		if (delta_t < 1) return;
+
+		DEBUG::DebugOutput("gold: ", this->gold);
+		DEBUG::DebugOutput("army: ", this->averageForce);
+		DEBUG::DebugOutput("canMove: ", this->canMove);
 		this->gold += formula(Timer.elapsedSeconds());	
 		delta_t -= 1;
 		int buildArmy = std::min((int)(this->gold * 0.3), 8000);
@@ -428,8 +448,12 @@ public:
 
 	void sleep(double seconds) {
 		this->canMove = false;
-		std::this_thread::sleep_for(std::chrono::milliseconds((int)(seconds) * 1000));
+		auto start = std::chrono::steady_clock::now();
+		std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
+		auto end = std::chrono::steady_clock::now();
+		DEBUG::DebugOutput( "Elapsed time: ", std::chrono::duration<double>(end - start).count());
 		this->canMove = true;
+		this->canDefend = !canDefend;
 	}
 
 	struct Transaction {
@@ -536,10 +560,21 @@ public:
 	}
 
 	void armyAttack(Point start, int amount, Point end) {
+		for (auto item : isAttacked) {
+			if (std::get<0>(item) == end.getX() && std::get<1>(item) == end.getY()) {
+				return;
+			}
+		}
+		this->canMove = false;
+		DEBUG::DebugOutput("armyAttack() called");
 		Army& army = regionManager.get_region(start.getX(), start.getY()).getArmy();
 		int curForce = army.getForce() * 0.7;
 		if (army.getForce() * 0.7 >= amount) {
-			regionManager.attack_region_army(start, end, amount);
+			DEBUG::DebugOutput("armyAttack only one region attack");
+			double time = regionManager.move_army(start, end, amount, this->arm_level[0]);
+			this->isAttacked.emplace_back(std::make_tuple(end.getX(), end.getY()));
+			this->canMove = true;
+			DEBUG::DebugOutput("armyAttack only one region attack need time", time);
 			return;
 		}
 		std::vector<Point> regionlist;
@@ -554,13 +589,17 @@ public:
 					if (curForce >= amount) {
 						for (auto region : regionlist) {
 							DEBUG::DebugOutput("armyAttack() calls move_army()");
-							maxTime = std::max(maxTime, regionManager.move_army(region, start, tmp.getForce() * 0.7, armyLevel));
+							Army& t = regionManager.get_region(region.getX(), region.getY()).getArmy();
+							maxTime = std::max(maxTime, regionManager.move_army(region, start, t.getForce() * 0.7, armyLevel));
+							DEBUG::DebugOutput("move_army() finished");
 						}
+						this->isAttacked.emplace_back(std::make_tuple(end.getX(), end.getY()));
 						DEBUG::DebugOutput("ArmyAttack time: ", maxTime);
 						this->canMove = false;
 						std::this_thread::sleep_for(std::chrono::milliseconds((int)(maxTime * 1100)));
+						DEBUG::DebugOutput("ArmyAttack finished: ");
 						this->canMove = true;
-						regionManager.attack_region_army(start, end, amount);
+						regionManager.move_army(start, end, amount, armyLevel);
 						return;
 					}
 				} catch(std::exception& e) {
@@ -569,6 +608,7 @@ public:
 				
 			}
 		}
+		this->canMove = true;
 	}
 
 
@@ -601,6 +641,7 @@ public:
 					int maxForceValue = 0;
 					for (int j = -1; j <= 1; j++) {
 						for (int k = -1; k <= 1; k++) {
+							if (x + j < 0 || x + j >= regionManager.get_map_width() || y + k < 0 || y + k >= regionManager.get_map_height()) continue;
 							if (regionManager.get_region(x + i, y + j).getOwner() == id) {
 								Army& tmp = regionManager.get_region(x + j, y + k).getArmy();
 								if (tmp.getForce() > maxForceValue) {
@@ -610,10 +651,23 @@ public:
 							}
 						}
 					}	
+					bool flag = false;
+					for (auto item : isAttacked) {
+						auto [Ax, Ay] = item;
+						if (Ax == x && Ay == y) {
+							flag = true;
+							break;
+						}
+					}
+					if (flag) {
+						continue;
+					}
 					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
+					this->canMove = false;
 					t.detach();
+					break;
 				}
 			}
 		} else {
@@ -637,10 +691,23 @@ public:
 							}
 						}
 					}	
+					bool flag = false;
+					for (auto item : isAttacked) {
+						auto [Ax, Ay] = item;
+						if (Ax == x && Ay == y) {
+							flag = true;
+							break;
+						}
+					}
+					if (flag) {
+						continue;
+					}
 					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
+					this->canMove = false;
 					t.detach();
+					break;
 				}
 			}
 		}
@@ -658,9 +725,10 @@ public:
 		//DEBUG::DebugOutput("AI source", this->gold);
 		//DEBUG::DebugOutput("canMove: ", this->canMove);
 		//DEBUG::DebugOutput("AI Called increse()");
+		
 		this->increase();
 		//DEBUG::DebugOutput("AI Called defend()");
-		this->defend();
+		//this->defend();
 		//DEBUG::DebugOutput("AI Called expand()");
 		this->expand();
 		//DEBUG::DebugOutput("AI Called attack()");

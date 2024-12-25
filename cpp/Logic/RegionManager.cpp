@@ -424,6 +424,7 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	std::vector<std::tuple<int, int>> path;
 
 	double distance = calculate_distance(start, end, path);
+	DEBUG::DebugOutput("distance finished");
 	if (distance == -1.f) {
 		DEBUG::DebugOutput("RegionManager::move_army() throws");
 		throw "Can't find a path";
@@ -499,7 +500,7 @@ void RegionManager::attack_region_army(Point start, Point end, int amount) {
 	Region& end_region = get_region(end.getX(), end.getY());
 
 	double time = distance / start_region.getArmy().getSpeed();
-
+	DEBUG::DebugOutput("moving cost time ", time);
 	MovingArmy army;
 	army.amount = amount;
 	army.path = path;
