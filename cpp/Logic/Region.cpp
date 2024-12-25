@@ -3,6 +3,7 @@
 #include "../../header/Exception/SurrenderNotAttackedException.h"
 #include "../../header/utils/Config.h"
 #include "../../header/Logic/RegionManager.h"
+#include "../../header/debug.h"
 #include <sstream>
 #include <type_traits>
 #include <random>
@@ -69,6 +70,7 @@ bool Region::increaseHp(float hp) {
 		std::stringstream s;
 		
 		s << "Region at (" << x << ", " << y << ") is already at full hp";
+		DEBUG::DebugOutput("Region::increaseHp() throws");
 		throw FullHpException(s.str());
 	}
 	this->hp = std::max(this->hp + hp, this->maxHp);
@@ -81,6 +83,7 @@ bool Region::decreaseHp(float hp) {
 		float y = position.getY();
 		std::stringstream s;
 		s << "Region at (" << x << ", " << y << ") is already at 0 hp";
+		DEBUG::DebugOutput("Region::decreaseHp() throws");
 		throw SurrenderNotAttackedException(s.str());
 	}
 	
@@ -112,7 +115,8 @@ bool Region::addWeapon(int weapon, int num) {
 	try {
 		this->weapons.at(weapon) += num;
 	} catch (std::out_of_range& e) {
-		throw;
+		DEBUG::DebugOutput("Region::addWeapon() throws");
+		throw e;
 	}
 	return true;
 }
@@ -125,7 +129,8 @@ bool Region::removeWeapon(int weapon) {
 		}
 		this->weapons.at(weapon)--;
 	} catch (std::out_of_range& e) {
-		throw;
+		DEBUG::DebugOutput("Region::addWeapon() throws");
+		throw e;
 	}
 	return true;
 }

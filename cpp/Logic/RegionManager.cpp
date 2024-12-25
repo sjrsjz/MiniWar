@@ -1,4 +1,5 @@
 #include "../../header/Logic/RegionManager.h"
+#include "../../header/debug.h"
 #include "../../header/Logic/Player.h"
 #include <vector>
 #include <random>
@@ -13,6 +14,7 @@ RegionManager::RegionManager(int width, int height) : width(width), height(heigh
 	//players.reserve(player_amount);
 
 	//read configer, initialize Weapon
+	DEBUG::DebugOutput("RegionManager::RegionManager() initialized");
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
 			regions(x, y) = Region(x, y);
@@ -29,6 +31,7 @@ RegionManager::~RegionManager() {
 }
 
 double RegionManager::calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end) {
+	DEBUG::DebugOutput("RegionManager::calculate_Euclidean_distance() called");
 	Region& start_region = get_region(std::get<0>(start), std::get<1>(start));
 	Region& end_region = get_region(std::get<0>(end), std::get<1>(end));
 	Point start_region_position = start_region.getPosition();
@@ -37,6 +40,7 @@ double RegionManager::calculate_Euclidean_distance(std::tuple<int, int> start, s
 }
 
 double RegionManager::calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path) {
+	DEBUG::DebugOutput("RegionManager::calculate_distance() called");
 	int start_x = std::floor(start.getX());
 	int start_y = std::floor(start.getY());
 	int end_x = std::floor(end.getX());
@@ -295,6 +299,7 @@ std::vector<MovingMissle> RegionManager::get_moving_missle_position() {
 }
 
 void RegionManager::set(int width, int height) {
+	DEBUG::DebugOutput("RegionManager::set() called");
 	this->regions.~Array();
 	this->regions = Array<Region>(width, height);
 	this->width = width;
@@ -304,6 +309,10 @@ void RegionManager::set(int width, int height) {
 		for (int y = 0; y < height; y++) {
 			regions(x, y) = Region(x, y);
 		}
+	}
+	for (int i = 0; i <= 2; i++) {
+		Weapon weapon(i);
+		weapons.push_back(weapon);
 	}
 }
 
@@ -321,10 +330,12 @@ void RegionManager::set(int width, int height) {
 //}
 
 double RegionManager::move_army(Point start, Point end, int amount, int army_level) {
+	DEBUG::DebugOutput("RegionManager::move_army() called");
 	std::vector<std::tuple<int, int>> path;
 
 	double distance = calculate_distance(start, end, path);
 	if (distance == -1.f) {
+		DEBUG::DebugOutput("RegionManager::move_army() throws");
 		throw "Can't find a path";
 	}
 

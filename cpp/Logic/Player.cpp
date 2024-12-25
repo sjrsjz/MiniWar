@@ -1,5 +1,6 @@
 #include "../../header/Logic/Player.h"
 #include "../../header/Logic/RegionManager.h"
+#include "../../header/debug.h"
 #include <random>
 
 Player:: Player(): regionmanager(RegionManager::getInstance()){
@@ -235,35 +236,40 @@ int Player::get_capital_y() {
 
 void Player:: gold_cost(int cost){
     if (gold < cost){
-        throw new std::exception("Not enough gold");
+		DEBUG::DebugOutput("Player::gold_cost() throws");
+        throw new std::exception();
     }
     gold -= cost;
 }
 
 void Player:: oil_cost(int cost){
     if (oil < cost){
-        throw new std::exception("Not enough oil");
+		DEBUG::DebugOutput("Player::oil_cost() throws");
+        throw new std::exception();
     }
     oil -= cost;
 }
 
 void Player:: electricity_cost(int cost){
     if (electricity < cost){
-        throw new std::exception("Not enough electricity");
+		DEBUG::DebugOutput("Player::electricity_cost() throws");
+        throw new std::exception();
     }
     electricity -= cost;
 }
 
 void Player:: labor_cost(int cost){
     if (labor_limit - ocupied_labor < cost){
-        throw new std::exception("Not enough labor");
+		DEBUG::DebugOutput("Player::labor_cost() throws");
+        throw new std::exception();
     }
     ocupied_labor += cost;
 }
 
 void Player:: steel_cost(int cost){
     if (steel < cost){
-        throw new std::exception("Not enough steel");
+		DEBUG::DebugOutput("Player::steel_cost() throws");
+        throw new std::exception();
     }
     steel -= cost;
 }
