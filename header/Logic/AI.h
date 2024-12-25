@@ -10,6 +10,7 @@
 #include <functional>
 #include <thread>
 #include <unordered_map>
+#include "../../header/debug.h"
 #include "../../header/Logic/RegionManager.h"
 #include "../../header/utils/Config.h"
 #include "../../header/Logic/Player.h"
@@ -98,7 +99,7 @@ class AI {
 		return 0.1 * regionSize * A / (1 + exp(-k * (t - t0)));
 	}
 
-	public:
+public:
 	AI() {
 		// temp
 		// TODO
@@ -257,7 +258,6 @@ class AI {
 		this->t0 = parameter["t0"].template get<double>();
 	}
 
-private:
 	void attack() {
 		// TODO
 		for (int i = 0; i < weapons.size(); i++) {
@@ -272,7 +272,7 @@ private:
 					int damage = regionManager.get_weapon(i).getDamage(arm_level[i + 1]);
 					double time = start.distance(end) / regionManager.get_weapon(i).getAttackSpeed(arm_level[i + 1]);
 					if (dist >= min && dist <= max) {
-						regionManager.attack_region_missle(i, start, end, time, damage);
+						regionManager.attack_region_missle(i, arm_level[i + 1], start, end, time);
 					}
 				}
 			}
@@ -624,7 +624,7 @@ private:
 							}
 						}
 					}	
-					std::thread t([this, maxForce, borderArmyForce, x, y]{
+					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
 					t.join();
@@ -633,7 +633,6 @@ private:
 		}
 	}
 
-public:
 	void update(bool isPause = false) {
 		if (isPause) {
 			Timer.pause();
@@ -642,9 +641,14 @@ public:
 			Timer.resume();
 		}
 
+
+		DEBUG::DebugOutput("AI Called increse()");
 		this->increase();
+		DEBUG::DebugOutput("AI Called expand()");
 		this->expand();
+		DEBUG::DebugOutput("AI Called defend()");
 		this->defend();
+		DEBUG::DebugOutput("AI Called attack()");
 		this->attack();
 	}
 	

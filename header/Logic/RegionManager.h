@@ -18,7 +18,9 @@ struct MovingArmy {
 };
 
 struct MovingMissle {
-	int damage{};
+	int owner_id{ -1 };
+	int weapon_id{};
+	int weapon_level{};
 	double time{};
 	std::tuple<int, int> start_point{};
 	std::tuple<int, int> end_point{};
@@ -41,7 +43,7 @@ private:
 	
 	void clear_building(Region& region);
 	double calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end);
-	
+	std::vector<Region> get_damaged_regions(Point position, float range);
 public:
 	RegionManager();
 	RegionManager(int width, int height);
@@ -58,7 +60,7 @@ public:
 
 	//void move_army(int amount, double time, std::vector<std::tuple<int, int>>& path);
 	double move_army(Point start, Point end, int amount, int army_level);
-	void attack_region_missle(int weapon_id, Point start, Point end, double time, int damage);
+	void attack_region_missle(int weapon_id, int level, Point start, Point end, double time);
 	void attack_region_army(Point start, Point end, int amount);
 
 	double calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path);
