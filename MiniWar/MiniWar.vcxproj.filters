@@ -22,35 +22,6 @@
     <ClCompile Include="..\cpp\utils\Point.cpp">
       <Filter>cpp\utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Army.cpp">
-      <Filter>cpp\Logic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Building.cpp">
-      <Filter>cpp\Logic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Player.cpp">
-      <Filter>cpp\Logic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Region.cpp">
-      <Filter>cpp\Logic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\cpp\Logic\RegionManager.cpp">
-      <Filter>cpp\Logic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\cpp\utils\Config.cpp">
-      <Filter>cpp\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Weapon.cpp">
-      <Filter>cpp\Logic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\cpp\utils\GlobalTimer.cpp">
-      <Filter>cpp\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="..\cpp\Engine.cpp">
-      <Filter>cpp</Filter>
-    <ClCompile Include="..\cpp\Logic\PowerStation.cpp">
-      <Filter>cpp\Logic</Filter>
-    </ClCompile>
     <ClCompile Include="..\include\imgui\imgui_impl_glfw.cpp">
       <Filter>cpp\imgui</Filter>
     </ClCompile>
@@ -71,6 +42,24 @@
     </ClCompile>
     <ClCompile Include="..\include\imgui\imgui_demo.cpp">
       <Filter>cpp\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Army.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Building.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Player.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Region.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\RegionManager.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Weapon.cpp">
+      <Filter>cpp\Logic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -149,32 +138,12 @@
     <ClInclude Include="..\header\Logic\Army.h">
       <Filter>headers\Logic</Filter>
     </ClInclude>
-<<<<<<< HEAD
-    <ClInclude Include="..\header\utils\SmoothMove.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-=======
->>>>>>> new-2
     <ClInclude Include="..\header\passes\SSBO.h">
       <Filter>headers\passes</Filter>
     </ClInclude>
     <ClInclude Include="..\header\passes\SSBOByteArray.h">
       <Filter>headers\passes</Filter>
     </ClInclude>
-<<<<<<< HEAD
-    <ClInclude Include="..\header\utils\Config.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\utils\GlobalTimer.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Logic\AI.h">
-      <Filter>headers\Logic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Engine.h">
-      <Filter>headers</Filter>
-    </ClInclude>
-=======
     <ClInclude Include="..\header\utils\SmoothMove.h">
       <Filter>headers\utils</Filter>
     </ClInclude>
@@ -235,7 +204,21 @@
     <ClInclude Include="..\include\bass\bass.h">
       <Filter>include</Filter>
     </ClInclude>
->>>>>>> new-2
+    <ClInclude Include="..\include\json.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Exception\FullHpException.h">
+      <Filter>headers\Exception</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Exception\SurrenderNotAttackedException.h">
+      <Filter>headers\Exception</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Engine.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\AI.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
@@ -302,18 +285,13 @@
       <UniqueIdentifier>{82bb7b68-d06a-4f9c-b28b-3d664b040fd9}</UniqueIdentifier>
     </Filter>
     <Filter Include="cpp\Logic">
-<<<<<<< HEAD
-      <UniqueIdentifier>{d5e832ea-e918-46f0-94cd-11f0a05368cd}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\shaders\main_game_pass.frag" />
-    <Text Include="..\shaders\main_game_pass.vert" />
-=======
       <UniqueIdentifier>{36b7f8f9-fc09-44df-a679-e1bdaa2787ed}</UniqueIdentifier>
     </Filter>
     <Filter Include="cpp\imgui">
       <UniqueIdentifier>{425a02f8-0a0d-4a92-9009-4ca66192686e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="headers\Exception">
+      <UniqueIdentifier>{024e838b-c172-4b83-9744-db7508c843eb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -323,6 +301,5 @@
     <Text Include="..\shaders\main_game_pass.frag">
       <Filter>shaders</Filter>
     </Text>
->>>>>>> new-2
   </ItemGroup>
 </Project>

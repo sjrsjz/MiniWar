@@ -23,239 +23,10 @@
     <ClInclude Include="..\header\Camera.h" />
     <ClInclude Include="..\header\debug.h" />
     <ClInclude Include="..\header\Engine.h" />
+    <ClInclude Include="..\header\Exception\FullHpException.h" />
+    <ClInclude Include="..\header\Exception\SurrenderNotAttackedException.h" />
     <ClInclude Include="..\header\globals.h" />
     <ClInclude Include="..\header\Logic\AI.h" />
-    <ClInclude Include="..\header\Logic\Building.h" />
-    <ClInclude Include="..\header\Logic\Player.h" />
-    <ClInclude Include="..\header\Logic\Region.h" />
-    <ClInclude Include="..\header\Logic\RegionManager.h" />
-    <ClInclude Include="..\header\Logic\Army.h" />
-    <ClInclude Include="..\header\Logic\Weapon.h" />
-    <ClInclude Include="..\header\mash.h" />
-    <ClInclude Include="..\header\output.h" />
-    <ClInclude Include="..\header\passes\FragmentBuffer.h" />
-    <ClInclude Include="..\header\passes\SSBO.h" />
-    <ClInclude Include="..\header\passes\SSBOByteArray.h" />
-    <ClInclude Include="..\header\shader.h" />
-    <ClInclude Include="..\header\Timer.h" />
-    <ClInclude Include="..\header\utils\Array.h" />
-    <ClInclude Include="..\header\utils\Config.h" />
-    <ClInclude Include="..\header\utils\GlobalTimer.h" />
-    <ClInclude Include="..\header\utils\Point.h" />
-    <ClInclude Include="..\header\utils\SmoothMove.h" />
-    <ClInclude Include="..\include\GLFW\glfw3.h" />
-    <ClInclude Include="..\include\GLFW\glfw3native.h" />
-    <ClInclude Include="..\include\GL\eglew.h" />
-    <ClInclude Include="..\include\GL\gl.h" />
-    <ClInclude Include="..\include\GL\glew.h" />
-    <ClInclude Include="..\include\GL\glxew.h" />
-    <ClInclude Include="..\include\GL\wglew.h" />
-    <ClInclude Include="..\include\linmath.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\cpp\Engine.cpp" />
-    <ClCompile Include="..\cpp\globals.cpp" />
-    <ClCompile Include="..\cpp\Logic\Army.cpp" />
-    <ClCompile Include="..\cpp\Logic\Building.cpp" />
-    <ClCompile Include="..\cpp\Logic\Player.cpp" />
-    <ClCompile Include="..\cpp\Logic\Region.cpp" />
-    <ClCompile Include="..\cpp\Logic\RegionManager.cpp" />
-    <ClCompile Include="..\cpp\Logic\Weapon.cpp" />
-    <ClCompile Include="..\cpp\Main.cpp" />
-    <ClCompile Include="..\cpp\mash.cpp" />
-    <ClCompile Include="..\cpp\output.cpp" />
-    <ClCompile Include="..\cpp\shader.cpp" />
-    <ClCompile Include="..\cpp\utils\Array.cpp" />
-    <ClCompile Include="..\cpp\utils\Config.cpp" />
-    <ClCompile Include="..\cpp\utils\GlobalTimer.cpp" />
-    <ClCompile Include="..\cpp\utils\Point.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\README.md" />
-    <None Include="..\shaders\map_renderer.frag" />
-    <None Include="..\shaders\map_renderer.vert" />
-    <None Include="..\shaders\normal_gl.frag" />
-    <None Include="..\shaders\normal_gl.vert" />
-    <Text Include="..\shaders\main_game_pass.frag">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </Text>
-    <Text Include="..\shaders\main_game_pass.vert">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </Text>
-  </ItemGroup>
-  <PropertyGroup Label="Globals">
-    <VCProjectVersion>16.0</VCProjectVersion>
-    <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{e2de6c65-51db-4054-a813-14f37725bd27}</ProjectGuid>
-    <RootNamespace>MiniWar</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>MiniWar</ProjectName>
-  </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
-  <ImportGroup Label="Shared">
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)../lib/glew32.lib;$(ProjectDir)../lib/glfw3dll.lib;$(ProjectDir)../lib/OpenGL32.lib</AdditionalDependencies>
-      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)../lib/glew32.lib;$(ProjectDir)../lib/glfw3dll.lib;$(ProjectDir)../lib/OpenGL32.lib</AdditionalDependencies>
-      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\GL;$(SolutionDir)include\GLFW;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(ProjectDir)../lib/glew32.lib;$(ProjectDir)../lib/glfw3dll.lib;$(ProjectDir)../lib/OpenGL32.lib</AdditionalDependencies>
-      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\GL;$(SolutionDir)include\GLFW;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(ProjectDir)../lib/glew32.lib;$(ProjectDir)../lib/glfw3dll.lib;$(ProjectDir)../lib/OpenGL32.lib</AdditionalDependencies>
-      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
-    </Link>
-  </ItemDefinitionGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|x64">
-      <Configuration>Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|x64">
-      <Configuration>Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\header\ByteArray.h" />
-    <ClInclude Include="..\header\Camera.h" />
-    <ClInclude Include="..\header\debug.h" />
-    <ClInclude Include="..\header\globals.h" />
     <ClInclude Include="..\header\Logic\Building.h" />
     <ClInclude Include="..\header\Logic\Player.h" />
     <ClInclude Include="..\header\Logic\PowerStation.h" />
@@ -297,12 +68,18 @@
     <ClInclude Include="..\include\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\include\imgui\imstb_textedit.h" />
     <ClInclude Include="..\include\imgui\imstb_truetype.h" />
+    <ClInclude Include="..\include\json.hpp" />
     <ClInclude Include="..\include\linmath.h" />
     <ClInclude Include="..\include\stb\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\cpp\globals.cpp" />
-    <ClCompile Include="..\cpp\Logic\PowerStation.cpp" />
+    <ClCompile Include="..\cpp\Logic\Army.cpp" />
+    <ClCompile Include="..\cpp\Logic\Building.cpp" />
+    <ClCompile Include="..\cpp\Logic\Player.cpp" />
+    <ClCompile Include="..\cpp\Logic\Region.cpp" />
+    <ClCompile Include="..\cpp\Logic\RegionManager.cpp" />
+    <ClCompile Include="..\cpp\Logic\Weapon.cpp" />
     <ClCompile Include="..\cpp\Main.cpp" />
     <ClCompile Include="..\cpp\mash.cpp" />
     <ClCompile Include="..\cpp\output.cpp" />
