@@ -1,6 +1,7 @@
 #include "../../header/Logic/Player.h"
 #include "../../header/Logic/RegionManager.h"
 #include "../../header/debug.h"
+#include "../../header/utils/Config.h"
 #include <random>
 
 Player:: Player(): regionmanager(RegionManager::getInstance()){
@@ -907,4 +908,33 @@ void Player::rangeAttack(Operation operation) {
 			}
 		}
 	}
+
 }
+
+void Player::create() {
+	Config config = Config::getInstance();
+	std::tuple<float, float> originSize = config.getConfig({"Region", "OriginSize"}).template get<std::tuple<float, float>>();
+
+
+	int mapWidth = regionmanager.get_map_width();
+	int mapHeight = regionmanager.get_map_height();
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> disX(3, mapWidth - 3);
+	std::uniform_int_distribution<int> disY(3, mapHeight - 3);
+	std::uniform_int_distribution<int> disSize(std::get<0>(originSize), std::get<1>(originSize));
+	int size = disSize(gen);
+	int x = disX(gen);
+	int y = disY(gen);
+	regionmanager.get_region(x, y).setOwner(0);
+	for (int i = -3; i <= 3; i++) {
+		for (int j = -3; j <= 3; j++) {
+			if (i * i + j * j > size * size) {
+				continue;
+			}
+			regionmanager.get_region(x + i, y + j).setOwner(0);
+		}
+	}
+	return;
+}
+

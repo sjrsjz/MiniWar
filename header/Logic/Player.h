@@ -69,7 +69,7 @@ public:
 	void remove_building(Operation operation);
 	void product(Operation operation);
 	void rangeAttack(Operation operation);
-
+	void create();
 
 	//update function
 	void update(GlobalTimer& timer);
