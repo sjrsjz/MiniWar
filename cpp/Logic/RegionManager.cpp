@@ -21,7 +21,7 @@ RegionManager::~RegionManager() {
 struct Node {
     Point pt;        // ��ǰ�ڵ�λ��
     int g_cost;      // ����㵽��ǰ��Ĵ���
-    int h_cost;      // ����ʽ����ֵ�������پ��룩
+    int h_cost;      // ���ʽ����ֵ�������پ��룩
     int f_cost;      // �ܴ��� f = g + h
     Node* parent;    // ���ڵ�ָ��
 

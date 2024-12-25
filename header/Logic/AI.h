@@ -19,6 +19,7 @@
 template<typename Key, typename Value>
 using umap = std::unordered_map<Key, Value>;
 using json = nlohmann::json;
+#define INF 1 << 30
 
 class AITimer {
 	private:
@@ -70,7 +71,7 @@ class AI {
 	int gold;
 	std::vector<int> weapons;
 	std::vector<int> arm_level;	
-	int maxLevel = 3;
+	int maxLevel = 2;
 	std::tuple<int, int> capital;
 	RegionManager& regionManager = RegionManager::getInstance();
 	Config& config = Config::getInstance();
@@ -80,7 +81,7 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 10000.0;
+	double A = 10000000.0;
 	double k = 0.01;
 	double t0 = 50;
 	AITimer Timer;
@@ -373,6 +374,7 @@ public:
 		DEBUG::DebugOutput("gold: ", this->gold);
 		DEBUG::DebugOutput("army: ", this->averageForce);
 		DEBUG::DebugOutput("canMove: ", this->canMove);
+		DEBUG::DebugOutput("canDefend: ", this->canDefend);
 		this->gold += formula(Timer.elapsedSeconds());	
 		delta_t -= 1;
 		int buildArmy = std::min((int)(this->gold * 0.3), 8000);
@@ -410,26 +412,37 @@ public:
 		if (maxLevelCount == 4) {
 			return;
 		}
-		return;
 		int buildLevel = (int)this->gold * 0.2;
-		if (buildLevel >= weaponCost["Army"].template get<std::vector<int>>()[arm_level[0]] && arm_level[0] < maxLevel) {
+		int armycost = INF;
+		if (arm_level[0] < maxLevel + 1)
+			armycost = weaponCost["Army"].template get<std::vector<int>>()[arm_level[0] - 1];
+		if (buildLevel >= armycost && arm_level[0] < maxLevel) {
 			arm_level[0]++;
-			this->gold -= weaponCost["Army"].template get<std::vector<int>>()[arm_level[0]];
+			this->gold -= armycost;
 		}
+		int weapon1cost = INF;
+		int weapon2cost = INF;
+		int weapon3cost = INF;
+		if (arm_level[1] < maxLevel)
+			weapon1cost = weaponCost["0"].template get<std::vector<int>>()[arm_level[1]];
+		if (arm_level[2] < maxLevel)
+			weapon2cost = weaponCost["1"].template get<std::vector<int>>()[arm_level[2]];
+		if (arm_level[3] < maxLevel)
+			weapon3cost = weaponCost["2"].template get<std::vector<int>>()[arm_level[3]];
 		if (dist <= 0.25) {
-			if (buildLevel >= weaponCost["0"].template get<std::vector<int>>()[arm_level[1]]) {
+			if (buildLevel >= weapon1cost && arm_level[1] < maxLevel) {
 				arm_level[1]++;
-				this->gold -= weaponCost["0"].template get<std::vector<int>>()[arm_level[1]];
+				this->gold -= weapon1cost;
 			}
 		} else if (dist <= 0.5) {
-			if (buildLevel >= weaponCost["1"].template get<std::vector<int>>()[arm_level[2]]) {
+			if (buildLevel >= weapon2cost && arm_level[2] < maxLevel) {
 				arm_level[2]++;
-				this->gold -= weaponCost["1"].template get<std::vector<int>>()[arm_level[2]];
+				this->gold -= weapon2cost;
 			}
 		} else {
-			if (buildLevel >= weaponCost["2"].template get<std::vector<int>>()[arm_level[3]]) {
+			if (buildLevel >= weapon3cost && arm_level[3] < maxLevel) {
 				arm_level[3]++;
-				this->gold -= weaponCost["2"].template get<std::vector<int>>()[arm_level[3]];
+				this->gold -= weapon3cost;
 			}
 		}
 	}
@@ -455,7 +468,6 @@ public:
 		auto end = std::chrono::steady_clock::now();
 		DEBUG::DebugOutput( "Elapsed time: ", std::chrono::duration<double>(end - start).count());
 		this->canMove = true;
-		this->canDefend = !canDefend;
 	}
 
 	struct Transaction {
@@ -553,7 +565,7 @@ public:
 			int armyLevel = this->arm_level[0];
 			DEBUG::DebugOutput("moveArmy() calls move_Army");
 			DEBUG::DebugOutput("from (", start.getX(), ",", start.getY(), ")", "to", "(", end.getX(), ",", end.getY(), ")");
-			maxTime = std::max(maxTime, regionManager.move_army(start, end, force, armyLevel));
+			maxTime = std::max(maxTime, regionManager.move_army(end, start, force, armyLevel));
 		}
 
 		std::thread t([this, maxTime](){
@@ -587,6 +599,7 @@ public:
 		for (int i = -1; i <= 1 ;i++) {
 			for (int j = -1; j <= 1; j++) {
 				try {
+					if (regionManager.get_region(start.getX() + i, start.getY() + j).getOwner() != id) continue;
 					Army& tmp = regionManager.get_region(start.getX() + i, start.getY() + j).getArmy();
 					curForce +=	tmp.getForce() * 0.7;
 					regionlist.push_back(Point(start.getX() + i, start.getY() + j));
@@ -620,7 +633,11 @@ public:
 
 	void expand() {
 		// TODO
-		if (!canMove) return;
+		if (!canMove) {
+			canDefend = false;
+			return;
+		}
+		canDefend = true;
 		std::vector<std::pair<std::tuple<int, int>, int>> borderDistance;
 		for (auto borderRegion : border) {
 			int distance = 0;
