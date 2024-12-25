@@ -336,10 +336,10 @@ void Player:: move_army(Operation operation, int amount){
 	Region& end_region = regionmanager.get_region(end_x, end_y);
 
 	if (start_region.getOwner() != id) {
-		throw std::invalid_argument("·ÇÕ¼ÓÐµØ¿é");
+		throw std::invalid_argument("ï¿½ï¿½Õ¼ï¿½ÐµØ¿ï¿½");
 	}
 	if (start_region.getArmy().getForce() < amount || amount == 0) {
-		throw std::invalid_argument("¾ü¶ÓÊýÁ¿²»×ã");
+		throw std::invalid_argument("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 	}
 
 	regionmanager.move_army(start, end, amount, arm_level[0]);
