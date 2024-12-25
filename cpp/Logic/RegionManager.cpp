@@ -506,6 +506,7 @@ void RegionManager::clear_building(Region& region) {
 
 void RegionManager::update(GlobalTimer& timer) {
 	current_time += timer.get_elapsed_time();
+	DEBUG::DebugOutput("RegionManager::update() called", current_time);
 	while (!moving_armies.empty() && moving_armies.top().time <= current_time) {
 		DEBUG::DebugOutput("Moving army: ", moving_armies.top().amount);
 		MovingArmy army = moving_armies.top();

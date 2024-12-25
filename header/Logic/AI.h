@@ -428,7 +428,7 @@ public:
 
 	void sleep(double seconds) {
 		this->canMove = false;
-		std::this_thread::sleep_for(std::chrono::milliseconds((int)(seconds * 1000)));
+		std::this_thread::sleep_for(std::chrono::milliseconds((int)(seconds) * 100));
 		this->canMove = true;
 	}
 
@@ -627,6 +627,7 @@ public:
 					int maxForceValue = 0;
 					for (int j = -1; j <= 1; j++) {
 						for (int k = -1; k <= 1; k++) {
+							if (x + j < 0 || x + j >= regionManager.get_map_width() || y + k < 0 || y + k >= regionManager.get_map_height()) continue;
 							if (regionManager.get_region(x + i, y + j).getOwner() == id) {
 								Army& tmp = regionManager.get_region(x + j, y + k).getArmy();
 								if (tmp.getForce() > maxForceValue) {
@@ -655,14 +656,14 @@ public:
 
 
 		DEBUG::DebugOutput("AI source", this->gold);
-		DEBUG::DebugOutput("canMove: ", this->canMove);
-		DEBUG::DebugOutput("AI Called increse()");
+		//DEBUG::DebugOutput("canMove: ", this->canMove);
+		//DEBUG::DebugOutput("AI Called increse()");
 		this->increase();
-		DEBUG::DebugOutput("AI Called defend()");
+		//DEBUG::DebugOutput("AI Called defend()");
 		this->defend();
-		DEBUG::DebugOutput("AI Called expand()");
+		//DEBUG::DebugOutput("AI Called expand()");
 		this->expand();
-		DEBUG::DebugOutput("AI Called attack()");
+		//DEBUG::DebugOutput("AI Called attack()");
 		this->attack();
 	}
 	
