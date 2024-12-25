@@ -32,3 +32,7 @@ void Point::setX(float x) {
 void Point::setY(float y) {
 	this->y = y;
 }
+
+bool Point::operator==(const Point& p) {
+	return this->x == p.x && this->y == p.y;
+}
