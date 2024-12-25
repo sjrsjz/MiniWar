@@ -66,5 +66,8 @@ const json Config::getResearch() {
 }
 static Config instance("./config.json");
 Config& Config::getInstance() {
+	if (instance.getConfig().empty()) {
+		instance = Config("./config.json");
+	}
 	return instance;
 }

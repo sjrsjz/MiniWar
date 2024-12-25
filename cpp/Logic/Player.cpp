@@ -813,10 +813,10 @@ void Player::product(Operation operation) {
 		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
 			throw "Not enough resource";
 		}
-		gold -= cost1[0];
-		oil -= cost1[1];
-		electricity -= cost1[2];
-		steel -= cost1[3];
+		gold -= cost0[0];
+		oil -= cost0[1];
+		electricity -= cost0[2];
+		steel -= cost0[3];
 		end_region.addWeapon(0);
 		break;
 	case Operator::ProductWeapon2:
@@ -824,10 +824,10 @@ void Player::product(Operation operation) {
 		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
 			throw "Not enough resource";
 		}
-		gold -= cost2[0];
-		oil -= cost2[1];
-		electricity -= cost2[2];
-		steel -= cost2[3];
+		gold -= cost0[0];
+		oil -= cost0[1];
+		electricity -= cost0[2];
+		steel -= cost0[3];
 		end_region.addWeapon(0);
 		break;
 	}

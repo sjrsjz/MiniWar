@@ -635,8 +635,10 @@ static class StatusGui {
 private:
 	SmoothMove resources_amount{};
 	SmoothMove resources_amount_back{};
+	int resources_amount_max = 0;
 	SmoothMove occupation_amount{};
 	SmoothMove occupation_amount_back{}; // 已占有资源
+	int occupation_amount_max = 0;
 
 	void render_bar(ImGuiIO& io, const SmoothMove& f, const SmoothMove& b, const char* title, GLuint tex, int scale, const ImVec4& fc, const ImVec4& bc) {
 		ImGui::Image(tex, ImVec2(30, 30));
@@ -664,10 +666,10 @@ public:
 		{
 			resources_amount.setTotalDuration(0.125);
 			resources_amount_back.setTotalDuration(0.5);
-
+			resources_amount_max = 100;
 			occupation_amount.setTotalDuration(1);
 			occupation_amount_back.setTotalDuration(2);
-
+			occupation_amount_max = 100;
 		}
 	}
 	void render_gui(ImGuiIO& io) {
@@ -676,8 +678,8 @@ public:
 		ImGui::SetWindowPos(ImVec2(50, io.DisplaySize.y - 250));
 
 		// 资源条
-		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, 100, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5));
-		render_bar(io, occupation_amount, occupation_amount_back, u8"已占有:%d", TEXTURE::s_image_guard, 100, ImVec4(1, 1, 1, 1), ImVec4(1, 0.25, 0.25, 0.5));
+		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, resources_amount_max, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5));
+		render_bar(io, occupation_amount, occupation_amount_back, u8"已占有:%d", TEXTURE::s_image_guard, occupation_amount_max, ImVec4(1, 1, 1, 1), ImVec4(1, 0.25, 0.25, 0.5));
 
 		ImGui::End();
 	}
@@ -686,19 +688,24 @@ public:
 		resources_amount_back.update_sin(timer.getTime());
 		occupation_amount.update_sin(timer.getTime());
 		occupation_amount_back.update_sin(timer.getTime());
-	}
 
-	void set_resources_amout(double x, const Timer& timer) {
-		resources_amount.newEndPosition(x, timer.getTime());
-		resources_amount_back.newEndPosition(x, timer.getTime());
+		double electricity = RegionManager::getInstance().get_player().get_electricity();
+		resources_amount.newEndPosition(electricity, timer.getTime());
+		resources_amount_back.newEndPosition(electricity, timer.getTime());
+		
+		int region_count = 0;
+		for (int i{}; i < RegionManager::getInstance().get_map_width(); i++) {
+			for (int j{}; j < RegionManager::getInstance().get_map_height(); j++) {
+				if (RegionManager::getInstance().get_region(i, j).getOwner() == 0) {
+					region_count++;
+				}
+			}
+		}
+		occupation_amount_max = RegionManager::getInstance().get_map_width() * RegionManager::getInstance().get_map_height();
+		double x = region_count / fmax(1e-3, occupation_amount_max);
 		occupation_amount.newEndPosition(x, timer.getTime());
 		occupation_amount_back.newEndPosition(x, timer.getTime());
-	}
-	double get_resources_amount() {
-		return resources_amount.getX();
-	}
-	double get_occupation_amount() {
-		return occupation_amount.getX();
+
 	}
 
 }s_status_gui;
@@ -1668,10 +1675,6 @@ void KeyRelease(int key) {
 			GAMESOUND::play_click_sound();
 			s_selected_weapon = (SelectedWeapon)((s_selected_weapon + 1) % 4);		
 		}
-		break;
-	case GLFW_KEY_F:
-		if (GAMESTATUS::s_enable_control)
-			s_status_gui.set_resources_amout(fmod(s_status_gui.get_resources_amount() + 0.1,1), timer);
 		break;
 	case GLFW_KEY_T:
 		s_tech_tree_gui.open(!s_tech_tree_gui.is_open(), timer);

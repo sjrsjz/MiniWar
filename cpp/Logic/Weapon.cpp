@@ -11,7 +11,7 @@ Weapon::Weapon(int id) {
 	this->damage = j["damage"].get<float>();
 	this->damageRange = j["damageRange"].get<float>();
 	this->attackSpeed = j["attackSpeed"].get<float>();
-	this->attackRange = std::make_tuple(j["attackRange"][0].get<float>(), j["attackRange"][1].get<float>());
+	this->attackRange = std::make_tuple(j["AttackRange"][0].get<float>(), j["AttackRange"][1].get<float>());
 	this->cost = j["cost"].get<std::vector<int>>();
 	this->id = id;
 	this->AICost = j["AICost"].get<int>();

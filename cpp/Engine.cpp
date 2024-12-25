@@ -6,7 +6,7 @@
 #include <thread>
 #include <queue>
 
-//AI ai;
+AI ai;
 bool isPause = false;
 
 static bool s_exit_game = false;
@@ -14,6 +14,7 @@ static std::thread s_main_loop;
 void initial_game(int width, int height) {
 	s_exit_game = false;
 	RegionManager::getInstance().set(width, height);
+	//ai.create(1);
 }
 
 void read_input() {
@@ -129,6 +130,7 @@ void update() {
 }
 
 void main_loop() {
+	
 	while (!s_exit_game) {
 		//DEBUG::DebugOutput("New Loop\n");
 		GlobalTimer::getInstance().start();

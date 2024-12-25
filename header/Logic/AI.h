@@ -100,7 +100,10 @@ class AI {
 	}
 
 public:
-	AI() {
+	AI(){}
+
+	void create()
+	{
 		// temp
 		// TODO
 		weaponCost = config.getConfig({"ResearchInstitution", "OUpLevelCost"});
@@ -173,7 +176,7 @@ public:
 
 	}		
 
-	AI(int id) {
+	void create(int id) {
 		weaponCost = config.getConfig({"ResearchInstitution", "OUpLevelCost"});
 		gold = 1000;
 		weapons = { 0, 0, 0 };
@@ -207,7 +210,7 @@ public:
 			{
 				for (int j = -3; j <= 3; j++)
 				{
-					if (i*i + j*j > size*size) continue;
+					if (i * i + j * j > size*size) continue;
 					try {
 						if (regionManager.get_region(x + i, y + j).getOwner() != -1)
 						{
@@ -522,7 +525,7 @@ public:
 		std::thread t([this, maxTime](){
 				this->sleep(std::ceil(maxTime));
 				});
-		t.join();
+		t.detach();
 	}
 
 	void armyAttack(Point start, int amount, Point end) {
@@ -601,7 +604,7 @@ public:
 					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
-					t.join();
+					t.detach();
 				}
 			}
 		} else {
@@ -627,7 +630,7 @@ public:
 					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
-					t.join();
+					t.detach();
 				}
 			}
 		}
