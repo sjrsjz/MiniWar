@@ -434,11 +434,12 @@ public:
 	bool isBorder(int x, int y) {
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
-				if (x + i >= 0 && x + i < regionManager.get_map_width() && y + j >= 0 && y + j < regionManager.get_map_height()) {
-					if (regionManager.get_region(x + i, y + j).getOwner() == id) {
-						return true;
-					}
+				if (x + i < 0 || x + i >= regionManager.get_map_width() || y + j < 0 || y + j >= regionManager.get_map_height()) continue;
+				if (regionManager.get_region(x + i, y + j).getOwner() == id) {
+					return true;
 				}
+			}
+		}
 			}
 		}
 		return false;
@@ -547,6 +548,7 @@ public:
 			Point end = Point(std::get<0>(to), std::get<1>(to));
 			int armyLevel = this->arm_level[0];
 			DEBUG::DebugOutput("moveArmy() calls move_Army");
+			DEBUG::DebugOutput("from (", start.getX(), ",", start.getY(), ")", "to", "(", end.getX(), ",", end.getY(), ")");
 			maxTime = std::max(maxTime, regionManager.move_army(start, end, force, armyLevel));
 		}
 
@@ -564,7 +566,9 @@ public:
 			}
 		}
 		this->canMove = false;
+		this->canDefend = true;
 		DEBUG::DebugOutput("armyAttack() called");
+		DEBUG::DebugOutput("from (", start.getX(), ",", start.getY(), ")", "to", "(", end.getX(), ",", end.getY(), ")");
 		Army& army = regionManager.get_region(start.getX(), start.getY()).getArmy();
 		int curForce = army.getForce() * 0.7;
 		if (army.getForce() * 0.7 >= amount) {
@@ -642,7 +646,7 @@ public:
 							if (x + j < 0 || x + j >= regionManager.get_map_width() || y + k < 0 || y + k >= regionManager.get_map_height()) continue;
 							if (regionManager.get_region(x + i, y + j).getOwner() == id) {
 								Army& tmp = regionManager.get_region(x + j, y + k).getArmy();
-								if (tmp.getForce() > maxForceValue) {
+								if (tmp.getForce() >= maxForceValue) {
 									maxForceValue = tmp.getForce();
 									maxForce = Point(x + j, y + k);
 								}
@@ -658,6 +662,9 @@ public:
 						}
 					}
 					if (flag) {
+						continue;
+					}
+					if (maxForce.getX() == 0 && maxForce.getY() == 0) {
 						continue;
 					}
 					std::thread t([this, maxForce, borderArmyForce, x, y](){
@@ -679,16 +686,18 @@ public:
 					int maxForceValue = 0;
 					for (int j = -1; j <= 1; j++) {
 						for (int k = -1; k <= 1; k++) {
+							int w = regionManager.get_map_width();
+							int h = regionManager.get_map_height();
 							if (x + j < 0 || x + j >= regionManager.get_map_width() || y + k < 0 || y + k >= regionManager.get_map_height()) continue;
 							if (regionManager.get_region(x + i, y + j).getOwner() == id) {
 								Army& tmp = regionManager.get_region(x + j, y + k).getArmy();
-								if (tmp.getForce() > maxForceValue) {
+								if (tmp.getForce() >= maxForceValue) {
 									maxForceValue = tmp.getForce();
 									maxForce = Point(x + j, y + k);
 								}
 							}
 						}
-					}	
+					}
 					bool flag = false;
 					for (auto item : isAttacked) {
 						auto [Ax, Ay] = item;
@@ -698,6 +707,9 @@ public:
 						}
 					}
 					if (flag) {
+						continue;
+					}
+					if (maxForce.getX() == 0 && maxForce.getY() == 0) {
 						continue;
 					}
 					std::thread t([this, maxForce, borderArmyForce, x, y](){
@@ -726,7 +738,7 @@ public:
 		
 		this->increase();
 		//DEBUG::DebugOutput("AI Called defend()");
-		//this->defend();
+		this->defend();
 		//DEBUG::DebugOutput("AI Called expand()");
 		this->expand();
 		//DEBUG::DebugOutput("AI Called attack()");
