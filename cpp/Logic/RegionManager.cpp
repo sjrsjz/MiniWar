@@ -16,16 +16,16 @@ RegionManager::~RegionManager() {
 }
 
 struct Node {
-    Point pt;        // µ±Ç°½ÚµãÎ»ÖÃ
-    int g_cost;      // ´ÓÆðµãµ½µ±Ç°µãµÄ´ú¼Û
-    int h_cost;      // Æô·¢Ê½º¯ÊýÖµ£¨Âü¹þ¶Ù¾àÀë£©
-    int f_cost;      // ×Ü´ú¼Û f = g + h
-    Node* parent;    // ¸¸½ÚµãÖ¸Õë
+    Point pt;        // ï¿½ï¿½Ç°ï¿½Úµï¿½Î»ï¿½ï¿½
+    int g_cost;      // ï¿½ï¿½ï¿½ï¿½ãµ½ï¿½ï¿½Ç°ï¿½ï¿½Ä´ï¿½ï¿½ï¿½
+    int h_cost;      // ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¾ï¿½ï¿½ë£©
+    int f_cost;      // ï¿½Ü´ï¿½ï¿½ï¿½ f = g + h
+    Node* parent;    // ï¿½ï¿½ï¿½Úµï¿½Ö¸ï¿½ï¿½
 
     Node(Point pt_, int g, int h, Node* parent_ = nullptr)
         : pt(pt_), g_cost(g), h_cost(h), f_cost(g + h), parent(parent_) {}
 
-    // ±È½ÏÓÅÏÈ¶ÓÁÐµÄË³Ðò£¬f_cost Ð¡µÄÓÅÏÈ
+    // ï¿½È½ï¿½ï¿½ï¿½ï¿½È¶ï¿½ï¿½Ðµï¿½Ë³ï¿½ï¿½f_cost Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     bool operator>(const Node& other) const {
         return f_cost > other.f_cost;
     }
@@ -49,19 +49,19 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
     int rows = grid.size();
     int cols = grid[0].size();
 
-    // °Ë¸ö·½Ïò£¨ÏàÁÚµã£©
+    // ï¿½Ë¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµã£©
     std::vector<std::pair<int, int>> directions = {
-        {0, 1}, {1, 0}, {0, -1}, {-1, 0},  // ÉÏ¡¢ÓÒ¡¢ÏÂ¡¢×ó
-        {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // ×óÉÏ¡¢ÓÒÉÏ¡¢×óÏÂ¡¢ÓÒÏÂ
+        {0, 1}, {1, 0}, {0, -1}, {-1, 0},  // ï¿½Ï¡ï¿½ï¿½Ò¡ï¿½ï¿½Â¡ï¿½ï¿½ï¿½
+        {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // ï¿½ï¿½ï¿½Ï¡ï¿½ï¿½ï¿½ï¿½Ï¡ï¿½ï¿½ï¿½ï¿½Â¡ï¿½ï¿½ï¿½ï¿½ï¿½
     };
 
-    // ÓÅÏÈ¶ÓÁÐ£¨Ð¡¶¥¶Ñ£©
+    // ï¿½ï¿½ï¿½È¶ï¿½ï¿½Ð£ï¿½Ð¡ï¿½ï¿½ï¿½Ñ£ï¿½
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_set;
 
-    // ´æ´¢ÒÑ¾­·ÃÎÊ¹ýµÄ½Úµã
+    // ï¿½æ´¢ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½Ä½Úµï¿½
     std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
 
-    // Æðµã³õÊ¼»¯
+    // ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
     Node* start_node = new Node(start, 0, manhattan_distance(start, end));
     open_set.push(*start_node);
 
@@ -75,17 +75,17 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
 
         visited[current.pt.getX()][current.pt.getY()] = true;
 
-        // ¼ì²éÊÇ·ñµ½´ïÖÕµã
+        // ï¿½ï¿½ï¿½ï¿½Ç·ñµ½´ï¿½ï¿½Õµï¿½
         if (current.pt.getX() == end.getX() && current.pt.getY() == end.getY()) {
             return reconstruct_path(&current);
         }
 
-        // ±éÀúÏàÁÚµã
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½
         for (const auto& dir : directions) {
             int nx = current.pt.getX() + dir.first;
             int ny = current.pt.getY() + dir.second;
 
-            // ¼ì²é±ß½çºÍÊÇ·ñ¿É×ß
+            // ï¿½ï¿½ï¿½ß½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
             if (nx >= 0 && ny >= 0 && nx < rows && ny < cols && grid[nx][ny] == 1 && !visited[nx][ny]) {
                 int move_cost = (dir.first == 0 || dir.second == 0) ? 10 : 14;
                 Node* neighbor = new Node(Point(nx, ny), current.g_cost + move_cost, manhattan_distance(Point(nx, ny), end), new Node(current));
@@ -94,7 +94,7 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
         }
     }
 
-    // Èç¹ûÕÒ²»µ½Â·¾¶£¬·µ»Ø¿Õ
+    // ï¿½ï¿½ï¿½ï¿½Ò²ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¿ï¿½
     return {};
 }
 
