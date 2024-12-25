@@ -8,3 +8,4 @@ void main_loop();
 void read_input();
 void update();
 void run_game(int width, int height);
+void push_input(const Operation& op);

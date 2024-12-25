@@ -1635,16 +1635,16 @@ void KeyProcess() {
 	float speed = 100 * exp(- 0.25 * scale_map_camera.getZ());
 
 	if (keys[GLFW_KEY_W]) {
-		dz = speed;
+		dz += speed;
 	}
 	if (keys[GLFW_KEY_S]) {
-		dz = -speed;
+		dz += -speed;
 	}
 	if (keys[GLFW_KEY_A]) {
-		dx = speed;
+		dx += speed;
 	}
 	if (keys[GLFW_KEY_D]) {
-		dx = -speed;
+		dx += -speed;
 	}
 
 	if (dx != 0 || dz != 0) {
@@ -1682,8 +1682,13 @@ void KeyRelease(int key) {
 	case GLFW_KEY_E: // 发动攻击
 		if (GAMESTATUS::s_enable_control) {
 			if (s_selected_gui.is_selected) {
+				Point start_point = Point::toPoint(s_selected_gui.grid);
+				Point end_point = Point::toPoint(s_current_selected_grid);
 				switch (s_selected_weapon)
 				{
+				case NONE:		
+					push_input({ start_point, end_point, Operator::ArmyMove });
+					break;
 				case NUCLEAR_MISSILE:
 					DEBUG::DebugOutput("Nuclear Missile");
 					GAMESOUND::play_nuclear_launch_sound();
