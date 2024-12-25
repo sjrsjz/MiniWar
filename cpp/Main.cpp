@@ -265,6 +265,9 @@ static enum SelectedWeapon {
 	SCATTER_BOMB, // 散弹炸弹
 } s_selected_weapon;
 
+static int s_scatter_bomb_range = 1;
+static int s_nuclear_missile_level = 1;
+
 namespace UIFonts {
 	static ImFont* default_font;
 	static ImFont* menu_font;
@@ -495,6 +498,49 @@ public:
 	}
 } s_tech_tree_gui;
 
+class ShakeEffect {
+	std::vector<SmoothMove> shake_list; // 共给地图震动效果使用
+public:
+	void clear() {
+		shake_list.clear();
+	}
+	void update(const Timer& timer) {
+		for (auto& s : shake_list) {
+			s.update_sin(timer.getTime());
+			s.newEndPosition(0, timer.getTime());
+		}
+		std::vector<SmoothMove> next = {};
+		for (auto& s : shake_list) {
+			if (s.getX() > 1e-3) {
+				next.push_back(s);
+			}
+		}
+		shake_list = next;
+	}
+	void push_shake(const Timer& timer) {
+		shake_list.push_back(SmoothMove());
+		shake_list.back().setTotalDuration(1);
+		shake_list.back().setStartPosition(1, timer.getTime());
+		shake_list.back().newEndPosition(0, timer.getTime());
+	}
+	void get_shake_matrix(mat4x4 m) {
+		mat4x4 shake_matrix;
+		mat4x4_identity(shake_matrix);
+		for (auto& s : shake_list) {
+			mat4x4 m0;
+			Camera cam;
+			cam.setPos(sin(s.getX() * 50) * 0.0125, sin(s.getX() * 25) * 0.0125, sin(s.getX() * 12.5) * 0.0125);
+			cam.getMat4(m0);
+
+			mat4x4_mul(shake_matrix, shake_matrix, m0);
+		}
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				m[i][j] = shake_matrix[i][j];
+			}
+		}
+	}
+}s_shake_effect;
 
 static class SelectedGui {
 public:
@@ -538,6 +584,30 @@ public:
 		ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, io.DisplaySize.y - 200));
 		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 200));
 
+		switch (s_selected_weapon) {
+		case NUCLEAR_MISSILE:
+			ImGui::Text("Selected Weapon: Nuclear Missile");
+			// 显示当前选择的武器等级
+			ImGui::Text("Selected Level: %d", s_nuclear_missile_level + 1);
+
+			break;
+		case ARMY:
+			ImGui::Text("Selected Weapon: Army");
+			break;
+		case SCATTER_BOMB:
+			ImGui::Text("Selected Weapon: Scatter Bomb");
+			// 滑块颜色
+			ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1, 1, 1, 0.5));
+			ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(1, 1, 1, 1));
+			ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 10.0f);  // 设置滑块大小
+			ImGui::SetNextItemWidth(io.DisplaySize.x / 4 - 20);  // 设置滑块条宽度
+			ImGui::SetCursorPosX(10);
+			ImGui::SliderInt("##ScatterBombRange", &s_scatter_bomb_range, 1, map_info.getWidth() / 2);
+			ImGui::PopStyleVar();
+			ImGui::PopStyleColor(2);
+			break;
+		}
+
 		ImGui::Text("Selected Grid: %d, %d", grid[0], grid[1]);
 		ImGui::End();
 		ImGui::PopStyleVar();
@@ -546,18 +616,15 @@ public:
 	void update(const Timer& timer) {
 		shake.update_sin(timer.getTime());
 		shake.newEndPosition(0, timer.getTime());
-
 	}
 
 	void shake_gui(const Timer& timer) {
 		shake.setStartPosition(1, timer.getTime());
 	}
 
-	void get_shake_matrix(mat4x4 m) {
-		Camera cam;
-		cam.setPos(sin(shake.getX() * 50) * 0.025, (1 + sin(shake.getX() * 25)) * 0.025, sin(shake.getX() * 12.5) * 0.025);
-		cam.getMat4(m);
-	}
+
+
+
 
 }s_selected_gui;
 static class StatusGui {
@@ -678,6 +745,7 @@ void load_new_game(const LevelConfig& level_config) {
 	point_renderer.update(vertices);
 
 	s_tech_tree_gui.init_tech_tree_gui();
+	s_shake_effect.clear();
 
 	GAMESTATUS::s_in_game = true;
 	GAMESTATUS::s_enable_control = true;
@@ -1065,7 +1133,7 @@ void render_main_game_pass() {
 	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
 
 	mat4x4 shake_camera;
-	s_selected_gui.get_shake_matrix(shake_camera);
+	s_shake_effect.get_shake_matrix(shake_camera);
 	mat4x4_mul(g_trans_mat, g_trans_mat, shake_camera);
 
 
@@ -1109,7 +1177,7 @@ void render_main_game_pass() {
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_attack_target"), 1);
 
 	// 散弹炸弹标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_scatter_target"), gridX, gridY, 20, s_selected_weapon == SCATTER_BOMB && s_if_selected);
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_scatter_target"), gridX, gridY, s_scatter_bomb_range, s_selected_weapon == SCATTER_BOMB && s_if_selected);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_scatter);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_scatter_target"), 2);
@@ -1166,6 +1234,8 @@ void prepare_render() {
 	s_status_gui.update(timer);
 	s_tech_tree_gui.update(timer);
 	s_selected_gui.update(timer);
+
+	s_shake_effect.update(timer);
 
 	GAMESTATUS::s_enable_control = !s_menu_gui.is_activitied() && !s_tech_tree_gui.is_open();
 
@@ -1238,7 +1308,7 @@ void render_points() {
 	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
 
 	mat4x4 shake_camera;
-	s_selected_gui.get_shake_matrix(shake_camera);
+	s_shake_effect.get_shake_matrix(shake_camera);
 	mat4x4_mul(g_trans_mat, g_trans_mat, shake_camera);
 
 	int g_trans_mat_location = glGetUniformLocation(s_points_program, "g_trans_mat");
@@ -1588,6 +1658,7 @@ void KeyRelease(int key) {
 					s_selected_gui.message = u8"核导弹已发射";
 					// do something
 					s_selected_gui.shake_gui(timer);
+					s_shake_effect.push_shake(timer);
 					s_selected_gui.is_selected = false;
 					break;
 				case ARMY:
@@ -1602,6 +1673,25 @@ void KeyRelease(int key) {
 			}
 
 		}
+		break;
+	case GLFW_KEY_Z:
+		if (GAMESTATUS::s_enable_control && s_selected_weapon == SCATTER_BOMB) {
+			// 减小范围
+			s_scatter_bomb_range = fmax(1, s_scatter_bomb_range - 1);
+		}
+		if (GAMESTATUS::s_enable_control && s_selected_weapon == NUCLEAR_MISSILE) {
+			s_nuclear_missile_level = (s_nuclear_missile_level + 1) % 3;
+		}
+		break;
+	case GLFW_KEY_X:
+		if (GAMESTATUS::s_enable_control && s_selected_weapon == SCATTER_BOMB) {
+			// 增大范围
+			s_scatter_bomb_range = fmin(map_info.getWidth() / 2, s_scatter_bomb_range + 1);
+		}
+		if (GAMESTATUS::s_enable_control && s_selected_weapon == NUCLEAR_MISSILE) {
+			s_nuclear_missile_level = (s_nuclear_missile_level - 1 + 3) % 3;
+		}
+		break;
 	default:
 		break;
 	}
