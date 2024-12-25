@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <thread>
 #include <unordered_map>
+#include "../../header/debug.h"
 #include "../../header/Logic/RegionManager.h"
 #include "../../header/utils/Config.h"
 #include "../../header/Logic/Player.h"
@@ -270,7 +271,7 @@ public:
 					int damage = regionManager.get_weapon(i).getDamage(arm_level[i + 1]);
 					double time = start.distance(end) / regionManager.get_weapon(i).getAttackSpeed(arm_level[i + 1]);
 					if (dist >= min && dist <= max) {
-						regionManager.attack_region_missle(i, start, end, time, damage);
+						regionManager.attack_region_missle(i, arm_level[i + 1], start, end, time);
 					}
 				}
 			}
@@ -639,9 +640,14 @@ public:
 			Timer.resume();
 		}
 
+
+		DEBUG::DebugOutput("AI Called increse()");
 		this->increase();
+		DEBUG::DebugOutput("AI Called expand()");
 		this->expand();
+		DEBUG::DebugOutput("AI Called defend()");
 		this->defend();
+		DEBUG::DebugOutput("AI Called attack()");
 		this->attack();
 	}
 	
