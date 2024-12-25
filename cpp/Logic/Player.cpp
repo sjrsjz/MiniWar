@@ -1,5 +1,6 @@
 #include "../../header/Logic/Player.h"
 #include "../../header/Logic/RegionManager.h"
+#include <random>
 
 Player:: Player(): regionmanager(RegionManager::getInstance()){
     id = 0;
@@ -208,8 +209,12 @@ int Player:: get_electricity(){
     return electricity;
 }
 
-int Player:: get_labor(){
-    return labor;
+int Player:: get_labor_limit(){
+    return labor_limit;
+}
+
+int Player::get_ocupied_labor() {
+	return ocupied_labor;
 }
 
 int Player:: get_steel(){
@@ -250,10 +255,10 @@ void Player:: electricity_cost(int cost){
 }
 
 void Player:: labor_cost(int cost){
-    if (labor < cost){
+    if (labor_limit - ocupied_labor < cost){
         throw new std::exception("Not enough labor");
     }
-    labor -= cost;
+    ocupied_labor += cost;
 }
 
 void Player:: steel_cost(int cost){
@@ -276,8 +281,8 @@ void Player:: add_electricity(int amount){
 }
 
 void Player:: add_labor(int amount){
-    labor += amount;
-}
+    labor_limit += amount; 
+}// not sure
 
 void Player:: add_steel(int amount){
     steel += amount;
@@ -292,7 +297,7 @@ int Player::get_building_level_limit(std::string name) {
 	return -1;
 }
 
-void Player:: move_army(Point start, Point end, int amount){
+void Player:: move_army(Operation operation, int amount){
  //   std::vector<std::tuple<int, int>> path;
  //   double distance = calculate_distance(start, end, path);
  //   if (distance == -1) {
@@ -312,6 +317,8 @@ void Player:: move_army(Point start, Point end, int amount){
  //   start_region.removeArmy(amount);
  //   //create a new army to move, when time is up, this army shall be destroyed, and the end region add this army's force
 	//regionmanager.move_army(amount, time, path);
+	Point start = operation.getStart();
+	Point end = operation.getEnd();
 
     int start_x = std::floor(start.getX());
     int start_y = std::floor(start.getY());
@@ -328,16 +335,33 @@ void Player:: move_army(Point start, Point end, int amount){
 		throw "Not enough army";
 	}
 
-	regionmanager.move_army(start, end, amount);
+	regionmanager.move_army(start, end, amount, arm_level[0]);
 }
 
-void Player::attack(Point start, Point end, int weapon_id) {
+void Player::attack(Operation operation) {
+	Point start = operation.getStart();
+	Point end = operation.getEnd();
     double distance = sqrt(pow(start.getX() - end.getX(), 2) + pow(start.getY() - end.getY(), 2));
 
     int start_x = std::floor(start.getX());
     int start_y = std::floor(start.getY());
 
     Region& start_region = regionmanager.get_region(start_x, start_y);
+
+	int weapon_id = 0;
+
+	switch (operation.getOp())
+	{
+	case Operator::Weapon0Attack:
+		weapon_id = 0;
+		break;
+	case Operator::Weapon1Attack:
+		weapon_id = 1;
+		break;
+	case Operator::Weapon2Attack:
+		weapon_id = 2;
+		break;
+	}
 
 	Weapon weapon = regionmanager.get_weapon(weapon_id);
 
@@ -347,9 +371,32 @@ void Player::attack(Point start, Point end, int weapon_id) {
 	start_region.removeWeapon(weapon_id);
 
 	regionmanager.attack_region_missle(weapon_id, start, end, time, damage);
-}
+} //should detect if the weapon can reach the target
 
-void Player::build(std::string building_name, Point location) {
+void Player::build(Operation operation) {
+
+	Point location = operation.getCur();
+	std::string building_name = "";
+
+	switch (operation.getOp())
+	{
+	case Operator::SetPowerStation:
+		building_name = "PowerStation";
+		break;
+	case Operator::SetRefinery:
+		building_name = "Refinery";
+		break;
+	case Operator::SetSteelFactory:
+		building_name = "SteelFactory";
+		break;
+	case Operator::SetCivilFactory:
+		building_name = "CivilFactory";
+		break;
+	case Operator::SetMilitaryFactory:
+		building_name = "MilitaryFactory";
+		break;
+	}
+
 	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
 	if (region.getOwner() != id) {
 		throw "Not your region";
@@ -361,19 +408,20 @@ void Player::build(std::string building_name, Point location) {
 	Config& configer = Config::getInstance();
 	json BuildCost = configer.getConfig({ "Building",building_name, "BuildCost" });
 	std::vector<int> Level1Cost = BuildCost.template get<std::vector<int>>();
-	if (gold < Level1Cost[0] || oil < Level1Cost[1] || steel < Level1Cost[2] || electricity < Level1Cost[3] || labor < Level1Cost[4]) {
+	if (gold < Level1Cost[0] || oil < Level1Cost[1] || steel < Level1Cost[2] || electricity < Level1Cost[3] || labor_limit - ocupied_labor < Level1Cost[4]) {
 		throw "Not enough resource";
 	}
 	gold -= Level1Cost[0];
 	oil -= Level1Cost[1];
 	steel -= Level1Cost[2];
 	electricity -= Level1Cost[3];
-	labor -= Level1Cost[4];
+	ocupied_labor += Level1Cost[4];
 	Building building(building_name);
 	region.setBuilding(building);
 }
 
-void Player::upgrade_building(Point location) {
+void Player::upgrade_building(Operation operation) {
+	Point location = operation.getCur();
 	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
     if (region.getBuilding().getName() == "none") {
         throw "No building exits";
@@ -396,21 +444,22 @@ void Player::upgrade_building(Point location) {
 		oil -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Oil" }).get<int>();
 		steel -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Steel" }).get<int>();
 		electricity -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Electricity" }).get<int>();
-		labor -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Labor" }).get<int>();
+		ocupied_labor += configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost1", "Labor" }).get<int>();
 		break;  
 	case 2:
 		gold -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Gold" }).get<int>();
 		oil -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Oil" }).get<int>();
 		steel -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Steel" }).get<int>();
 		electricity -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Electricity" }).get<int>();
-		labor -= configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Labor" }).get<int>();
+		ocupied_labor += configer.getConfig({ "Building",region.getBuilding().getName(), "UpLevelCost2", "Labor" }).get<int>();
 		break;
     }
 
     region.getBuilding().upLevel(institution_level_limit[get_building_level_limit(region.getBuilding().getName())]);
 }
 
-void Player::remove_building(Point location) {
+void Player::remove_building(Operation operation) {
+	Point location = operation.getCur();
 	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
     if (region.getOwner() != id) {
 		throw "Not your region";
@@ -436,261 +485,337 @@ void Player::remove_building(Point location) {
 		oil += std::floor(0.6 * Level1Cost[1]);
 		steel += std::floor(0.6 * Level1Cost[2]);
 		electricity += std::floor(0.6 * Level1Cost[3]);
-		labor += Level1Cost[4];
+		ocupied_labor -= Level1Cost[4];
 		break;
     case 2:
         gold += std::floor(0.6 * (Level1Cost[0] + Level2Cost[0]));
         oil += std::floor(0.6 * (Level1Cost[1] + Level2Cost[1]));
         steel += std::floor(0.6 * (Level1Cost[2] + Level2Cost[2]));
         electricity += std::floor(0.6 * (Level1Cost[3] + Level2Cost[3]));
-        labor += Level1Cost[4] + Level2Cost[4];
+        ocupied_labor -= Level1Cost[4] + Level2Cost[4];
         break;
     case 3:
 		gold += std::floor(0.6 * (Level1Cost[0] + Level2Cost[0] + Level3Cost[0]));
 		oil += std::floor(0.6 * (Level1Cost[1] + Level2Cost[1] + Level3Cost[1]));
 		steel += std::floor(0.6 * (Level1Cost[2] + Level2Cost[2] + Level3Cost[2]));
 		electricity += std::floor(0.6 * (Level1Cost[3] + Level2Cost[3] + Level3Cost[3]));
-		labor += Level1Cost[4] + Level2Cost[4] + Level3Cost[4];
+		ocupied_labor -= Level1Cost[4] + Level2Cost[4] + Level3Cost[4];
 		break;
     }
 }
 
-void Player::research(int selection) {
-	Region& region = regionmanager.get_region(get_capital_x(), get_capital_y());
-    if (region.getOwner() != id) {
-		throw "Not your capital";
+void Player::set_research(Operation operation) {
+	Config& configer = Config::getInstance();
+	int cost = configer.getConfig({ "ResearchInstitution","BuildCost" }).get<int>();
+	if (gold < cost) {
+		throw "Not enough gold";
 	}
-    if (region.getBuilding().getName() != "ResearchInstitution") {
-		throw "No research center";
+	gold -= cost;
+	have_research_institution = true;
+}
+
+void Player::research(Operation operation) {
+	if (!have_research_institution) {
+		throw "Research institution not built";
 	}
 	//wait for configure.h complete
 	//make sure cost is enough, then research
     Config& configer = Config::getInstance();
-	switch (selection) {
-	case 0:
+	std::vector<int> Uplevelcost_PowerStation = configer.getConfig({ "ResearchInstitution","OUpLevelCost","PowerStation" }).template get<std::vector<int>>();
+	std::vector<int> Uplevelcost_Refinery = configer.getConfig({ "ResearchInstitution","OUpLevelCost","Refinery" }).template get<std::vector<int>>();
+	std::vector<int> Uplevelcost_SteelFactory = configer.getConfig({ "ResearchInstitution","OUpLevelCost","SteelFactory" }).template get<std::vector<int>>();
+	std::vector<int> Uplevelcost_CivilFactory = configer.getConfig({ "ResearchInstitution","OUpLevelCost","CivilFactory" }).template get<std::vector<int>>();
+	std::vector<int> Uplevelcost_MilitaryFactory = configer.getConfig({ "ResearchInstitution","OUpLevelCost","MilitaryFactory" }).template get<std::vector<int>>();
+
+	std::vector<int> Uplevelcost_Army = configer.getConfig({ "ResearchInstitution","OUpLevelCost","Army" }).template get<std::vector<int>>();
+	std::vector<int> Uplevelcost_CM = configer.getConfig({ "ResearchInstitution","OUpLevelCost","0" }).template get<std::vector<int>>();
+	std::vector<int> Uplevelcost_MRBM = configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" }).template get<std::vector<int>>();
+	std::vector<int> Uplevelcost_ICBM = configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" }).template get<std::vector<int>>();
+
+	switch (operation.getOp()) {
+	case Operator::PowerStationUpLevel:
 		if (institution_level_limit[0] == 3) {
 			throw "Already reach max level";
 		}
 		else {
 			if (institution_level_limit[0] == 1) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","PowerStation" })[0]) {
+				if (gold < Uplevelcost_PowerStation[0]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","PowerStation" })[0];
+					gold -= Uplevelcost_PowerStation[0];
 					institution_level_limit[0] = 2;
 				}
 			}
 			if (institution_level_limit[0] == 2) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","PowerStation" })[1]) {
+				if (gold < Uplevelcost_PowerStation[1]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","PowerStation" })[1];
+					gold -= Uplevelcost_PowerStation[1];
 					institution_level_limit[0] = 3;
 				}
 			}
 		}
 		break;
-	case 1:
+	case Operator::RefineryUpLevel:
 		if (institution_level_limit[1] == 3) {
 			throw "Already reach max level";
 		}
 		else {
 			if (institution_level_limit[1] == 1) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","Refinery" })[0]) {
+				if (gold < Uplevelcost_Refinery[0]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","Refinery" })[0];
+					gold -= Uplevelcost_Refinery[0];
 					institution_level_limit[1] = 2;
 				}
 			}
 			if (institution_level_limit[1] == 2) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","Refinery" })[1]) {
+				if (gold < Uplevelcost_Refinery[1]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","Refinery" })[1];
+					gold -= Uplevelcost_Refinery[1];
 					institution_level_limit[1] = 3;
 				}
 			}
 		}
 		break;
-	case 2:
+	case Operator::SteelFactoryUpLevel:
 		if (institution_level_limit[2] == 3) {
 			throw "Already reach max level";
 		}
 		else {
 			if (institution_level_limit[2] == 1) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","SteelFactory" })[0]) {
+				if (gold < Uplevelcost_SteelFactory[0]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","SteelFactory" })[0];
+					gold -= Uplevelcost_SteelFactory[0];
 					institution_level_limit[2] = 2;
 				}
 			}
 			if (institution_level_limit[2] == 2) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","SteelFactory" })[1]) {
+				if (gold < Uplevelcost_SteelFactory[1]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","SteelFactory" })[1];
+					gold -= Uplevelcost_SteelFactory[1];
 					institution_level_limit[2] = 3;
 				}
 			}
 		}
 		break;
-	case 3:
+	case Operator::CivilFactoryUpLevel:
 		if (institution_level_limit[3] == 3) {
 			throw "Already reach max level";
 		}
 		else {
 			if (institution_level_limit[3] == 1) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","CivilFactory" })[0]) {
+				if (gold < Uplevelcost_CivilFactory[0]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","CivilFactory" })[0];
+					gold -= Uplevelcost_CivilFactory[0];
 					institution_level_limit[3] = 2;
 				}
 			}
 			if (institution_level_limit[3] == 2) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","CivilFactory" })[1]) {
+				if (gold < Uplevelcost_CivilFactory[1]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","CivilFactory" })[1];
+					gold -= Uplevelcost_CivilFactory[1];
 					institution_level_limit[3] = 3;
 				}
 			}
 		}
 		break;
-	case 4:
+	case Operator::MilitaryFactoryUpLevel:
 		if (institution_level_limit[4] == 3) {
 			throw "Already reach max level";
 		}
 		else {
 			if (institution_level_limit[4] == 1) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","MilitaryFactory" })[0]) {
+				if (gold < Uplevelcost_MilitaryFactory[0]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","MilitaryFactory" })[0];
+					gold -= Uplevelcost_MilitaryFactory[0];
 					institution_level_limit[4] = 2;
 				}
 			}
 			if (institution_level_limit[4] == 2) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","MilitaryFactory" })[1]) {
+				if (gold < Uplevelcost_MilitaryFactory[1]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","MilitaryFactory" })[1];
+					gold -= Uplevelcost_MilitaryFactory[1];
 					institution_level_limit[4] = 3;
 				}
 			}
 		}
 		break;
-	case 5:
+	case Operator::ArmyUpLevel:
 		if (arm_level[0] == 3) {
 			throw "Already reach max level";
 		}
 		else {
 			if (arm_level[0] == 1) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","Army" })[0]) {
+				if (gold < Uplevelcost_Army[0]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","Army" })[0];
+					gold -= Uplevelcost_Army[0];
 					arm_level[0] = 2;
 				}
 			}
 			if (arm_level[0] == 2) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","Army" })[1]) {
+				if (gold < Uplevelcost_Army[1]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","Army" })[1];
+					gold -= Uplevelcost_Army[1];
 					arm_level[0] = 3;
 				}
 			}
 		}
 		break;
-	case 6:
+	case Operator::Weapon0UpLevel:
 		if (arm_level[1] == 3) {
 			throw "Already reach max level";
 		}
 		else {
 			if (arm_level[1] == 1) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","0" })[0]) {
+				if (gold < Uplevelcost_CM[0]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","0" })[0];
+					gold -= Uplevelcost_CM[0];
 					arm_level[1] = 2;
 				}
 			}
 			if (arm_level[1] == 2) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","0" })[1]) {
+				if (gold < Uplevelcost_CM[1]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","0" })[1];
+					gold -= Uplevelcost_CM[1];
 					arm_level[1] = 3;
 				}
 			}	
 		}
 		break;
-	case 7 :
+	case Operator::Weapon1UpLevel:
 		if (arm_level[2] == 3) {
 			throw "Already reach max level";
 		}
 		else {
 			if (arm_level[2] == 1) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" })[0]) {
+				if (gold < Uplevelcost_MRBM[0]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" })[0];
+					gold -= Uplevelcost_MRBM[0];
 					arm_level[2] = 2;
 				}
 			}
 			if (arm_level[2] == 2) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" })[1]) {
+				if (gold < Uplevelcost_MRBM[1]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","1" })[1];
+					gold -= Uplevelcost_MRBM[1];
 					arm_level[2] = 3;
 				}
 			}
 		}
 		break;
-	case 8:
+	case Operator::Weapon2UpLevel:
 		if (arm_level[3] == 3) {
 			throw "Already reach max level";
 		}
 		else {
 			if (arm_level[3] == 1) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" })[0]) {
+				if (gold < Uplevelcost_ICBM[0]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" })[0];
+					gold -= Uplevelcost_ICBM[0];
 					arm_level[3] = 2;
 				}
 			}
 			if (arm_level[3] == 2) {
-				if (gold < configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" })[1]) {
+				if (gold < Uplevelcost_ICBM[1]) {
 					throw "Not enough gold";
 				}
 				else {
-					gold -= configer.getConfig({ "ResearchInstitution","OUpLevelCost","2" })[1];
+					gold -= Uplevelcost_ICBM[1];
 					arm_level[3] = 3;
 				}
 			}
 		}
+		break;
+	}
+}
+
+void Player::product(Operation operation) {
+	Point start = operation.getStart();
+	Point end = operation.getEnd();
+	Region& start_region = regionmanager.get_region(std::floor(start.getX()), std::floor(start.getY()));
+	Region& end_region = regionmanager.get_region(std::floor(end.getX()), std::floor(end.getY()));
+
+	if (start_region.getOwner() != id || end_region.getOwner() != id) {
+		throw "Not your region";
+	}
+	if (start_region.getBuilding().getName() != "MilitaryFactory") {
+		throw "No military factory";
+	}
+	Config& configer = Config::getInstance();
+	switch (operation.getOp())
+	{
+	case Operator::ProductArmy:
+		int cost = configer.getConfig({ "Army","cost" }).get<int>() * operation.getSize();
+		if (gold < cost) {
+			throw "Not enough gold";
+		}
+		gold -= cost;
+		end_region.addArmy(operation.getSize());
+		break;
+	case Operator::ProductWeapon0:
+		std::vector<int> cost0 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
+		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
+			throw "Not enough resource";
+		}
+		gold -= cost0[0];
+		oil -= cost0[1];
+		electricity -= cost0[2];
+		steel -= cost0[3];	
+		end_region.addWeapon(0);
+		break;
+	case Operator::ProductWeapon1:
+		std::vector<int> cost1 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
+		if (gold < cost1[0] || oil < cost1[1] || electricity < cost1[2] || steel < cost1[3] || labor_limit - ocupied_labor < cost1[4]) {
+			throw "Not enough resource";
+		}
+		gold -= cost0[0];
+		oil -= cost0[1];
+		electricity -= cost0[2];
+		steel -= cost0[3];
+		end_region.addWeapon(0);
+		break;
+	case Operator::ProductWeapon2:
+		std::vector<int> cost2 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
+		if (gold < cost2[0] || oil < cost2[1] || electricity < cost2[2] || steel < cost2[3] || labor_limit - ocupied_labor < cost2[4]) {
+			throw "Not enough resource";
+		}
+		gold -= cost0[0];
+		oil -= cost0[1];
+		electricity -= cost0[2];
+		steel -= cost0[3];
+		end_region.addWeapon(0);
 		break;
 	}
 }
@@ -704,4 +829,69 @@ void Player:: update(GlobalTimer& timer){
 	steel += delta_resource[2];
 	electricity += delta_resource[3];
 	labor_limit = delta_resource[4];
+}
+
+void Player::rangeAttack(Operation operation) {
+	Point cur = operation.getCur();
+	float radius = operation.getRadius();
+	int num = radius * radius / 4;
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dis(0, radius);
+	bool flag = false;
+	int cnt = 0;
+	std::vector<std::pair<Point, std::vector<int>>> regionWeapons;
+	for (int i = 0; i < regionmanager.get_map_width(); i++) {
+		for (int j = 0; j < regionmanager.get_map_height(); j++) {
+			Region& region = regionmanager.get_region(i, j);
+			if (region.getOwner() == id) {
+				regionWeapons.push_back(std::make_pair(region.getPosition(), region.getWeapons()));
+			}
+		}
+	}
+	while (num) {
+		float x = dis(gen);
+		float y = dis(gen);
+		Point target(x, y);
+		int mapSize = regionmanager.get_map_width();
+		for (auto regionWeapon : regionWeapons) {
+			Point regionPos = regionWeapon.first;
+			std::vector<int>& weapons = regionWeapon.second;
+			float distance = regionPos.distance(target);
+			if (weapons[0] > 0) {
+				float speed = regionmanager.get_weapon(0).getAttackSpeed(arm_level[1]);
+				float damage = regionmanager.get_weapon(0).getDamage(arm_level[1]);
+				double time = distance / speed;
+				if (distance <= 0.25 * mapSize) {
+					regionmanager.attack_region_missle(0, regionPos, target, time, damage);
+					num--;
+					flag = true;
+				}
+			} else if (weapons[1] > 0) {
+				float speed = regionmanager.get_weapon(1).getAttackSpeed(arm_level[2]);
+				float damage = regionmanager.get_weapon(1).getDamage(arm_level[2]);
+				double time = distance / speed;
+				if (distance <= 0.5 * mapSize) {
+					regionmanager.attack_region_missle(1, regionPos, target, time, damage);
+					num--;
+					flag = true;
+				}
+			} else if (weapons[2] > 0) {
+				float speed = regionmanager.get_weapon(2).getAttackSpeed(arm_level[3]);
+				float damage = regionmanager.get_weapon(2).getDamage(arm_level[3]);
+				double time = distance / speed;
+				if (distance <= 0.75 * mapSize && distance >= 0.2 * mapSize) {
+					regionmanager.attack_region_missle(2, regionPos, target, time, damage);
+					num--;
+					flag = true;
+				}
+			} 
+		}
+		if (!flag) {
+			cnt++;
+			if (cnt > 5) {
+				break;
+			}
+		}
+	}
 }

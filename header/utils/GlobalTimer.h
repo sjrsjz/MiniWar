@@ -12,6 +12,8 @@ public:
 	void pause();
 	void resume();
 	double get_elapsed_time() const;
+	GlobalTimer() : is_running_(false), is_paused_(false), paused_duration_(std::chrono::steady_clock::duration::zero()) {};
+	~GlobalTimer() = default;
 private:
 	std::chrono::steady_clock::time_point start_time_;
 	std::chrono::steady_clock::time_point end_time_;
@@ -20,8 +22,6 @@ private:
 	bool is_running_;
 	bool is_paused_;
 
-	GlobalTimer() : is_running_(false), is_paused_(false), paused_duration_(std::chrono::steady_clock::duration::zero()) {};
-	~GlobalTimer() = default;
 	GlobalTimer(const GlobalTimer&) = delete;
 	GlobalTimer& operator=(const GlobalTimer&) = delete;
 };

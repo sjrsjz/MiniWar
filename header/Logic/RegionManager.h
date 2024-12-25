@@ -52,11 +52,13 @@ public:
 	int get_map_height();
 	Player& get_player();
 
+	void set(int width, int height);
+
 	void calculate_delta_resources(std::vector<int> delta_resource, double delta_t, int player_id);
 	void update(GlobalTimer& timer);
 
-	void move_army(int amount, double time, std::vector<std::tuple<int, int>>& path);
-	double move_army(Point start, Point end, int amount);
+	//void move_army(int amount, double time, std::vector<std::tuple<int, int>>& path);
+	double move_army(Point start, Point end, int amount, int army_level);
 	void attack_region_missle(int weapon_id, Point start, Point end, double time, int damage);
 	void attack_region_army(Point start, Point end, int amount);
 

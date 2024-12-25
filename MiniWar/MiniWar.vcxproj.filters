@@ -216,8 +216,13 @@
     <ClInclude Include="..\header\Engine.h">
       <Filter>headers</Filter>
     </ClInclude>
+<<<<<<< HEAD
     <ClInclude Include="..\header\Logic\AI.h">
       <Filter>headers\Logic</Filter>
+=======
+    <ClInclude Include="..\header\utils\Operation.h">
+      <Filter>headers\utils</Filter>
+>>>>>>> master
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

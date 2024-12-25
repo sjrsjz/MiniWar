@@ -240,6 +240,19 @@ Player& RegionManager::get_player() {
 	return player;
 }
 
+void RegionManager::set(int width, int height) {
+	this->regions.~Array();
+	this->regions = Array<Region>(width, height);
+	this->width = width;
+	this->height = height;
+
+	for (int x = 0; x < width; x++) {
+		for (int y = 0; y < height; y++) {
+			regions(x, y) = Region(x, y);
+		}
+	}
+}
+
 //void RegionManager::move_army(int amount, double time, std::vector<std::tuple<int, int>>& path) {
 //	MovingArmy army;
 //	army.amount = amount;
@@ -253,7 +266,7 @@ Player& RegionManager::get_player() {
 //	end_region.addArmy(amount);
 //}
 
-double RegionManager::move_army(Point start, Point end, int amount) {
+double RegionManager::move_army(Point start, Point end, int amount, int army_level) {
 	std::vector<std::tuple<int, int>> path;
 
 	double distance = calculate_distance(start, end, path);
@@ -269,7 +282,10 @@ double RegionManager::move_army(Point start, Point end, int amount) {
 	Region& start_region = get_region(start_x, start_y);
 	Region& end_region = get_region(end_x, end_y);
 
-	double time = distance / start_region.getArmy().getSpeed();
+	Config& configer = Config::getInstance();
+	double speed = configer.getConfig({ "Army","speed" }).template get<std::vector<double>>()[army_level-1];
+
+	double time = distance / speed;
 
 	start_region.removeArmy(amount);
 

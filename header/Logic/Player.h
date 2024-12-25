@@ -1,4 +1,22 @@
 #pragma once
+#include "../Timer.h"
+#include "../utils/Point.h"
+#include "../../header/Logic/Weapon.h"
+
+#include "../../header/Logic/Army.h"
+#include "../../header/utils/GlobalTimer.h"
+#include "../../header/utils/Operation.h"
+
+#include <string>
+#include <cmath>
+#include <vector>
+#include <queue>
+#include <unordered_map>
+
+//class RegionManager {
+//public:
+//	static RegionManager& getInstance();
+//};
 class RegionManager;
 
 class Player {
@@ -6,10 +24,11 @@ private:
 	int gold{};
 	int oil{};
 	int electricity{};
-	int labor{};
+	int ocupied_labor{};
 	int steel{};
 	int id{};
 	int labor_limit{};
+	bool have_research_institution = false;
 	std::tuple<int, int> capital = std::make_tuple(-1,-1);
 	std::vector<int> arm_level = {1,0,0,0};//0: army, 1: CM 2: MRBM 3: ICBM
 	std::vector<int> institution_level_limit = {1,1,1,1,1};//0: powerstation, 1: refinery, 2: steelfactory, 3: civilian_factory, 4: military_factory
@@ -21,7 +40,8 @@ public:
 	~Player();
 	int get_gold();
 	int get_electricity();
-	int get_labor();
+	int get_labor_limit();
+	int get_ocupied_labor();
 	int get_steel();
 	int get_oil();
 	int get_capital_x();
@@ -38,15 +58,20 @@ public:
 	void add_steel(int amount);
 
 	int get_building_level_limit(std::string name);
+	//Interaction functions below
+	void move_army(Operation operation, int amount);
+	void attack(Operation operation);
 
-	void move_army(Point start, Point end, int amount);
-	void attack(Point start, Point end, int weapon_id);
+	void build(Operation operation);
+	void upgrade_building(Operation operation);
+	void set_research(Operation operation);
+	void research(Operation operation);
+	void remove_building(Operation operation);
+	void product(Operation operation);
+	void rangeAttack(Operation operation);
 
-	void build(std::string building_name, Point location);
-	void upgrade_building(Point location);
-	void research(int selection);
-	void remove_building(Point location);
 
+	//update function
 	void update(GlobalTimer& timer);
 };
 

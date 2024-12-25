@@ -23,7 +23,7 @@ namespace UnitTest1
 			catch (std::runtime_error& e) {
 				Assert::AreEqual(e.what(), "");
 			}
-			//Config config("../MiniWar/config.json");
+			//Config config("../../MiniWar/config.json");
 			//json j = config.getConfig({ "mapSize", "large", "width"});
 			//int res = j.template get<int>();
 			//Assert::AreEqual(res, 64);
