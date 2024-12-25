@@ -224,6 +224,29 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 	return distance;
 }
 
+std::vector<Region> RegionManager::get_damaged_regions(Point position, float range) {
+	float start_x = std::floor(position.getX()) + 0.5;
+	float start_y = std::floor(position.getY()) + 0.5;
+	std::vector<Region> result;
+
+	int left_range = std::floor(start_x - range < 0.f ? 0.f : start_x - range);
+	int right_range = std::floor(start_x + range > get_map_width() ? get_map_width() : start_x + range);
+	int down_range = std::floor(start_y - range < 0.f ? 0.f : start_y - range);
+	int up_range = std::floor(start_y + range > get_map_width() ? get_map_width() : start_x + range);
+
+	for (int i = left_range; i <= right_range; i++) {
+		for (int j = down_range; j <= up_range; j++) {
+			float x = i + 0.5;
+			float y = j + 0.5;
+			if (range <= sqrt(pow(x - start_x, 2) + pow(y - start_y, 2))) {
+				result.push_back(get_region(i , j));
+			}
+		}
+	}
+
+	return result;
+}
+
 Weapon& RegionManager::get_weapon(int id) {
 	return weapons[id];
 }
@@ -301,11 +324,13 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	return time;
 }
 
-void RegionManager::attack_region_missle(int weapon_id, Point start, Point end, double time, int damage) {
+void RegionManager::attack_region_missle(int weapon_id, int level, Point start, Point end, double time) {
 	Region& start_region = get_region(start.getX(), start.getY());
 	Region& end_region = get_region(end.getX(), end.getY());
 	MovingMissle missle;
-	missle.damage = damage;
+	missle.weapon_id = weapon_id;
+	missle.weapon_level = level;
+	missle.owner_id = start_region.getOwner();
 	missle.time = current_time + time;
 	missle.start_point = std::make_tuple(start.getX(), start.getY());
 	missle.end_point = std::make_tuple(end.getX(), end.getY());
@@ -397,18 +422,29 @@ void RegionManager::update(GlobalTimer& timer) {
 		MovingMissle missle = moving_missles.top();
 		moving_missles.pop();
 		Region& end_region = get_region(std::get<0>(missle.end_point), std::get<1>(missle.end_point));
-		int rest_hp = end_region.getHp() - missle.damage;
-		if (rest_hp <= 0) {
-			end_region.setOwner(-1);
-			std::random_device rd;
-			std::mt19937 gen(rd());
-			std::uniform_int_distribution<> dis(200, 300);
-			end_region.setHp(dis(gen));
-			end_region.getWeapons().clear();
-			clear_building(end_region);
-		}
-		else {
-			end_region.setHp(rest_hp);
+
+		Weapon weapon = get_weapon(missle.weapon_id);
+		int damage = weapon.getDamage(missle.weapon_level);
+		float damage_range = weapon.getDamageRange(missle.weapon_level);
+
+		std::vector<Region> damaged_regions = get_damaged_regions(end_region.getPosition(), damage_range);
+
+		while (!damaged_regions.empty())
+		{
+			Region region = damaged_regions.back();
+			int rest_hp = region.getHp() - damage;
+			if (rest_hp <= 0) {
+				region.setOwner(-1);
+				std::random_device rd;
+				std::mt19937 gen(rd());
+				std::uniform_int_distribution<> dis(200, 300);
+				region.setHp(dis(gen));
+				region.getWeapons().clear();
+				clear_building(region);
+			}
+			else {
+				region.setHp(rest_hp);
+			}
 		}
 	}
 }
