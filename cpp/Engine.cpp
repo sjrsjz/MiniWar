@@ -131,16 +131,17 @@ void update() {
 }
 
 void main_loop() {
-	
+	GlobalTimer::getInstance().reset();
 	while (!s_exit_game) {
 		//DEBUG::DebugOutput("New Loop\n");
-		GlobalTimer::getInstance().start();
+		GlobalTimer::getInstance().update();
 
 		read_input();
 
-		GlobalTimer::getInstance().stop();
+
 		update();
 		//DEBUG::DebugOutput("End Loop\n");
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 

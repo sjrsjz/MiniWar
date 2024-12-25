@@ -737,6 +737,16 @@ void render_update_info() {
 	}
 	map_info.update();
 	
+	std::vector<Vertex> vertices;
+	auto army = rm.get_moving_army_position();
+	for (auto& a : army) {
+		Vertex tmp = { std::get<0>(a.current_pos) / map_info.getWidth() * 2 - 1, -0.62, std::get<1>(a.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 0};
+		vertices.push_back(tmp);
+	}
+	//DEBUG::DebugOutput("Army size", army.size());
+	point_renderer.update(vertices);
+
+
 }
 
 
@@ -1854,6 +1864,7 @@ void destroy() {
 }
 
 int main() {
+	srand(time(0));
 	if (!glfwInit()) {
 		println("Failed to initialize glfw"); return 0;
 	}

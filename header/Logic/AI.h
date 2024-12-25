@@ -428,7 +428,7 @@ public:
 
 	void sleep(double seconds) {
 		this->canMove = false;
-		std::this_thread::sleep_for(std::chrono::milliseconds((int)(seconds) * 100));
+		std::this_thread::sleep_for(std::chrono::milliseconds((int)(seconds) * 1000));
 		this->canMove = true;
 	}
 
@@ -655,7 +655,7 @@ public:
 		}
 
 
-		DEBUG::DebugOutput("AI source", this->gold);
+		//DEBUG::DebugOutput("AI source", this->gold);
 		//DEBUG::DebugOutput("canMove: ", this->canMove);
 		//DEBUG::DebugOutput("AI Called increse()");
 		this->increase();

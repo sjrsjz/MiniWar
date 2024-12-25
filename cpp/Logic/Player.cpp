@@ -836,7 +836,7 @@ void Player::product(Operation operation) {
 
 void Player:: update(GlobalTimer& timer){
 	std::vector<int> delta_resource = { 0,0,0,0,0 };
-	double delta_t = timer.get_elapsed_time();
+	double delta_t = timer.get_dt();
 	regionmanager.calculate_delta_resources(delta_resource, delta_t, id);
 	gold += delta_resource[0];
 	oil += delta_resource[1];
