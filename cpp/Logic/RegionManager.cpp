@@ -8,19 +8,8 @@
 RegionManager::RegionManager() {
 }
 
-RegionManager::RegionManager(int width, int height) : width(width), height(height), regions(width, height), moving_missles(), moving_armies(){
-	//read configer, initialize Weapon
-	DEBUG::DebugOutput("RegionManager::RegionManager() initialized");
-	for (int x = 0; x < width; x++) {
-		for (int y = 0; y < height; y++) {
-			regions(x, y) = Region(x, y);
-		}
-	}
-
-	for (int i = 0; i <= 2; i++) {
-		Weapon weapon(i);
-		weapons.push_back(weapon);
-	}
+RegionManager::RegionManager(int width, int height){
+	set(width, height);
 }
 
 RegionManager::~RegionManager() {
@@ -279,6 +268,16 @@ void RegionManager::set(int width, int height) {
 		Weapon weapon(i);
 		weapons.push_back(weapon);
 	}
+
+	regions(0, 0).setOwner(0);	
+	regions(0, 1).setOwner(0);
+	regions(0, 2).setOwner(0);
+	regions(1, 0).setOwner(0);
+	regions(1, 1).setOwner(0);
+	regions(1, 2).setOwner(0);
+	regions(2, 0).setOwner(0);
+	regions(2, 1).setOwner(0);
+	regions(2, 2).setOwner(0);
 }
 
 //void RegionManager::move_army(int amount, double time, std::vector<std::tuple<int, int>>& path) {
@@ -407,6 +406,7 @@ void RegionManager::clear_building(Region& region) {
 void RegionManager::update(GlobalTimer& timer) {
 	current_time += timer.get_elapsed_time();
 	while (!moving_armies.empty() && moving_armies.top().time <= current_time) {
+		DEBUG::DebugOutput("Moving army: ", moving_armies.top().amount);
 		MovingArmy army = moving_armies.top();
 		moving_armies.pop();
 		Region& end_region = get_region(std::get<0>(army.path.back()), std::get<1>(army.path.back()));
@@ -426,6 +426,7 @@ void RegionManager::update(GlobalTimer& timer) {
 	}
 
 	while (!moving_missles.empty() && moving_missles.top().time <= current_time) {
+		DEBUG::DebugOutput("Moving missle: ", moving_missles.top().weapon_id);
 		MovingMissle missle = moving_missles.top();
 		moving_missles.pop();
 		Region& end_region = get_region(std::get<0>(missle.end_point), std::get<1>(missle.end_point));

@@ -13,4 +13,7 @@ public:
 	void setX(float x);
 	void setY(float y);
 	float distance(Point& p);
+	static Point toPoint(int p[2]) {
+		return Point(p[0], p[1]);
+	}
 };
