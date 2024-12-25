@@ -308,7 +308,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
 
         if(g_attack_target.z > 0.5 && is_mouse_valid_selection){
             vec2 center = g_attack_target.xy;
-		    float radius = 5;
+		    float radius = 2;
 		    float dist = length(vec2(cell_idx.real_idx) - center);
 		    if(dist < radius){
 			    vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;

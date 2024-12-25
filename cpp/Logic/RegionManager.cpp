@@ -3,7 +3,10 @@
 #include "../../header/Logic/Player.h"
 #include <vector>
 #include <random>
+#include <mutex>
 
+std::mutex army_mutex;
+std::mutex missle_mutex;
 
 RegionManager::RegionManager() {
 }
@@ -353,6 +356,37 @@ Player& RegionManager::get_player() {
 	return player;
 }
 
+std::vector<MovingArmy> RegionManager::get_moving_army_position() {
+	std::vector<MovingArmy> copied_armies;
+	army_mutex.lock();
+	std::priority_queue<MovingArmy> copy = moving_armies;
+	army_mutex.unlock();
+	while (!copy.empty())
+	{
+		MovingArmy army = copy.top();
+		copied_armies.push_back(army);
+		copy.pop();
+	}
+
+	return copied_armies;
+
+}
+
+std::vector<MovingMissle> RegionManager::get_moving_missle_position() {
+	std::vector<MovingMissle> copied_missles;
+	missle_mutex.lock();
+	std::priority_queue<MovingMissle> copy = moving_missles;
+	missle_mutex.unlock();
+
+	while (!copy.empty())
+	{
+		MovingMissle missle = copy.top();
+		copied_missles.push_back(missle);
+		copy.pop();
+	}
+	return copied_missles;
+}
+
 void RegionManager::set(int width, int height) {
 	DEBUG::DebugOutput("RegionManager::set() called");
 	this->regions.~Array();
@@ -370,15 +404,6 @@ void RegionManager::set(int width, int height) {
 		weapons.push_back(weapon);
 	}
 
-	regions(0, 0).setOwner(0);	
-	regions(0, 1).setOwner(0);
-	regions(0, 2).setOwner(0);
-	regions(1, 0).setOwner(0);
-	regions(1, 1).setOwner(0);
-	regions(1, 2).setOwner(0);
-	regions(2, 0).setOwner(0);
-	regions(2, 1).setOwner(0);
-	regions(2, 2).setOwner(0);
 }
 
 //void RegionManager::move_army(int amount, double time, std::vector<std::tuple<int, int>>& path) {
@@ -399,6 +424,7 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	std::vector<std::tuple<int, int>> path;
 
 	double distance = calculate_distance(start, end, path);
+	DEBUG::DebugOutput("distance finished");
 	if (distance == -1.f) {
 		DEBUG::DebugOutput("RegionManager::move_army() throws");
 		throw "Can't find a path";
@@ -422,9 +448,13 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	MovingArmy army;
 	army.owner_id = start_region.getOwner();
 	army.amount = amount;
-	army.time = current_time + time;
+	army.time = time;
+	army.reach_time = current_time + time;
 	army.path = path;
+	army.current_pos = std::make_tuple(start_x + 0.5, end_x + 0.5);
+	army_mutex.lock();
 	moving_armies.push(army);
+	army_mutex.unlock();
 
 	//count time
 	//if time is up, move
@@ -438,10 +468,14 @@ void RegionManager::attack_region_missle(int weapon_id, int level, Point start, 
 	missle.weapon_id = weapon_id;
 	missle.weapon_level = level;
 	missle.owner_id = start_region.getOwner();
-	missle.time = current_time + time;
-	missle.start_point = std::make_tuple(start.getX(), start.getY());
-	missle.end_point = std::make_tuple(end.getX(), end.getY());
+	missle.time = time;
+	missle.reach_time = current_time + time;
+	missle.start_point = std::make_tuple(std::floor(start.getX()), std::floor(start.getY()));
+	missle.end_point = std::make_tuple(std::floor(end.getX()), std::floor(end.getY()));
+	missle.current_pos = std::make_tuple(std::floor(start.getX()) + 0.5, std::floor(end.getY()) + 0.5);
+	missle_mutex.lock();
 	moving_missles.push(missle);
+	missle_mutex.unlock();
 	//count time
 	//if time is up, attack
 	//if time is up, remove missle
@@ -466,7 +500,7 @@ void RegionManager::attack_region_army(Point start, Point end, int amount) {
 	Region& end_region = get_region(end.getX(), end.getY());
 
 	double time = distance / start_region.getArmy().getSpeed();
-
+	DEBUG::DebugOutput("moving cost time ", time);
 	MovingArmy army;
 	army.amount = amount;
 	army.path = path;
@@ -474,7 +508,9 @@ void RegionManager::attack_region_army(Point start, Point end, int amount) {
 	army.owner_id = start_region.getOwner();
 
 	start_region.removeArmy(amount);
+	army_mutex.lock();
 	moving_armies.push(army);
+	army_mutex.unlock();
 	
 	//count time
 	//if time is up, attack
@@ -500,13 +536,16 @@ static RegionManager instance;
 RegionManager& RegionManager::getInstance() {
 	return instance;
 }
+
 void RegionManager::clear_building(Region& region) {
 	region.getBuilding().remove();
 }
 
 void RegionManager::update(GlobalTimer& timer) {
-	current_time += timer.get_elapsed_time();
-	while (!moving_armies.empty() && moving_armies.top().time <= current_time) {
+	current_time = timer.get_running_time();
+	army_mutex.lock();
+	//DEBUG::DebugOutput("RegionManager::update() called", moving_armies.size());
+	while (!moving_armies.empty() && moving_armies.top().reach_time <= current_time) {
 		DEBUG::DebugOutput("Moving army: ", moving_armies.top().amount);
 		MovingArmy army = moving_armies.top();
 		moving_armies.pop();
@@ -518,14 +557,19 @@ void RegionManager::update(GlobalTimer& timer) {
 		}
 		else{
 			int rest_army = army.amount - end_region.getArmy().getForce();
-			end_region.setOwner(start_region.getOwner());
-			end_region.getArmy().removeArmy(end_region.getArmy().getForce());
-			end_region.getArmy().addArmy(rest_army);
-			end_region.getWeapons().clear();
-			clear_building(end_region);
+			if(rest_army < 0){
+				end_region.getArmy().setArmy(-rest_army);
+			}
+			else {
+				end_region.setOwner(start_region.getOwner());
+				end_region.getArmy().setArmy(rest_army);
+				end_region.getWeapons().clear();
+				clear_building(end_region);
+			}
 		}
 	}
-
+	army_mutex.unlock();
+	missle_mutex.lock();
 	while (!moving_missles.empty() && moving_missles.top().time <= current_time) {
 		DEBUG::DebugOutput("Moving missle: ", moving_missles.top().weapon_id);
 		MovingMissle missle = moving_missles.top();
@@ -556,6 +600,85 @@ void RegionManager::update(GlobalTimer& timer) {
 			}
 		}
 	}
+	missle_mutex.unlock();
+
+	std::vector<MovingArmy> temp_armies;
+	std::vector<MovingMissle> temp_missles;
+
+	army_mutex.lock();
+	while (!moving_armies.empty()) {
+		MovingArmy army = moving_armies.top();
+		moving_armies.pop();
+		temp_armies.push_back(army);
+	}
+	while (!temp_armies.empty()) {
+		MovingArmy army = temp_armies.back();
+		//update current position
+		int side_num = army.path.size() - 1;
+		int current_side = army.time == 0 ? 0 : (1 + (current_time - army.reach_time) / army.time) * side_num;
+
+		current_side = current_side > side_num ? side_num : current_side;
+
+		float mix = (1 + (current_time - army.reach_time) / army.time) * side_num - current_side;
+
+		int current_x_L = std::get<0>(army.path[current_side]);
+		int current_y_L = std::get<1>(army.path[current_side]);
+		
+		current_side = current_side + 1 >= army.path.size() ? current_side : current_side + 1;
+
+		int current_x_R = std::get<0>(army.path[current_side]);
+		int current_y_R = std::get<1>(army.path[current_side]);
+
+
+		float center_x_L = get_region(current_x_L, current_y_L).getPosition().getX();
+		float center_y_L = get_region(current_x_L, current_y_L).getPosition().getY();
+
+		float center_x_R = get_region(current_x_R, current_y_R).getPosition().getX();
+		float center_y_R = get_region(current_x_R, current_y_R).getPosition().getY();
+
+		float mix_x = center_x_L * (1 - mix) + center_x_R * mix;
+		float mix_y = center_y_L * (1 - mix) + center_y_R * mix;
+
+		army.current_pos = std::make_tuple(mix_x, mix_y);
+
+		moving_armies.push(army);
+		temp_armies.pop_back();
+	}
+
+	army_mutex.unlock();
+	missle_mutex.lock();
+
+	while (!moving_missles.empty()) {
+		MovingMissle missle = moving_missles.top();
+		moving_missles.pop();
+		//update current postion
+		float mix = fmin(1, (1 + (current_time - missle.reach_time) / missle.time));
+
+		int x_L = std::get<0>(missle.start_point);
+		int y_L = std::get<1>(missle.start_point);
+
+		int x_R = std::get<0>(missle.end_point);
+		int y_R = std::get<1>(missle.end_point);
+
+		float center_x_L = get_region(x_L, y_L).getPosition().getX();
+		float center_y_L = get_region(x_L, y_L).getPosition().getY();
+
+		float center_x_R = get_region(x_R, y_R).getPosition().getX();
+		float center_y_R = get_region(x_R, y_R).getPosition().getY();
+
+		float mix_x = center_x_L * (1 - mix) + center_x_R * mix;
+		float mix_y = center_y_L * (1 - mix) + center_y_R * mix;
+		
+		missle.current_pos = std::make_tuple(mix_x, mix_y);
+
+		temp_missles.push_back(missle);
+	}
+	while (!temp_missles.empty()) {
+		MovingMissle missle = temp_missles.back();
+		moving_missles.push(missle);
+		temp_missles.pop_back();
+	}
+	missle_mutex.unlock();
 }
 
 void RegionManager::calculate_delta_resources(std::vector<int> delta_resourcce, double delta_t, int player_id) {
