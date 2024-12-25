@@ -1,5 +1,6 @@
 #include "../../header/Logic/Player.h"
 #include "../../header/Logic/RegionManager.h"
+#include <random>
 
 Player:: Player(): regionmanager(RegionManager::getInstance()){
     id = 0;
@@ -833,4 +834,69 @@ void Player:: update(GlobalTimer& timer){
 	steel += delta_resource[2];
 	electricity += delta_resource[3];
 	labor_limit = delta_resource[4];
+}
+
+void Player::rangeAttack(Operation operation) {
+	Point cur = operation.getCur();
+	float radius = operation.getRadius();
+	int num = radius * radius / 4;
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dis(0, radius);
+	bool flag = false;
+	int cnt = 0;
+	std::vector<std::pair<Point, std::vector<int>>> regionWeapons;
+	for (int i = 0; i < regionmanager.get_map_width(); i++) {
+		for (int j = 0; j < regionmanager.get_map_height(); j++) {
+			Region& region = regionmanager.get_region(i, j);
+			if (region.getOwner() == id) {
+				regionWeapons.push_back(std::make_pair(region.getPosition(), region.getWeapons()));
+			}
+		}
+	}
+	while (num) {
+		float x = dis(gen);
+		float y = dis(gen);
+		Point target(x, y);
+		int mapSize = regionmanager.get_map_width();
+		for (auto regionWeapon : regionWeapons) {
+			Point regionPos = regionWeapon.first;
+			std::vector<int>& weapons = regionWeapon.second;
+			float distance = regionPos.distance(target);
+			if (weapons[0] > 0) {
+				float speed = regionmanager.get_weapon(0).getAttackSpeed(arm_level[1]);
+				float damage = regionmanager.get_weapon(0).getDamage(arm_level[1]);
+				double time = distance / speed;
+				if (distance <= 0.25 * mapSize) {
+					regionmanager.attack_region_missle(0, regionPos, target, time, damage);
+					num--;
+					flag = true;
+				}
+			} else if (weapons[1] > 0) {
+				float speed = regionmanager.get_weapon(1).getAttackSpeed(arm_level[2]);
+				float damage = regionmanager.get_weapon(1).getDamage(arm_level[2]);
+				double time = distance / speed;
+				if (distance <= 0.5 * mapSize) {
+					regionmanager.attack_region_missle(1, regionPos, target, time, damage);
+					num--;
+					flag = true;
+				}
+			} else if (weapons[2] > 0) {
+				float speed = regionmanager.get_weapon(2).getAttackSpeed(arm_level[3]);
+				float damage = regionmanager.get_weapon(2).getDamage(arm_level[3]);
+				double time = distance / speed;
+				if (distance <= 0.75 * mapSize && distance >= 0.2 * mapSize) {
+					regionmanager.attack_region_missle(2, regionPos, target, time, damage);
+					num--;
+					flag = true;
+				}
+			} 
+		}
+		if (!flag) {
+			cnt++;
+			if (cnt > 5) {
+				break;
+			}
+		}
+	}
 }
