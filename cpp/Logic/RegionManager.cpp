@@ -16,16 +16,16 @@ RegionManager::~RegionManager() {
 }
 
 struct Node {
-    Point pt;        // µ±Ç°½ÚµãÎ»ÖÃ
-    int g_cost;      // ´ÓÆðµãµ½µ±Ç°µãµÄ´ú¼Û
-    int h_cost;      // Æô·¢Ê½º¯ÊýÖµ£¨Âü¹þ¶Ù¾àÀë£©
-    int f_cost;      // ×Ü´ú¼Û f = g + h
-    Node* parent;    // ¸¸½ÚµãÖ¸Õë
+    Point pt;        // ï¿½ï¿½Ç°ï¿½Úµï¿½Î»ï¿½ï¿½
+    int g_cost;      // ï¿½ï¿½ï¿½ï¿½ãµ½ï¿½ï¿½Ç°ï¿½ï¿½Ä´ï¿½ï¿½ï¿½
+    int h_cost;      // ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¾ï¿½ï¿½ë£©
+    int f_cost;      // ï¿½Ü´ï¿½ï¿½ï¿½ f = g + h
+    Node* parent;    // ï¿½ï¿½ï¿½Úµï¿½Ö¸ï¿½ï¿½
 
     Node(Point pt_, int g, int h, Node* parent_ = nullptr)
         : pt(pt_), g_cost(g), h_cost(h), f_cost(g + h), parent(parent_) {}
 
-    // ±È½ÏÓÅÏÈ¶ÓÁÐµÄË³Ðò£¬f_cost Ð¡µÄÓÅÏÈ
+    // ï¿½È½ï¿½ï¿½ï¿½ï¿½È¶ï¿½ï¿½Ðµï¿½Ë³ï¿½ï¿½f_cost Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     bool operator>(const Node& other) const {
         return f_cost > other.f_cost;
     }
@@ -49,19 +49,19 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
     int rows = grid.size();
     int cols = grid[0].size();
 
-    // °Ë¸ö·½Ïò£¨ÏàÁÚµã£©
+    // ï¿½Ë¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµã£©
     std::vector<std::pair<int, int>> directions = {
-        {0, 1}, {1, 0}, {0, -1}, {-1, 0},  // ÉÏ¡¢ÓÒ¡¢ÏÂ¡¢×ó
-        {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // ×óÉÏ¡¢ÓÒÉÏ¡¢×óÏÂ¡¢ÓÒÏÂ
+        {0, 1}, {1, 0}, {0, -1}, {-1, 0},  // ï¿½Ï¡ï¿½ï¿½Ò¡ï¿½ï¿½Â¡ï¿½ï¿½ï¿½
+        {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // ï¿½ï¿½ï¿½Ï¡ï¿½ï¿½ï¿½ï¿½Ï¡ï¿½ï¿½ï¿½ï¿½Â¡ï¿½ï¿½ï¿½ï¿½ï¿½
     };
 
-    // ÓÅÏÈ¶ÓÁÐ£¨Ð¡¶¥¶Ñ£©
+    // ï¿½ï¿½ï¿½È¶ï¿½ï¿½Ð£ï¿½Ð¡ï¿½ï¿½ï¿½Ñ£ï¿½
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_set;
 
-    // ´æ´¢ÒÑ¾­·ÃÎÊ¹ýµÄ½Úµã
+    // ï¿½æ´¢ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½Ä½Úµï¿½
     std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
 
-    // Æðµã³õÊ¼»¯
+    // ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
     Node* start_node = new Node(start, 0, manhattan_distance(start, end));
     open_set.push(*start_node);
 
@@ -75,17 +75,17 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
 
         visited[current.pt.getX()][current.pt.getY()] = true;
 
-        // ¼ì²éÊÇ·ñµ½´ïÖÕµã
+        // ï¿½ï¿½ï¿½ï¿½Ç·ñµ½´ï¿½ï¿½Õµï¿½
         if (current.pt.getX() == end.getX() && current.pt.getY() == end.getY()) {
             return reconstruct_path(&current);
         }
 
-        // ±éÀúÏàÁÚµã
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½
         for (const auto& dir : directions) {
             int nx = current.pt.getX() + dir.first;
             int ny = current.pt.getY() + dir.second;
 
-            // ¼ì²é±ß½çºÍÊÇ·ñ¿É×ß
+            // ï¿½ï¿½ï¿½ß½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
             if (nx >= 0 && ny >= 0 && nx < rows && ny < cols && grid[nx][ny] == 1 && !visited[nx][ny]) {
                 int move_cost = (dir.first == 0 || dir.second == 0) ? 10 : 14;
                 Node* neighbor = new Node(Point(nx, ny), current.g_cost + move_cost, manhattan_distance(Point(nx, ny), end), new Node(current));
@@ -94,7 +94,7 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
         }
     }
 
-    // Èç¹ûÕÒ²»µ½Â·¾¶£¬·µ»Ø¿Õ
+    // ï¿½ï¿½ï¿½ï¿½Ò²ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¿ï¿½
     return {};
 }
 
@@ -353,6 +353,32 @@ Player& RegionManager::get_player() {
 	return player;
 }
 
+std::vector<MovingArmy> RegionManager::get_moving_army_position() {
+	std::vector<MovingArmy> copied_armies;
+	std::priority_queue<MovingArmy> copy = moving_armies;
+
+	while (!copy.empty())
+	{
+		MovingArmy army = copy.top();
+		copied_armies.push_back(army);
+		copy.pop();
+	}
+	return copied_armies;
+}
+
+std::vector<MovingMissle> RegionManager::get_moving_missle_position() {
+	std::vector<MovingMissle> copied_missles;
+	std::priority_queue<MovingMissle> copy = moving_missles;
+
+	while (!copy.empty())
+	{
+		MovingMissle missle = copy.top();
+		copied_missles.push_back(missle);
+		copy.pop();
+	}
+	return copied_missles;
+}
+
 void RegionManager::set(int width, int height) {
 	DEBUG::DebugOutput("RegionManager::set() called");
 	this->regions.~Array();
@@ -422,8 +448,10 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	MovingArmy army;
 	army.owner_id = start_region.getOwner();
 	army.amount = amount;
-	army.time = current_time + time;
+	army.time = time;
+	army.reach_time = current_time + time;
 	army.path = path;
+	army.current_pos = std::make_tuple(start_x + 0.5, end_x + 0.5);
 	moving_armies.push(army);
 
 	//count time
@@ -438,9 +466,11 @@ void RegionManager::attack_region_missle(int weapon_id, int level, Point start, 
 	missle.weapon_id = weapon_id;
 	missle.weapon_level = level;
 	missle.owner_id = start_region.getOwner();
-	missle.time = current_time + time;
-	missle.start_point = std::make_tuple(start.getX(), start.getY());
-	missle.end_point = std::make_tuple(end.getX(), end.getY());
+	missle.time = time;
+	missle.reach_time = current_time + time;
+	missle.start_point = std::make_tuple(std::floor(start.getX()), std::floor(start.getY()));
+	missle.end_point = std::make_tuple(std::floor(end.getX()), std::floor(end.getY()));
+	missle.current_pos = std::make_tuple(std::floor(start.getX()) + 0.5, std::floor(end.getY()) + 0.5);
 	moving_missles.push(missle);
 	//count time
 	//if time is up, attack
@@ -500,6 +530,7 @@ static RegionManager instance;
 RegionManager& RegionManager::getInstance() {
 	return instance;
 }
+
 void RegionManager::clear_building(Region& region) {
 	region.getBuilding().remove();
 }
@@ -556,6 +587,46 @@ void RegionManager::update(GlobalTimer& timer) {
 				region.setHp(rest_hp);
 			}
 		}
+	}
+
+	std::vector<MovingArmy> temp_armies;
+	std::vector<MovingMissle> temp_missles;
+
+
+	while (!moving_armies.empty()) {
+		MovingArmy army = moving_armies.top();
+		moving_armies.pop();
+		temp_armies.push_back(army);
+	}
+	while (!temp_armies.empty()) {
+		MovingArmy army = temp_armies.back();
+		//update current position
+		int side_num = army.path.size() - 1;
+		int current_side = (1 - (current_time - army.reach_time) / army.time) * side_num;
+		float current_x = std::get<0>(army.path[current_side]) + 1.0 * ((1 - (current_time - army.reach_time) / army.time) * side_num - current_side) + 0.5;
+		float current_y = std::get<1>(army.path[current_side]) + 1.0 * ((1 - (current_time - army.reach_time) / army.time) * side_num - current_side) + 0.5;
+
+		army.current_pos = std::make_tuple(current_x, current_y);
+
+		moving_armies.push(army);
+		temp_armies.pop_back();
+	}
+
+	while (!moving_missles.empty()) {
+		MovingMissle missle = moving_missles.top();
+		moving_missles.pop();
+		//update current postion
+		float current_x = std::get<0>(missle.end_point) - (current_time - missle.reach_time) * (std::get<0>(missle.end_point) - std::get<0>(missle.start_point)) / missle.time + 0.5;
+		float current_y = std::get<1>(missle.end_point) - (current_time - missle.reach_time) * (std::get<1>(missle.end_point) - std::get<1>(missle.start_point)) / missle.time + 0.5;
+
+		missle.current_pos = std::make_tuple(current_x, current_y);
+
+		temp_missles.push_back(missle);
+	}
+	while (!temp_missles.empty()) {
+		MovingMissle missle = temp_missles.back();
+		moving_missles.push(missle);
+		temp_missles.pop_back();
 	}
 }
 
