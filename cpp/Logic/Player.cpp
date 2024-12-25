@@ -328,7 +328,7 @@ void Player:: move_army(Operation operation, int amount){
 	Region& start_region = regionmanager.get_region(start_x, start_y);
 	Region& end_region = regionmanager.get_region(end_x, end_y);
 
-	if (start_region.getOwner() != id || end_region.getOwner()) {
+	if (start_region.getOwner() != id) {
 		throw "Not your region";
 	}
 	if (start_region.getArmy().getForce() < amount) {

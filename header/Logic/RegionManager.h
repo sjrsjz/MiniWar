@@ -11,9 +11,11 @@ struct MovingArmy {
 	int owner_id{ -1 };
 	int amount{};
 	double time{};
+	double reach_time{};
 	std::vector<std::tuple<int, int>> path{};
+	std::tuple<float, float> current_pos{};
 	bool operator<(const MovingArmy& rhs) const {
-		return time > rhs.time;
+		return reach_time > rhs.reach_time;
 	}
 };
 
@@ -22,10 +24,12 @@ struct MovingMissle {
 	int weapon_id{};
 	int weapon_level{};
 	double time{};
+	double reach_time{};
 	std::tuple<int, int> start_point{};
 	std::tuple<int, int> end_point{};
+	std::tuple<float, float> current_pos{};
 	bool operator<(const MovingMissle& rhs) const {
-		return time > rhs.time;
+		return reach_time > rhs.reach_time;
 	}
 };
 
@@ -52,6 +56,9 @@ public:
 	int get_map_width();
 	int get_map_height();
 	Player& get_player();
+
+	std::vector<MovingArmy> get_moving_army_position();
+	std::vector<MovingMissle> get_moving_missle_position();
 
 	void set(int width, int height);
 
