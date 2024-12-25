@@ -97,7 +97,7 @@ class AI {
 		return 0.1 * regionSize * A / (1 + exp(-k * (t - t0)));
 	}
 
-	public:
+public:
 	AI() {
 		// temp
 		// TODO
@@ -256,7 +256,6 @@ class AI {
 		this->t0 = parameter["t0"].template get<double>();
 	}
 
-private:
 	void attack() {
 		// TODO
 		for (int i = 0; i < weapons.size(); i++) {
@@ -597,7 +596,7 @@ private:
 							}
 						}
 					}	
-					std::thread t([this, maxForce, borderArmyForce](int x, int y){
+					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
 					t.join();
@@ -623,7 +622,7 @@ private:
 							}
 						}
 					}	
-					std::thread t([this, maxForce, borderArmyForce](int x, int y){
+					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
 					t.join();
@@ -632,7 +631,6 @@ private:
 		}
 	}
 
-public:
 	void update(bool isPause = false) {
 		if (isPause) {
 			Timer.pause();
