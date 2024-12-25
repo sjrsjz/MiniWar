@@ -680,17 +680,17 @@ private:
 		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, bc); // 前景色
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.25f));	   // 背景色
 		ImVec2 pos = ImGui::GetCursorPos();
-		ImGui::ProgressBar(b.getX(), ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
+		ImGui::ProgressBar(b.getX() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
 		ImGui::PopStyleColor(2); // 恢复颜色设置
 		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, fc); // 前景色
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.0f));	   // 背景色
 		ImGui::SetCursorPos(pos);
-		ImGui::ProgressBar(f.getX(), ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
+		ImGui::ProgressBar(f.getX() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
 		ImGui::PopStyleColor(2); // 恢复颜色设置
 		ImVec2 text_size = ImGui::CalcTextSize(title);
 		ImGui::SetCursorPos(ImVec2(pos.x + 5, pos.y + 30 - text_size.y));
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.15,0.15,0.15,0.5)); // 前景色
-		ImGui::Text(title, (int)(f.getX() * scale));
+		ImGui::Text(title, (int)(f.getX()));
 		ImGui::PopStyleColor(1);
 	}
 
@@ -776,7 +776,7 @@ public:
 			}
 		}
 		occupation_amount_max = RegionManager::getInstance().get_map_width() * RegionManager::getInstance().get_map_height();
-		double x = region_count / fmax(1e-3, occupation_amount_max);
+		double x = region_count;
 		occupation_amount.newEndPosition(x, timer.getTime());
 		occupation_amount_back.newEndPosition(x, timer.getTime());
 
@@ -1284,7 +1284,7 @@ void render_main_game_pass() {
 	bool s_if_selected = s_selected_gui.is_selected;
 
 	// 核辐射标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, 10, s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, 2.5, s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_radioactive);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_radioactive"), 0);
@@ -1359,7 +1359,7 @@ void prepare_render() {
 	GAMESTATUS::s_enable_control = !s_menu_gui.is_activitied() && !s_tech_tree_gui.is_open();
 
 	if (GAMESTATUS::s_in_game) {
-		GAMESOUND::set_background_volume(0.25);
+		GAMESOUND::set_background_volume(0.5);
 		render_update_info();
 	}
 	else {
@@ -1768,31 +1768,41 @@ void KeyRelease(int key) {
 			if (s_selected_gui.is_selected) {
 				Point start_point = Point::toPoint(s_selected_gui.grid);
 				Point end_point = Point::toPoint(s_current_selected_grid);
-				Region& from_region = RegionManager::getInstance().get_region(start_point.getX(), start_point.getY());
-				Region& to_region = RegionManager::getInstance().get_region(end_point.getX(), end_point.getY());
-				switch (s_selected_weapon)
-				{
-				case NONE:		
-					//push_input({ start_point, end_point, Operator::ArmyMove });
-					break;
-				case NUCLEAR_MISSILE:
-					DEBUG::DebugOutput("Nuclear Missile");
-					GAMESOUND::play_nuclear_launch_sound();
-					s_selected_gui.message = u8"核导弹已发射";
-					// do something
-					s_selected_gui.shake_gui(timer);
-					s_shake_effect.push_shake(timer);
-					s_selected_gui.is_selected = false;
-					break;
-				case ARMY:
-					DEBUG::DebugOutput("Army");
-					push_input({ start_point, end_point, from_region.getArmy().getForce(), Operator::ArmyMove});
-					break;
-				case SCATTER_BOMB:
-					DEBUG::DebugOutput("Scatter Bomb");
-					break;
-				default:
-					break;
+				try {
+					Region& from_region = RegionManager::getInstance().get_region(start_point.getX(), start_point.getY());
+					Region& to_region = RegionManager::getInstance().get_region(end_point.getX(), end_point.getY());
+					switch (s_selected_weapon)
+					{
+					case NONE:
+						//push_input({ start_point, end_point, Operator::ArmyMove });
+						break;
+					case NUCLEAR_MISSILE:
+						if (from_region.getOwner() != 0) {
+							s_selected_gui.message = u8"无效区块！";
+							s_selected_gui.shake_gui(timer);
+							break;
+						}
+						DEBUG::DebugOutput("Nuclear Missile");
+						GAMESOUND::play_nuclear_launch_sound();
+						s_selected_gui.message = u8"核导弹已发射";
+						// do something
+						s_selected_gui.shake_gui(timer);
+						s_shake_effect.push_shake(timer);
+						s_selected_gui.is_selected = false;
+						break;
+					case ARMY:
+						DEBUG::DebugOutput("Army");
+						push_input({ start_point, end_point, from_region.getArmy().getForce(), Operator::ArmyMove });
+						break;
+					case SCATTER_BOMB:
+						DEBUG::DebugOutput("Scatter Bomb");
+						break;
+					default:
+						break;
+					}
+				}
+				catch (std::exception e) {
+					
 				}
 			}
 

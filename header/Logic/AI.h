@@ -693,7 +693,7 @@ public:
 							int w = regionManager.get_map_width();
 							int h = regionManager.get_map_height();
 							if (x + j < 0 || x + j >= regionManager.get_map_width() || y + k < 0 || y + k >= regionManager.get_map_height()) continue;
-							if (regionManager.get_region(x + i, y + j).getOwner() == id) {
+							if (regionManager.get_region(x + j, y + k).getOwner() == id) {
 								Army& tmp = regionManager.get_region(x + j, y + k).getArmy();
 								if (tmp.getForce() >= maxForceValue) {
 									maxForceValue = tmp.getForce();

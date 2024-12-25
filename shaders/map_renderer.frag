@@ -37,7 +37,7 @@ struct RegionData{
 	float padding_1;
 };
 RegionData empty_region(){
-	return RegionData(vec2(1000000), vec2(-1e6), 0, 0);	
+	return RegionData(vec2(1000000), vec2(-1e6), -1, 0);	
 }
 layout(std430, binding = 0) buffer MapBuffer{
 	RegionData region[];
@@ -250,6 +250,8 @@ CellIndex calculateCellIndex(vec2 uv) {
 
 vec3 sun_light_dir = normalize(vec3(-1,0.03,-1));
 
+)" R"( // 应对超长字符串
+
 vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     CellIndex cell_idx = calculateCellIndex(uv);
     
@@ -263,14 +265,22 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     //color *= sky_color * max(dot(region_normal,sun_light_dir),0.1);
     
     // 区块中心
-    // color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
+    color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
 
     // 军队位置
     color = mix(color, vec3(10,10,10), float(cell_idx.army_data.z < 0.05));
-
+    
     float attack_distance = distance(g_mouse_selected,g_selected);
 
-    bool is_valid_selection = g_selected.x >= 0 && g_selected.y >= 0;
+    RegionData selected_region = getRegion(g_selected.x, g_selected.y);
+    bool is_player_s = selected_region.identity == 0;
+    bool is_valid_selection = g_selected.x >= 0 && g_selected.y >= 0 && 
+        (g_radioactive_selected.w > 0.5 && is_player_s || 
+         g_attack_target.z > 0.5 && is_player_s || 
+         g_scatter_target.w > 0.5 &&  is_player_s);
+
+
+
     bool is_mouse_valid_selection = g_mouse_selected.x >= 0 && g_mouse_selected.y >= 0;
 
     if(is_valid_selection && (g_radioactive_selected.w > 0.5 || g_scatter_target.w > 0.5)){
@@ -288,7 +298,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
         color = vec3(0,10,0) * (0.5 + 0.5 * sin(g_time * 15));
     }
 
-    if(attack_distance <= g_valid_attack_range){
+    if(attack_distance <= g_valid_attack_range && is_player_s){
         // 圆形选中
         if(g_radioactive_selected.w > 0.5 && is_mouse_valid_selection){
             vec2 center = g_radioactive_selected.xy;
@@ -325,7 +335,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
              float radius = g_scatter_target.z;
              float dist = length(vec2(cell_idx.real_idx) - center);
              if(dist < radius){
-		         float weight = pow(0.65 + 0.35 * sin(g_time*5),3);//* exp(-7*dist/(radius+1e-3));
+		         float weight = pow(0.65 + 0.35 * sin(g_time*5),3);
 		         color = mix(color, vec3(0.5,0,0), weight);
 		         vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
 		         vec2 d_uv = (uv - region_uv) * g_map_size / radius * 1.25 * 0.25 + 0.5;
@@ -367,6 +377,8 @@ vec3 rot3D(vec3 v, vec3 axis, float angle){
 	);
 	return rotMat * v;
 }
+
+
 
 vec4 render(out float depth){
 	vec3 rayDir = getRayDir(texCoord.x, texCoord.y);
