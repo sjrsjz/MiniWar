@@ -1,9 +1,11 @@
-﻿const char* main_game_pass_vert = R"(
+﻿#ifndef __glsl_main_game_pass_vert__
+#define __glsl_main_game_pass_vert__
+static const char* main_game_pass_vert = R"(
 #version 430 core
 uniform mat4 MVP;
-in vec3 vPos;
-in vec2 vUV;
+layout(location = 0) in vec3 vPos;
 out vec2 texCoord;
+
 void main()
 {
 	gl_Position = MVP * vec4(vPos, 1.0);
@@ -11,3 +13,4 @@ void main()
 	texCoord = vec2(vPos.x, vPos.y);
 }
 )";
+#endif

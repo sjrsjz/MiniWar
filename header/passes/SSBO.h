@@ -21,6 +21,64 @@ public:
         create_ssbo();
     }
 
+    inline SSBO(SSBO& o) {
+		// Copy constructor
+		// �½�һ��SSBO����Ȼ��o�����ݿ������¶�����
+		if (this == &o) {
+			return;
+		}
+        release();
+        m_binding_point_index = o.m_binding_point_index;
+		m_size = o.m_size;
+		m_usage = o.m_usage;
+
+
+		create_ssbo();
+		o.bind_ssbo();
+	    
+		// ��o�ж�ȡ����
+		void* data = new char[m_size];
+		glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_size, data);
+		update_data(data, m_size);
+
+		o.unbind_ssbo();
+		delete[] data;
+
+    }
+
+	inline SSBO& operator=(const SSBO& o) {
+		// Copy assignment
+		// �ͷŵ�ǰ�������Դ��Ȼ��o�����ݿ�������ǰ������
+		if (this != &o) {
+			release();
+			m_binding_point_index = o.m_binding_point_index;
+			m_size = o.m_size;
+			m_usage = o.m_usage;
+
+			create_ssbo();
+			o.bind_ssbo();
+
+			// ��o�ж�ȡ����
+			void* data = new char[m_size];
+			glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_size, data);
+			update_data(data, m_size);
+
+			o.unbind_ssbo();
+			delete[] data;
+
+		}
+		return *this;
+	}
+
+	inline SSBO(const SSBO& o) {
+		// move constructor
+		// ��o�������ƶ�����ǰ������
+		m_ssbo = o.m_ssbo;
+		m_binding_point_index = o.m_binding_point_index;
+		m_size = o.m_size;
+		m_usage = o.m_usage;
+	}
+
     inline ~SSBO()
     {
         release();
@@ -34,12 +92,17 @@ public:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_binding_point_index, m_ssbo);
     }
 
-    inline void bind_ssbo()
+    inline void bind_ssbo() const
     {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo);
     }
 
-    inline void unbind_ssbo()
+	inline void bind(GLuint index) const
+	{
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, m_ssbo);
+	}
+
+    inline void unbind_ssbo() const
     {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     }

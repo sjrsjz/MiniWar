@@ -193,6 +193,16 @@ LINMATH_H_FUNC void mat4x4_mul_vec4(vec4 r, mat4x4 const M, vec4 const v)
 			r[j] += M[i][j] * v[i];
 	}
 }
+
+LINMATH_H_FUNC void mat4x4_mul_vec4_column_major(vec4 r, mat4x4 const M, vec4 const v)
+{
+	for (int j = 0; j < 4; ++j) {
+		r[j] = 0.f;
+		for (int i = 0; i < 4; ++i)
+			r[j] += M[j][i] * v[i];
+	}
+}
+
 LINMATH_H_FUNC void mat4x4_translate(mat4x4 T, float x, float y, float z)
 {
 	mat4x4_identity(T);

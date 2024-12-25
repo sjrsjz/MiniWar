@@ -1,6 +1,7 @@
 #include <cmath>
 
 static const double M_PI = 3.14159265358979323846;
+// �����㷨
 class SmoothMove {
 private:
     double v0 = 0;
@@ -71,4 +72,13 @@ public:
     inline double getX() const {
         return x1;
     }
+
+	inline void clamp(double min, double max, double time) {
+		if (getX() < min) {
+			newEndPosition(min, time);
+		}
+		if (getX() > max) {
+			newEndPosition(max, time);
+		}
+	}
 };

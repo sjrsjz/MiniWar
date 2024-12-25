@@ -1,21 +1,4 @@
 #pragma once
-#include "../Timer.h"
-#include "../utils/Point.h"
-#include "../../header/Logic/Weapon.h"
-
-#include "../../header/Logic/Army.h"
-#include "../../header/utils/GlobalTimer.h"
-
-#include <string>
-#include <cmath>
-#include <vector>
-#include <queue>
-#include <unordered_map>
-
-//class RegionManager {
-//public:
-//	static RegionManager& getInstance();
-//};
 class RegionManager;
 
 class Player {

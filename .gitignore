@@ -8,3 +8,7 @@ MiniWar/MiniWar.vcxproj.user
 *.gitmodules
 /.vscode/settings.json
 /.vscode/settings.json
+MiniWar/Debug
+MiniWar/Release
+MiniWar/x64
+/UnitTest1/x64/Debug

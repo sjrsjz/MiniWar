@@ -48,6 +48,29 @@
     </ClCompile>
     <ClCompile Include="..\cpp\Engine.cpp">
       <Filter>cpp</Filter>
+    <ClCompile Include="..\cpp\Logic\PowerStation.cpp">
+      <Filter>cpp\Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\imgui\imgui_impl_glfw.cpp">
+      <Filter>cpp\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\imgui\imgui.cpp">
+      <Filter>cpp\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\imgui\imgui_draw.cpp">
+      <Filter>cpp\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\imgui\imgui_tables.cpp">
+      <Filter>cpp\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\imgui\imgui_widgets.cpp">
+      <Filter>cpp\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\imgui\imgui_impl_opengl3.cpp">
+      <Filter>cpp\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\imgui\imgui_demo.cpp">
+      <Filter>cpp\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -126,15 +149,19 @@
     <ClInclude Include="..\header\Logic\Army.h">
       <Filter>headers\Logic</Filter>
     </ClInclude>
+<<<<<<< HEAD
     <ClInclude Include="..\header\utils\SmoothMove.h">
       <Filter>headers\utils</Filter>
     </ClInclude>
+=======
+>>>>>>> new-2
     <ClInclude Include="..\header\passes\SSBO.h">
       <Filter>headers\passes</Filter>
     </ClInclude>
     <ClInclude Include="..\header\passes\SSBOByteArray.h">
       <Filter>headers\passes</Filter>
     </ClInclude>
+<<<<<<< HEAD
     <ClInclude Include="..\header\utils\Config.h">
       <Filter>headers\utils</Filter>
     </ClInclude>
@@ -147,6 +174,68 @@
     <ClInclude Include="..\header\Engine.h">
       <Filter>headers</Filter>
     </ClInclude>
+=======
+    <ClInclude Include="..\header\utils\SmoothMove.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\PowerStation.h">
+      <Filter>headers\Logic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\FloatBuffer.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\RegionSelector.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imgui_impl_glfw.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imgui.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imconfig.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imgui_internal.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imstb_rectpack.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imstb_textedit.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imstb_truetype.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imgui_impl_opengl3.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imgui_impl_opengl3_loader.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\RegionSSBOBuffer.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\RegionData.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\stb\stb_image.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\ImageLoader.h">
+      <Filter>headers\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\passes\FlameRenderPass.h">
+      <Filter>headers\passes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\points.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\bass\bass.h">
+      <Filter>include</Filter>
+    </ClInclude>
+>>>>>>> new-2
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
@@ -160,6 +249,30 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\map_renderer.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\gaussian_blur.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\gaussian_blur.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\flame_render_pass.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\flame_render_pass.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\direct_tex.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\direct_tex.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\points_renderer.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\points_renderer.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
@@ -189,11 +302,27 @@
       <UniqueIdentifier>{82bb7b68-d06a-4f9c-b28b-3d664b040fd9}</UniqueIdentifier>
     </Filter>
     <Filter Include="cpp\Logic">
+<<<<<<< HEAD
       <UniqueIdentifier>{d5e832ea-e918-46f0-94cd-11f0a05368cd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\shaders\main_game_pass.frag" />
     <Text Include="..\shaders\main_game_pass.vert" />
+=======
+      <UniqueIdentifier>{36b7f8f9-fc09-44df-a679-e1bdaa2787ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cpp\imgui">
+      <UniqueIdentifier>{425a02f8-0a0d-4a92-9009-4ca66192686e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\shaders\main_game_pass.vert">
+      <Filter>shaders</Filter>
+    </Text>
+    <Text Include="..\shaders\main_game_pass.frag">
+      <Filter>shaders</Filter>
+    </Text>
+>>>>>>> new-2
   </ItemGroup>
 </Project>

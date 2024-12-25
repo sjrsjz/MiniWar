@@ -27,6 +27,7 @@ struct MovingMissle {
 	}
 };
 
+class Player;
 class RegionManager {
 private:
 	int width;
