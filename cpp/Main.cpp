@@ -590,16 +590,16 @@ public:
 
 		switch (s_selected_weapon) {
 		case NUCLEAR_MISSILE:
-			ImGui::Text("Selected Weapon: Nuclear Missile");
+			ImGui::Text(u8"选中: 核导弹");
 			// 显示当前选择的武器等级
-			ImGui::Text("Selected Level: %d", s_nuclear_missile_level + 1);
+			ImGui::Text(u8"武器等级: %d", s_nuclear_missile_level + 1);
 
 			break;
 		case ARMY:
-			ImGui::Text("Selected Weapon: Army");
+			ImGui::Text(u8"选中：军队");
 			break;
 		case SCATTER_BOMB:
-			ImGui::Text("Selected Weapon: Scatter Bomb");
+			ImGui::Text(u8"选中：散射打击");
 			// 滑块颜色
 			ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1, 1, 1, 0.5));
 			ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(1, 1, 1, 1));
@@ -612,9 +612,27 @@ public:
 			break;
 		}
 
-		ImGui::Text("Selected Grid: %d, %d", grid[0], grid[1]);
+		ImGui::Text(u8"区块坐标: %d, %d", grid[0], grid[1]);
 		Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
-
+		std::string building_name = region.getBuilding().getName();
+		if(building_name != "none")
+			ImGui::Text(u8"建筑: %s", building_name.c_str());
+		if (region.getOwner() >= 0) {
+			if (region.getOwner() == 0) {
+				ImGui::Text(u8"所有者: 玩家");
+				if (s_selected_weapon == ARMY) {
+					ImGui::Text(u8"军队: %d", region.getArmy().getForce());
+				}
+			}
+			else {
+				ImGui::Text(u8"所有者: AI");
+				if (s_selected_weapon == ARMY) {
+					ImGui::Text(u8"军队: %d", region.getArmy().getForce());
+				}
+			}
+		}
+		ImGui::SameLine();
+		ImGui::Text("HP: %d", region.getHp());
 		ImGui::End();
 		ImGui::PopStyleVar();
 	}
@@ -635,9 +653,23 @@ public:
 }s_selected_gui;
 static class StatusGui {
 private:
-	SmoothMove resources_amount{};
-	SmoothMove resources_amount_back{};
-	int resources_amount_max = 0;
+	SmoothMove gold_amount{};
+	SmoothMove gold_amount_back{};
+	SmoothMove electricity_amount{};
+	SmoothMove electricity_amount_back{};
+	SmoothMove labor_amount{};
+	SmoothMove labor_amount_back{};
+	SmoothMove oil_amount{};
+	SmoothMove oil_amount_back{};
+	SmoothMove steel_amount{};
+	SmoothMove steel_amount_back{};
+
+	int gold_amount_max = 0;
+	int electricity_amount_max = 0;
+	int labor_amount_max = 0;
+	int oil_amount_max = 0;
+	int steel_amount_max = 0;
+
 	SmoothMove occupation_amount{};
 	SmoothMove occupation_amount_back{}; // 已占有资源
 	int occupation_amount_max = 0;
@@ -666,34 +698,74 @@ public:
 	StatusGui() {
 		// 资源条
 		{
-			resources_amount.setTotalDuration(0.125);
-			resources_amount_back.setTotalDuration(0.5);
-			resources_amount_max = 100;
+			gold_amount.setTotalDuration(0.125);
+			gold_amount_back.setTotalDuration(0.5);
+			gold_amount_max = 100;
+			electricity_amount.setTotalDuration(0.125);
+			electricity_amount_back.setTotalDuration(0.5);
+			electricity_amount_max = 100;
+			labor_amount.setTotalDuration(0.125);
+			labor_amount_back.setTotalDuration(0.5);
+			labor_amount_max = 100;
+			oil_amount.setTotalDuration(0.125);
+			oil_amount_back.setTotalDuration(0.5);
+			oil_amount_max = 100;
+			steel_amount.setTotalDuration(0.125);
+			steel_amount_back.setTotalDuration(0.5);
+			steel_amount_max = 100;
 			occupation_amount.setTotalDuration(1);
 			occupation_amount_back.setTotalDuration(2);
 			occupation_amount_max = 100;
+
 		}
 	}
 	void render_gui(ImGuiIO& io) {
 		ImGui::Begin("Status", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoCollapse);
-		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 200));
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 225));
 		ImGui::SetWindowPos(ImVec2(50, io.DisplaySize.y - 250));
 
 		// 资源条
-		render_bar(io, resources_amount, resources_amount_back, u8"资源:%d", TEXTURE::s_image_lightning, resources_amount_max, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5));
+		render_bar(io, gold_amount, gold_amount_back, u8"金钱:%d", TEXTURE::s_image_lightning, gold_amount_max, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5));
+		render_bar(io, electricity_amount, electricity_amount_back, u8"电力:%d", TEXTURE::s_image_lightning, electricity_amount_max, ImVec4(1, 1, 1, 1), ImVec4(0, 0, 1, 0.5));
+		render_bar(io, labor_amount, labor_amount_back, u8"劳动力:%d", TEXTURE::s_image_lightning, labor_amount_max, ImVec4(1, 1, 1, 1), ImVec4(0, 1, 0, 0.5));
+		render_bar(io, oil_amount, oil_amount_back, u8"石油:%d", TEXTURE::s_image_lightning, oil_amount_max, ImVec4(1, 1, 1, 1), ImVec4(1, 0.5, 0, 0.5));
+		render_bar(io, steel_amount, steel_amount_back, u8"钢铁:%d", TEXTURE::s_image_lightning, steel_amount_max, ImVec4(1, 1, 1, 1), ImVec4(0.5, 0.5, 0.5, 0.5));
 		render_bar(io, occupation_amount, occupation_amount_back, u8"已占有:%d", TEXTURE::s_image_guard, occupation_amount_max, ImVec4(1, 1, 1, 1), ImVec4(1, 0.25, 0.25, 0.5));
+
 
 		ImGui::End();
 	}
 	void update(const Timer& timer) {
-		resources_amount.update_sin(timer.getTime());
-		resources_amount_back.update_sin(timer.getTime());
+		gold_amount.update_sin(timer.getTime());
+		gold_amount_back.update_sin(timer.getTime());
+		electricity_amount.update_sin(timer.getTime());
+		electricity_amount_back.update_sin(timer.getTime());
+		labor_amount.update_sin(timer.getTime());
+		labor_amount_back.update_sin(timer.getTime());
+		oil_amount.update_sin(timer.getTime());
+		oil_amount_back.update_sin(timer.getTime());
+		steel_amount.update_sin(timer.getTime());
+		steel_amount_back.update_sin(timer.getTime());
 		occupation_amount.update_sin(timer.getTime());
 		occupation_amount_back.update_sin(timer.getTime());
 
+		double gold = RegionManager::getInstance().get_player().get_gold();
+		gold_amount.newEndPosition(gold, timer.getTime());
+		gold_amount_back.newEndPosition(gold, timer.getTime());
 		double electricity = RegionManager::getInstance().get_player().get_electricity();
-		resources_amount.newEndPosition(electricity, timer.getTime());
-		resources_amount_back.newEndPosition(electricity, timer.getTime());
+		electricity_amount.newEndPosition(electricity, timer.getTime());
+		electricity_amount_back.newEndPosition(electricity, timer.getTime());
+		double labor = RegionManager::getInstance().get_player().get_ocupied_labor();
+		labor_amount.newEndPosition(labor, timer.getTime());
+		labor_amount_back.newEndPosition(labor, timer.getTime());
+		double oil = RegionManager::getInstance().get_player().get_oil();
+		oil_amount.newEndPosition(oil, timer.getTime());
+		oil_amount_back.newEndPosition(oil, timer.getTime());
+		double steel = RegionManager::getInstance().get_player().get_steel();
+		steel_amount.newEndPosition(steel, timer.getTime());
+		steel_amount_back.newEndPosition(steel, timer.getTime());
+
+
 		
 		int region_count = 0;
 		for (int i{}; i < RegionManager::getInstance().get_map_width(); i++) {
@@ -1696,10 +1768,12 @@ void KeyRelease(int key) {
 			if (s_selected_gui.is_selected) {
 				Point start_point = Point::toPoint(s_selected_gui.grid);
 				Point end_point = Point::toPoint(s_current_selected_grid);
+				Region& from_region = RegionManager::getInstance().get_region(start_point.getX(), start_point.getY());
+				Region& to_region = RegionManager::getInstance().get_region(end_point.getX(), end_point.getY());
 				switch (s_selected_weapon)
 				{
 				case NONE:		
-					push_input({ start_point, end_point, Operator::ArmyMove });
+					//push_input({ start_point, end_point, Operator::ArmyMove });
 					break;
 				case NUCLEAR_MISSILE:
 					DEBUG::DebugOutput("Nuclear Missile");
@@ -1712,6 +1786,7 @@ void KeyRelease(int key) {
 					break;
 				case ARMY:
 					DEBUG::DebugOutput("Army");
+					push_input({ start_point, end_point, from_region.getArmy().getForce(), Operator::ArmyMove});
 					break;
 				case SCATTER_BOMB:
 					DEBUG::DebugOutput("Scatter Bomb");

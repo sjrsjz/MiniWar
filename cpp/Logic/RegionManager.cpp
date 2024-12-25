@@ -545,7 +545,7 @@ void RegionManager::update(GlobalTimer& timer) {
 	current_time = timer.get_running_time();
 	army_mutex.lock();
 	//DEBUG::DebugOutput("RegionManager::update() called", moving_armies.size());
-	while (!moving_armies.empty() && moving_armies.top().time <= current_time) {
+	while (!moving_armies.empty() && moving_armies.top().reach_time <= current_time) {
 		DEBUG::DebugOutput("Moving army: ", moving_armies.top().amount);
 		MovingArmy army = moving_armies.top();
 		moving_armies.pop();
@@ -557,11 +557,15 @@ void RegionManager::update(GlobalTimer& timer) {
 		}
 		else{
 			int rest_army = army.amount - end_region.getArmy().getForce();
-			end_region.setOwner(start_region.getOwner());
-			end_region.getArmy().removeArmy(end_region.getArmy().getForce());
-			end_region.getArmy().addArmy(rest_army);
-			end_region.getWeapons().clear();
-			clear_building(end_region);
+			if(rest_army < 0){
+				end_region.getArmy().setArmy(-rest_army);
+			}
+			else {
+				end_region.setOwner(start_region.getOwner());
+				end_region.getArmy().setArmy(rest_army);
+				end_region.getWeapons().clear();
+				clear_building(end_region);
+			}
 		}
 	}
 	army_mutex.unlock();

@@ -31,5 +31,9 @@ bool Army::removeArmy(int num){
 		return false;
 	}
 	this->force -= num;
+	this->force = this->force < 0 ? 0 : this->force;
 	return true;
+}
+void Army::setArmy(int num) {
+	this->force = num;
 }

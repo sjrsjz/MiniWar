@@ -12,4 +12,5 @@ public:
 	int getForce();
 	bool addArmy(int num);
 	bool removeArmy(int num);
+	void setArmy(int num);
 };

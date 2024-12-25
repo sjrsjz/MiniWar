@@ -305,12 +305,15 @@ public:
 				} else if (regionManager.get_region(i, j).getOwner() == 0) {
 					playerRegions.push_back(std::make_tuple(i, j));
 				} 
+			}
+		}
+		for (int i = 0; i < regionManager.get_map_width(); i++) {
+			for (int j = 0; j < regionManager.get_map_height(); j++) {
 				if (isBorder(i, j)) {
 					border.push_back(std::make_tuple(i, j));
 				}
 			}
 		}
-
 		this->regionSize = AIRegions.size();
 		this->playerRegionSize = playerRegions.size();
 
@@ -432,10 +435,11 @@ public:
 	}
 
 	bool isBorder(int x, int y) {
+		if (regionManager.get_region(x, y).getOwner() == id) return false;
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
 				if (x + i < 0 || x + i >= regionManager.get_map_width() || y + j < 0 || y + j >= regionManager.get_map_height()) continue;
-				if (regionManager.get_region(x + i, y + j).getOwner() == id) {
+				if (regionManager.get_region(x + i, y + j).getOwner() == id && !(i==0 && j==0)) {
 					return true;
 				}
 			}
@@ -497,7 +501,8 @@ public:
 			target += army[i].second;
 		}
 
-		int remain = sumArmy - target;
+		int remain = sumArmy - target; // ??
+		remain = remain >= army.size() ? army.size() - 1 : remain;
 		for (int i = 0; i < remain; i++) {
 			army[i].second++;
 		}

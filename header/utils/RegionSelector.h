@@ -146,6 +146,8 @@ public:
 		}
 		vec2 cell_uv = { cell_u, cell_v };
 		auto [idx_x, idx_y, min_dist] = cell(cell_uv, cell_center);
+		if (x + idx_x < 0 || x + idx_x >= mapWidth || y + idx_y < 0 || y + idx_y >= mapHeight)
+			return { false, -1, -1 };
 		return { true, x + idx_x, y + idx_y };
 	}
 

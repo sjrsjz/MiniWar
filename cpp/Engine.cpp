@@ -137,8 +137,12 @@ void main_loop() {
 		//DEBUG::DebugOutput("New Loop\n");
 		GlobalTimer::getInstance().update();
 
-		read_input();
-
+		try {
+			read_input();
+		}
+		catch (std::exception& e) {
+			DEBUG::DebugOutput(e.what());
+		}
 
 		update();
 		//DEBUG::DebugOutput("End Loop\n");
