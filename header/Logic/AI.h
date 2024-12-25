@@ -440,8 +440,7 @@ public:
 				}
 			}
 		}
-			}
-		}
+
 		return false;
 	}
 
