@@ -865,28 +865,28 @@ void Player::rangeAttack(Operation operation) {
 			float distance = regionPos.distance(target);
 			if (weapons[0] > 0) {
 				float speed = regionmanager.get_weapon(0).getAttackSpeed(arm_level[1]);
-				float damage = regionmanager.get_weapon(0).getDamage(arm_level[1]);
+				/*float damage = regionmanager.get_weapon(0).getDamage(arm_level[1]);*/
 				double time = distance / speed;
 				if (distance <= 0.25 * mapSize) {
-					regionmanager.attack_region_missle(0, regionPos, target, time, damage);
+					regionmanager.attack_region_missle(0, arm_level[1], regionPos, target, time);
 					num--;
 					flag = true;
 				}
 			} else if (weapons[1] > 0) {
 				float speed = regionmanager.get_weapon(1).getAttackSpeed(arm_level[2]);
-				float damage = regionmanager.get_weapon(1).getDamage(arm_level[2]);
+				/*float damage = regionmanager.get_weapon(1).getDamage(arm_level[2]);*/
 				double time = distance / speed;
 				if (distance <= 0.5 * mapSize) {
-					regionmanager.attack_region_missle(1, regionPos, target, time, damage);
+					regionmanager.attack_region_missle(1, arm_level[2], regionPos, target, time);
 					num--;
 					flag = true;
 				}
 			} else if (weapons[2] > 0) {
 				float speed = regionmanager.get_weapon(2).getAttackSpeed(arm_level[3]);
-				float damage = regionmanager.get_weapon(2).getDamage(arm_level[3]);
+				/*float damage = regionmanager.get_weapon(2).getDamage(arm_level[3]);*/
 				double time = distance / speed;
 				if (distance <= 0.75 * mapSize && distance >= 0.2 * mapSize) {
-					regionmanager.attack_region_missle(2, regionPos, target, time, damage);
+					regionmanager.attack_region_missle(2, arm_level[3], regionPos, target, time);
 					num--;
 					flag = true;
 				}
