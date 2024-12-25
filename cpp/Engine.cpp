@@ -54,7 +54,7 @@ void read_input() {
 			regionManager.get_player().remove_building(op);
 			break;
 		case Operator::SetResearch:
-			regionManager.get_player().build_research(op);
+			regionManager.get_player().set_research(op);
 			break;
 		case Operator::BuildingLevel:
 			regionManager.get_player().upgrade_building(op);
@@ -86,9 +86,6 @@ void read_input() {
 		case Operator::Weapon2UpLevel:
 			regionManager.get_player().research(op);
 			break;
-		case Operator::Product:
-			regionManager.get_player().product(op);
-			break;
 		case Operator::ArmyMove:
 			regionManager.get_player().move_army(op, size);
 			break;
@@ -102,7 +99,7 @@ void read_input() {
 			regionManager.get_player().attack(op);
 			break;
 		case Operator::RangeAttack:
-			regionManager.get_player().range_attack(op);
+			regionManager.get_player().rangeAttack(op);
 			break;
 		case Operator::ProductArmy:
 			regionManager.get_player().product(op);
