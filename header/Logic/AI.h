@@ -81,9 +81,9 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 10000000.0;
+	double A = 500.0;
 	double k = 0.01;
-	double t0 = 50;
+	double t0 = 250;
 	AITimer Timer;
 	bool canMove = true;
 	bool canDefend = true;
@@ -385,7 +385,11 @@ public:
 		this->gold -= buildArmy;
 
 		int biuldWeapon = (int)this->gold * 0.5;
-		double dist = std::sqrt(this->distance[0].second) / playerRegionSize / regionManager.get_map_width();
+		int sumDis = 0;
+		for (int i = 0; i < distance.size(); i++) {
+			sumDis += distance[i].second;
+		}
+		double dist = std::sqrt(sumDis) / playerRegionSize / regionManager.get_map_width();
 		if (dist <= 0.25) {
 			if (biuldWeapon >= regionManager.get_weapon(0).getAICost() && arm_level[1] > 0) {
 				weapons[0]++;
@@ -556,7 +560,7 @@ public:
 			}
 		}
 
-		double maxTime = 0;
+		double maxTime = -1;
 
 		for (auto transaction : transactions) {
 			auto [from, to, force] = transaction;
@@ -566,6 +570,9 @@ public:
 			DEBUG::DebugOutput("moveArmy() calls move_Army");
 			DEBUG::DebugOutput("from (", start.getX(), ",", start.getY(), ")", "to", "(", end.getX(), ",", end.getY(), ")");
 			maxTime = std::max(maxTime, regionManager.move_army(end, start, force, armyLevel));
+		}
+		if (maxTime == -1) {
+			return;
 		}
 
 		std::thread t([this, maxTime](){
