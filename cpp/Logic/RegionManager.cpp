@@ -26,6 +26,93 @@ RegionManager::RegionManager(int width, int height) : width(width), height(heigh
 RegionManager::~RegionManager() {
 }
 
+struct Node {
+    Point pt;        // 当前节点位置
+    int g_cost;      // 从起点到当前点的代价
+    int h_cost;      // 启发式函数值（曼哈顿距离）
+    int f_cost;      // 总代价 f = g + h
+    Node* parent;    // 父节点指针
+
+    Node(Point pt_, int g, int h, Node* parent_ = nullptr)
+        : pt(pt_), g_cost(g), h_cost(h), f_cost(g + h), parent(parent_) {}
+
+    // 比较优先队列的顺序，f_cost 小的优先
+    bool operator>(const Node& other) const {
+        return f_cost > other.f_cost;
+    }
+};
+
+int manhattan_distance(Point a,Point b) {
+    return std::abs(a.getX() - b.getX()) + std::abs(a.getY() - b.getY());
+}
+
+static std::vector<Point> reconstruct_path(Node* end_node) {
+    std::vector<Point> path;
+    for (Node* current = end_node; current != nullptr; current = current->parent) {
+        path.push_back(current->pt);
+    }
+    std::reverse(path.begin(), path.end());
+    return path;
+}
+
+
+std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point end) {
+    int rows = grid.size();
+    int cols = grid[0].size();
+
+    // 八个方向（相邻点）
+    std::vector<std::pair<int, int>> directions = {
+        {0, 1}, {1, 0}, {0, -1}, {-1, 0},  // 上、右、下、左
+        {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // 左上、右上、左下、右下
+    };
+
+    // 优先队列（小顶堆）
+    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_set;
+
+    // 存储已经访问过的节点
+    std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+
+    // 起点初始化
+    Node* start_node = new Node(start, 0, manhattan_distance(start, end));
+    open_set.push(*start_node);
+
+    while (!open_set.empty()) {
+        Node current = open_set.top();
+        open_set.pop();
+
+        if (visited[current.pt.getX()][current.pt.getY()]) {
+            continue;
+        }
+
+        visited[current.pt.getX()][current.pt.getY()] = true;
+
+        // 检查是否到达终点
+        if (current.pt.getX() == end.getX() && current.pt.getY() == end.getY()) {
+            return reconstruct_path(&current);
+        }
+
+        // 遍历相邻点
+        for (const auto& dir : directions) {
+            int nx = current.pt.getX() + dir.first;
+            int ny = current.pt.getY() + dir.second;
+
+            // 检查边界和是否可走
+            if (nx >= 0 && ny >= 0 && nx < rows && ny < cols && grid[nx][ny] == 1 && !visited[nx][ny]) {
+                int move_cost = (dir.first == 0 || dir.second == 0) ? 10 : 14;
+                Node* neighbor = new Node(Point(nx, ny), current.g_cost + move_cost, manhattan_distance(Point(nx, ny), end), new Node(current));
+                open_set.push(*neighbor);
+            }
+        }
+    }
+
+    // 如果找不到路径，返回空
+    return {};
+}
+
+
+
+
+
 double RegionManager::calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end) {
 	DEBUG::DebugOutput("RegionManager::calculate_Euclidean_distance() called");
 	Region& start_region = get_region(std::get<0>(start), std::get<1>(start));
@@ -42,186 +129,200 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 	int end_x = std::floor(end.getX());
 	int end_y = std::floor(end.getY());
 
+
+
+
 	int id = get_region(start_x, start_y).getOwner();
 
 	double distance = 0.f;
 
 	Array<Region>& regions = get_regions();
-	std::vector<int> player_region_matrix(regions.get_width() * regions.get_height());
+	std::vector<std::vector<int>> player_region_matrix(regions.get_width(), std::vector<int>(regions.get_height(), 0));
 	for (int i = 0; i < regions.get_width(); i++) {
 		for (int j = 0; j < regions.get_height(); j++) {
 			if (regions(i, j).getOwner() == id || regions(i,j).getOwner() == -1 || (i == end_x&&j==end_y)) {
-				player_region_matrix[i + j * regions.get_width()] = 1;
-			}
-			else
-			{
-				player_region_matrix[i + j * regions.get_width()] = 0;
+				player_region_matrix[i][j] = 1;
 			}
 		}
 	}
 
-	int temp_x = start_x;
-	int temp_y = start_y;
 
-	static int NOT_AVALIABLE = 1000000;
-	static int straight_cost = 10;
-	static int diagonal_cost = 14;
+	std::vector<Point> path_points = astar(player_region_matrix, start, end);
 
-	int cost_list[8] = {};//0: left up 1: up 2: right up 3: left 4: right 5: left down 6: down 7: right down
-
-	while (temp_x != end_x && temp_y != end_y)
-	{
-		path.push_back(std::make_tuple(temp_x, temp_y));
-
-		bool up = true;
-		bool down = true;
-		bool left = true;
-		bool right = true;
-		if (temp_x - 1 < 0)
-		{
-			cost_list[0] = NOT_AVALIABLE;
-			cost_list[3] = NOT_AVALIABLE;
-			cost_list[5] = NOT_AVALIABLE;
-			left = false;
-		}
-		if (temp_x + 1 > regions.get_width())
-		{
-			cost_list[2] = NOT_AVALIABLE;
-			cost_list[4] = NOT_AVALIABLE;
-			cost_list[7] = NOT_AVALIABLE;
-			right = false;
-		}
-		if (temp_y - 1 < 0)
-		{
-			cost_list[5] = NOT_AVALIABLE;
-			cost_list[6] = NOT_AVALIABLE;
-			cost_list[7] = NOT_AVALIABLE;
-			down = false;
-		}
-		if (temp_y + 1 > 0)
-		{
-			cost_list[0] = NOT_AVALIABLE;
-			cost_list[1] = NOT_AVALIABLE;
-			cost_list[2] = NOT_AVALIABLE;
-			up = false;
-		}
-		if (up) {
-			if (player_region_matrix[temp_x + (temp_y + 1) * regions.get_width()] == 1) {
-				cost_list[0] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
-			}
-			else {
-				cost_list[0] = NOT_AVALIABLE;
-			}
-			if (left) {
-				if (player_region_matrix[temp_x - 1 + (temp_y + 1) * regions.get_width()] == 1) {
-					cost_list[1] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
-				}
-				else {
-					cost_list[1] = NOT_AVALIABLE;
-				}
-			}
-			if (right) {
-				if (player_region_matrix[temp_x + 1 + (temp_y + 1) * regions.get_width()] == 1) {
-					cost_list[2] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
-				}
-				else {
-					cost_list[2] = NOT_AVALIABLE;
-				}
-			}
-		}
-		if (down) {
-			if (player_region_matrix[temp_x + (temp_y - 1) * regions.get_width()] == 1) {
-				cost_list[5] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
-			}
-			else {
-				cost_list[5] = NOT_AVALIABLE;
-			}
-			if (left) {
-				if (player_region_matrix[temp_x - 1 + (temp_y - 1) * regions.get_width()] == 1) {
-					cost_list[6] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
-				}
-				else {
-					cost_list[6] = NOT_AVALIABLE;
-				}
-			}
-			if (right) {
-				if (player_region_matrix[temp_x + 1 + (temp_y - 1) * regions.get_width()] == 1) {
-					cost_list[7] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
-				}
-				else {
-					cost_list[7] = NOT_AVALIABLE;
-				}
-			}
-		}
-		if (left) {
-			if (player_region_matrix[temp_x - 1 + temp_y * regions.get_width()] == 1) {
-				cost_list[3] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
-			}
-			else {
-				cost_list[3] = NOT_AVALIABLE;
-			}
-		}
-		if (right) {
-			if (player_region_matrix[temp_x + 1 + temp_y * regions.get_width()] == 1) {
-				cost_list[4] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
-			}
-			else {
-				cost_list[4] = NOT_AVALIABLE;
-			}
-		}
-
-		int min_cost = NOT_AVALIABLE, min_way = 0;
-		for (int i = 0; i < 8; i++) {
-			if (cost_list[i] < min_cost) {
-				min_cost = cost_list[i];
-				min_way = i;
-			}
-		}
-		if (min_cost == NOT_AVALIABLE) {
-			return -1.f;
-		}
-
-		switch (min_way) {
-		case 0:
-			temp_y++;
-			distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y - 1));
-			break;
-		case 1:
-			temp_x--;
-			temp_y++;
-			distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y - 1));
-			break;
-		case 2:
-			temp_x++;
-			temp_y++;
-			distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y - 1));
-			break;
-		case 3:
-			temp_x--;
-			distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y));
-			break;
-		case 4:
-			temp_x++;
-			distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y));
-			break;
-		case 5:
-			temp_y--;
-			distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y + 1));
-			break;
-		case 6:
-			temp_x--;
-			temp_y--;
-			distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y + 1));
-			break;
-		case 7:
-			temp_x++;
-			temp_y--;
-			distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y + 1));
-			break;
-		}
-		player_region_matrix[temp_x + temp_y * regions.get_width()] = 0;
+	if (path_points.empty()) {
+		return -1.f;
 	}
+
+	for (int i = 0; i < path_points.size(); i++) {
+		path.push_back(std::make_tuple(path_points[i].getX(), path_points[i].getY()));
+		if (i == 0) continue;
+		distance += path_points[i].distance(path_points[i - 1]);
+	}
+
 	return distance;
+
+	//int temp_x = start_x;
+	//int temp_y = start_y;
+
+	//static int NOT_AVALIABLE = 1000000;
+	//static int straight_cost = 10;
+	//static int diagonal_cost = 14;
+
+	//int cost_list[8] = {};//0: left up 1: up 2: right up 3: left 4: right 5: left down 6: down 7: right down
+	//bool up = true;
+	//bool down = true;
+	//bool left = true;
+	//bool right = true;
+
+	//while (!(temp_x != end_x && temp_y != end_y))
+	//{
+	//	path.push_back(std::make_tuple(temp_x, temp_y));
+
+	//	if (temp_x - 1 < 0)
+	//	{
+	//		cost_list[0] = NOT_AVALIABLE;
+	//		cost_list[3] = NOT_AVALIABLE;
+	//		cost_list[5] = NOT_AVALIABLE;
+	//		left = false;
+	//	}
+	//	if (temp_x + 1 > regions.get_width())
+	//	{
+	//		cost_list[2] = NOT_AVALIABLE;
+	//		cost_list[4] = NOT_AVALIABLE;
+	//		cost_list[7] = NOT_AVALIABLE;
+	//		right = false;
+	//	}
+	//	if (temp_y - 1 < 0)
+	//	{
+	//		cost_list[5] = NOT_AVALIABLE;
+	//		cost_list[6] = NOT_AVALIABLE;
+	//		cost_list[7] = NOT_AVALIABLE;
+	//		down = false;
+	//	}
+	//	if (temp_y + 1 > regions.get_height())
+	//	{
+	//		cost_list[0] = NOT_AVALIABLE;
+	//		cost_list[1] = NOT_AVALIABLE;
+	//		cost_list[2] = NOT_AVALIABLE;
+	//		up = false;
+	//	}
+	//	if (up) {
+	//		if (player_region_matrix[temp_x + (temp_y + 1) * regions.get_width()] == 1) {
+	//			cost_list[0] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
+	//		}
+	//		else {
+	//			cost_list[0] = NOT_AVALIABLE;
+	//		}
+	//		if (left) {
+	//			if (player_region_matrix[temp_x - 1 + (temp_y + 1) * regions.get_width()] == 1) {
+	//				cost_list[1] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
+	//			}
+	//			else {
+	//				cost_list[1] = NOT_AVALIABLE;
+	//			}
+	//		}
+	//		if (right) {
+	//			if (player_region_matrix[temp_x + 1 + (temp_y + 1) * regions.get_width()] == 1) {
+	//				cost_list[2] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
+	//			}
+	//			else {
+	//				cost_list[2] = NOT_AVALIABLE;
+	//			}
+	//		}
+	//	}
+	//	if (down) {
+	//		if (player_region_matrix[temp_x + (temp_y - 1) * regions.get_width()] == 1) {
+	//			cost_list[5] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
+	//		}
+	//		else {
+	//			cost_list[5] = NOT_AVALIABLE;
+	//		}
+	//		if (left) {
+	//			if (player_region_matrix[temp_x - 1 + (temp_y - 1) * regions.get_width()] == 1) {
+	//				cost_list[6] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
+	//			}
+	//			else {
+	//				cost_list[6] = NOT_AVALIABLE;
+	//			}
+	//		}
+	//		if (right) {
+	//			if (player_region_matrix[temp_x + 1 + (temp_y - 1) * regions.get_width()] == 1) {
+	//				cost_list[7] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
+	//			}
+	//			else {
+	//				cost_list[7] = NOT_AVALIABLE;
+	//			}
+	//		}
+	//	}
+	//	if (left) {
+	//		if (player_region_matrix[temp_x - 1 + temp_y * regions.get_width()] == 1) {
+	//			cost_list[3] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
+	//		}
+	//		else {
+	//			cost_list[3] = NOT_AVALIABLE;
+	//		}
+	//	}
+	//	if (right) {
+	//		if (player_region_matrix[temp_x + 1 + temp_y * regions.get_width()] == 1) {
+	//			cost_list[4] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
+	//		}
+	//		else {
+	//			cost_list[4] = NOT_AVALIABLE;
+	//		}
+	//	}
+
+	//	int min_cost = NOT_AVALIABLE, min_way = 0;
+	//	for (int i = 0; i < 8; i++) {
+	//		if (cost_list[i] < min_cost) {
+	//			min_cost = cost_list[i];
+	//			min_way = i;
+	//		}
+	//	}
+	//	if (min_cost == NOT_AVALIABLE) {
+	//		return -1.f;
+	//	}
+
+	//	switch (min_way) {
+	//	case 0:
+	//		temp_y++;
+	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y - 1));
+	//		break;
+	//	case 1:
+	//		temp_x--;
+	//		temp_y++;
+	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y - 1));
+	//		break;
+	//	case 2:
+	//		temp_x++;
+	//		temp_y++;
+	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y - 1));
+	//		break;
+	//	case 3:
+	//		temp_x--;
+	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y));
+	//		break;
+	//	case 4:
+	//		temp_x++;
+	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y));
+	//		break;
+	//	case 5:
+	//		temp_y--;
+	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y + 1));
+	//		break;
+	//	case 6:
+	//		temp_x--;
+	//		temp_y--;
+	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y + 1));
+	//		break;
+	//	case 7:
+	//		temp_x++;
+	//		temp_y--;
+	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y + 1));
+	//		break;
+	//	}
+	//	player_region_matrix[temp_x + temp_y * regions.get_width()] = 0;
+	//}
+	//return distance;
 }
 
 std::vector<Region> RegionManager::get_damaged_regions(Point position, float range) {

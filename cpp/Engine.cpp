@@ -14,7 +14,8 @@ static std::thread s_main_loop;
 void initial_game(int width, int height) {
 	s_exit_game = false;
 	RegionManager::getInstance().set(width, height);
-	//ai.create(1);
+	RegionManager::getInstance().get_player().create();
+	ai.create();
 }
 
 void read_input() {
@@ -126,7 +127,7 @@ void push_input(const Operation& op) {
 
 void update() {
 	RegionManager::getInstance().update(GlobalTimer::getInstance());
-	//ai.update(isPause);
+	ai.update(isPause);
 }
 
 void main_loop() {

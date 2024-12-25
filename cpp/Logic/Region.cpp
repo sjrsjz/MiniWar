@@ -37,6 +37,7 @@ Region::Region(int x, int y){
 	Config& config = Config::getInstance();
 	std::tuple<int, int> hpRange = config.getConfig({ "Region", "hp" }).template get<std::tuple<int ,int>>();
 
+	std::tuple<int, int> armyRange = config.getConfig({ "Region", "Army" }).template get<std::tuple<int ,int>>();
 	
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -48,6 +49,10 @@ Region::Region(int x, int y){
 	this->position = Point(X + x, Y + y);
 	DEBUG::DebugOutput("X", X + x, "Y", Y + y);
 	std::uniform_int_distribution<> disHp(std::get<0>(hpRange), std::get<1>(hpRange));
+	std::uniform_int_distribution<> disArmy(std::get<0>(armyRange), std::get<1>(armyRange));
+	int armyForce = disArmy(gen);
+	this->army = Army(armyForce);
+
 	this->hp = disHp(gen);
 	this->maxHp = this->hp;
 }

@@ -80,9 +80,9 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 300.0;
+	double A = 10000.0;
 	double k = 0.01;
-	double t0 = 250;
+	double t0 = 50;
 	AITimer Timer;
 	bool canMove = true;
 	double delta_t = 0;
@@ -461,8 +461,13 @@ public:
 		for (int i = 0; i < regionSize; i++) {
 			weights[i] = 1.0 / this->distance[i].second;
 		}
+
+		float sumWeight = 0;
+		for (auto i : weights) {
+			sumWeight += i;
+		}
 		for (auto& weight : weights) {
-			weight /= sumDistance;
+			weight /= sumWeight;
 		}
 		int target = 0;
 		for (int i = 0; i < regionSize; i++){
@@ -519,6 +524,7 @@ public:
 			Point start = Point(std::get<0>(from), std::get<1>(from));
 			Point end = Point(std::get<0>(to), std::get<1>(to));
 			int armyLevel = this->arm_level[0];
+			DEBUG::DebugOutput("moveArmy() calls move_Army");
 			maxTime = std::max(maxTime, regionManager.move_army(start, end, force, armyLevel));
 		}
 
@@ -526,6 +532,7 @@ public:
 				this->sleep(std::ceil(maxTime));
 				});
 		t.detach();
+		DEBUG::DebugOutput("maxTime: ", maxTime);
 	}
 
 	void armyAttack(Point start, int amount, Point end) {
@@ -546,8 +553,10 @@ public:
 					int armyLevel = this->arm_level[0];
 					if (curForce >= amount) {
 						for (auto region : regionlist) {
+							DEBUG::DebugOutput("armyAttack() calls move_army()");
 							maxTime = std::max(maxTime, regionManager.move_army(region, start, tmp.getForce() * 0.7, armyLevel));
 						}
+						DEBUG::DebugOutput("ArmyAttack time: ", maxTime);
 						this->canMove = false;
 						std::this_thread::sleep_for(std::chrono::milliseconds((int)(maxTime * 1100)));
 						this->canMove = true;
@@ -645,12 +654,14 @@ public:
 		}
 
 
+		DEBUG::DebugOutput("AI source", this->gold);
+		DEBUG::DebugOutput("canMove: ", this->canMove);
 		DEBUG::DebugOutput("AI Called increse()");
 		this->increase();
-		DEBUG::DebugOutput("AI Called expand()");
-		this->expand();
 		DEBUG::DebugOutput("AI Called defend()");
 		this->defend();
+		DEBUG::DebugOutput("AI Called expand()");
+		this->expand();
 		DEBUG::DebugOutput("AI Called attack()");
 		this->attack();
 	}
