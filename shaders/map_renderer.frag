@@ -64,9 +64,9 @@ float hexagon(vec2 position) {
 
 vec3 get_identity_color(float identity, vec2 uv, vec3 region_normal, vec3 sky_color){
     vec3 region_color = vec3(region_normal.y * 0.1);
-	if(identity == 0) return region_color;
+	if(identity == -1) return region_color;
+	if(identity == 0) return mix(region_color, vec3(0,1,1) * max(0.1 - hexagon(uv*g_map_size.x), 0) * 20, 0.5 * pow(1 - 0.65 * abs(sin(2 * g_time)),4));
 	if(identity == 1) return mix(region_color, vec3(10,0,0), pow(1 - 0.65 * abs(sin(2 * g_time)),4));
-	if(identity == 2) return mix(region_color, vec3(0,1,1) * max(0.1 - hexagon(uv*g_map_size.x), 0) * 20, 0.5 * pow(1 - 0.65 * abs(sin(2 * g_time)),4));
 	if(identity == 3) return vec3(0,0,1);
 	return vec3(1,1,1);
 }

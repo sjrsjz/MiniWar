@@ -8,10 +8,6 @@ RegionManager::RegionManager() {
 }
 
 RegionManager::RegionManager(int width, int height) : width(width), height(height), regions(width, height), moving_missles(), moving_armies(){
-	//players = std::vector<Player>(player_amount);
-
-	//players.reserve(player_amount);
-
 	//read configer, initialize Weapon
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
@@ -364,8 +360,8 @@ Region& RegionManager::get_region(int x, int y) {
 	return regions(x, y);
 }
 
+static RegionManager instance;
 RegionManager& RegionManager::getInstance() {
-	static RegionManager instance;
 	return instance;
 }
 void RegionManager::clear_building(Region& region) {

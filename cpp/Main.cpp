@@ -27,6 +27,10 @@
 
 #include "../header/utils/ImageLoader.h"
 
+// Engine
+#include "../header/Engine.h"
+
+
 #include "../shaders/main_game_pass.vert"
 #include "../shaders/main_game_pass.frag"
 #include "../shaders/normal_gl.vert"
@@ -709,6 +713,26 @@ float randfloat() {
 	return (float)rand() / RAND_MAX;
 }
 
+void render_update_info() {
+	RegionManager& rm = RegionManager::getInstance();
+	for (int i{}; i < rm.get_map_width(); i++) {
+		for (int j{}; j < rm.get_map_height(); j++) {
+			Region& region_info = rm.get_region(i, j);
+			RegionData region;
+			region.cell_center_x = region_info.getPosition().getX() - i;
+			region.cell_center_y = region_info.getPosition().getY() - j;
+			region.army_position_x = -1e6;
+			region.army_position_y = -1e6;
+			region.identity = region_info.getOwner();
+			region.padding_1 = 0;
+			map_info.setRegion(i, j, region);
+		}
+	}
+	map_info.update();
+	
+}
+
+
 void load_new_game(const LevelConfig& level_config) {
 
 
@@ -722,11 +746,11 @@ void load_new_game(const LevelConfig& level_config) {
 	for (int i{}; i < level_config.map_width; i++) {
 		for (int j{}; j < level_config.map_height; j++) {
 			RegionData region;
-			region.cell_center_x = randfloat();
-			region.cell_center_y = randfloat();
+			region.cell_center_x = 0;
+			region.cell_center_y = 0;
 			region.army_position_x = -1e6;
 			region.army_position_y = -1e6;
-			region.identity = (int)(i * i + j * j < 400) + (int)(i * i + j * j < 200);
+			region.identity = 0;
 			region.padding_1 = 0;
 			map_info.setRegion(i, j, region);
 		}
@@ -746,6 +770,10 @@ void load_new_game(const LevelConfig& level_config) {
 
 	s_tech_tree_gui.init_tech_tree_gui();
 	s_shake_effect.clear();
+
+
+	run_game(level_config.map_width, level_config.map_height);
+
 
 	GAMESTATUS::s_in_game = true;
 	GAMESTATUS::s_enable_control = true;
@@ -1241,6 +1269,7 @@ void prepare_render() {
 
 	if (GAMESTATUS::s_in_game) {
 		GAMESOUND::set_background_volume(0.25);
+		render_update_info();
 	}
 	else {
 		GAMESOUND::set_background_volume(1);

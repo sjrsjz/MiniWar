@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cmath>
 #include <algorithm>
+#include <functional>
 #include <thread>
 #include <unordered_map>
 #include "../../header/Logic/RegionManager.h"
@@ -597,7 +598,7 @@ private:
 							}
 						}
 					}	
-					std::thread t([this, maxForce, borderArmyForce](int x, int y){
+					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
 					t.join();
@@ -623,7 +624,7 @@ private:
 							}
 						}
 					}	
-					std::thread t([this, maxForce, borderArmyForce](int x, int y){
+					std::thread t([this, maxForce, borderArmyForce, x, y]{
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
 					t.join();

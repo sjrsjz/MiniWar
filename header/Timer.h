@@ -7,6 +7,8 @@ private:
 	double lt = 0;
 public:
 	double dt = 0;
+	Timer() {
+	}
 	Timer(double t) { lt = t; }
 	void setTime(double t) {
 		dt = t - lt; lt = t;

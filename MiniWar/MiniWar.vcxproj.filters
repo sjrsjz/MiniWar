@@ -1,7 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="..\cpp\Logic\Army.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\utils\Array.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Building.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\utils\Config.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\globals.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\utils\GlobalTimer.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
     <ClCompile Include="..\cpp\Main.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\utils\Operation.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\cpp\mash.cpp">
@@ -10,73 +31,145 @@
     <ClCompile Include="..\cpp\output.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Player.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\utils\Point.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\Region.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\cpp\Logic\RegionManager.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
     <ClCompile Include="..\cpp\shader.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\globals.cpp">
+    <ClCompile Include="..\cpp\Logic\Weapon.cpp">
       <Filter>cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\utils\Array.cpp">
-      <Filter>cpp\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="..\cpp\utils\Point.cpp">
-      <Filter>cpp\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="..\include\imgui\imgui_impl_glfw.cpp">
-      <Filter>cpp\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="..\include\imgui\imgui.cpp">
-      <Filter>cpp\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\include\imgui\imgui_draw.cpp">
-      <Filter>cpp\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\include\imgui\imgui_tables.cpp">
-      <Filter>cpp\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\include\imgui\imgui_widgets.cpp">
-      <Filter>cpp\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\include\imgui\imgui_impl_opengl3.cpp">
-      <Filter>cpp\imgui</Filter>
+      <Filter>include</Filter>
     </ClCompile>
     <ClCompile Include="..\include\imgui\imgui_demo.cpp">
-      <Filter>cpp\imgui</Filter>
+      <Filter>include</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Army.cpp">
-      <Filter>cpp\Logic</Filter>
+    <ClCompile Include="..\include\imgui\imgui_draw.cpp">
+      <Filter>include</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Building.cpp">
-      <Filter>cpp\Logic</Filter>
+    <ClCompile Include="..\include\imgui\imgui_impl_glfw.cpp">
+      <Filter>include</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Player.cpp">
-      <Filter>cpp\Logic</Filter>
+    <ClCompile Include="..\include\imgui\imgui_impl_opengl3.cpp">
+      <Filter>include</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Region.cpp">
-      <Filter>cpp\Logic</Filter>
+    <ClCompile Include="..\include\imgui\imgui_tables.cpp">
+      <Filter>include</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\Logic\RegionManager.cpp">
-      <Filter>cpp\Logic</Filter>
+    <ClCompile Include="..\include\imgui\imgui_widgets.cpp">
+      <Filter>include</Filter>
     </ClCompile>
-    <ClCompile Include="..\cpp\Logic\Weapon.cpp">
-      <Filter>cpp\Logic</Filter>
+    <ClCompile Include="..\cpp\Engine.cpp">
+      <Filter>cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\header\Logic\AI.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\Army.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\Array.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\Building.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\ByteArray.h">
+      <Filter>header</Filter>
+    </ClInclude>
     <ClInclude Include="..\header\Camera.h">
-      <Filter>headers</Filter>
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\debug.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Engine.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\passes\FlameRenderPass.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\FloatBuffer.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\passes\FragmentBuffer.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Exception\FullHpException.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\globals.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\ImageLoader.h">
+      <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="..\header\mash.h">
-      <Filter>headers</Filter>
+      <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="..\header\output.h">
-      <Filter>headers</Filter>
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\Player.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\Point.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\points.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\PowerStation.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\Region.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\RegionData.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\RegionManager.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\RegionSelector.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\RegionSSBOBuffer.h">
+      <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="..\header\shader.h">
-      <Filter>headers</Filter>
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\SmoothMove.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\passes\SSBO.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\passes\SSBOByteArray.h">
+      <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="..\header\Timer.h">
-      <Filter>headers</Filter>
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\Logic\Weapon.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\bass\bass.h">
+      <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\include\GL\eglew.h">
       <Filter>include</Filter>
@@ -96,73 +189,19 @@
     <ClInclude Include="..\include\GL\glxew.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\linmath.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\GL\wglew.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\passes\FragmentBuffer.h">
-      <Filter>headers\passes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\debug.h">
-      <Filter>headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\ByteArray.h">
-      <Filter>headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\globals.h">
-      <Filter>headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\utils\Array.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\utils\Point.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Logic\Region.h">
-      <Filter>headers\Logic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Logic\Weapon.h">
-      <Filter>headers\Logic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Logic\Building.h">
-      <Filter>headers\Logic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Logic\Player.h">
-      <Filter>headers\Logic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Logic\RegionManager.h">
-      <Filter>headers\Logic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Logic\Army.h">
-      <Filter>headers\Logic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\passes\SSBO.h">
-      <Filter>headers\passes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\passes\SSBOByteArray.h">
-      <Filter>headers\passes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\utils\SmoothMove.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Logic\PowerStation.h">
-      <Filter>headers\Logic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\utils\FloatBuffer.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\utils\RegionSelector.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\imgui\imgui_impl_glfw.h">
+    <ClInclude Include="..\include\imgui\imconfig.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imgui.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\imgui\imconfig.h">
+    <ClInclude Include="..\include\imgui\imgui_impl_glfw.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imgui_impl_opengl3.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\imgui\imgui_impl_opengl3_loader.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imgui_internal.h">
@@ -174,137 +213,90 @@
     <ClInclude Include="..\include\imgui\imstb_textedit.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\json.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\imgui\imstb_truetype.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\imgui\imgui_impl_opengl3.h">
+    <ClInclude Include="..\include\linmath.h">
       <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\imgui\imgui_impl_opengl3_loader.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\utils\RegionSSBOBuffer.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\utils\RegionData.h">
-      <Filter>headers\utils</Filter>
     </ClInclude>
     <ClInclude Include="..\include\stb\stb_image.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\header\utils\ImageLoader.h">
-      <Filter>headers\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\passes\FlameRenderPass.h">
-      <Filter>headers\passes</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\points.h">
-      <Filter>headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\bass\bass.h">
+    <ClInclude Include="..\include\GL\wglew.h">
       <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\json.hpp">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\header\Exception\FullHpException.h">
-      <Filter>headers\Exception</Filter>
     </ClInclude>
     <ClInclude Include="..\header\Exception\SurrenderNotAttackedException.h">
-      <Filter>headers\Exception</Filter>
+      <Filter>header</Filter>
     </ClInclude>
-    <ClInclude Include="..\header\Engine.h">
-      <Filter>headers</Filter>
-    </ClInclude>
-<<<<<<< HEAD
-    <ClInclude Include="..\header\Logic\AI.h">
-      <Filter>headers\Logic</Filter>
-=======
     <ClInclude Include="..\header\utils\Operation.h">
-      <Filter>headers\utils</Filter>
->>>>>>> master
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\header\utils\Config.h">
+      <Filter>header</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
-    <None Include="..\shaders\normal_gl.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\normal_gl.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\map_renderer.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\map_renderer.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\gaussian_blur.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\gaussian_blur.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\flame_render_pass.vert">
-      <Filter>shaders</Filter>
+    <None Include="..\shaders\direct_tex.frag">
+      <Filter>shader</Filter>
     </None>
     <None Include="..\shaders\flame_render_pass.frag">
-      <Filter>shaders</Filter>
+      <Filter>shader</Filter>
     </None>
     <None Include="..\shaders\direct_tex.vert">
-      <Filter>shaders</Filter>
+      <Filter>shader</Filter>
     </None>
-    <None Include="..\shaders\direct_tex.frag">
-      <Filter>shaders</Filter>
+    <None Include="..\shaders\flame_render_pass.vert">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\shaders\gaussian_blur.frag">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\shaders\gaussian_blur.vert">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\shaders\map_renderer.frag">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\shaders\map_renderer.vert">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\shaders\normal_gl.frag">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\shaders\normal_gl.vert">
+      <Filter>shader</Filter>
     </None>
     <None Include="..\shaders\points_renderer.frag">
-      <Filter>shaders</Filter>
+      <Filter>shader</Filter>
     </None>
     <None Include="..\shaders\points_renderer.vert">
-      <Filter>shaders</Filter>
+      <Filter>shader</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="headers">
-      <UniqueIdentifier>{ec299f0c-013b-4cb3-a0a1-e9280676cc9a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="include">
-      <UniqueIdentifier>{06ca7a44-c08e-4837-889e-bb2d3178b023}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cpp">
-      <UniqueIdentifier>{aa8e1d28-df8b-44e2-9fb8-e8b83128dc4a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="headers\passes">
-      <UniqueIdentifier>{97dd5582-01b7-46b5-bf4d-5a9d11b8bd15}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="shaders">
-      <UniqueIdentifier>{79b2e853-4416-4792-af4f-28243a3cd31c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="headers\Logic">
-      <UniqueIdentifier>{1b557f20-e25b-47d6-8cf5-809e04c6d8f9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cpp\utils">
-      <UniqueIdentifier>{f82efc86-a5b7-4617-9956-c6df13331bae}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="headers\utils">
-      <UniqueIdentifier>{82bb7b68-d06a-4f9c-b28b-3d664b040fd9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cpp\Logic">
-      <UniqueIdentifier>{36b7f8f9-fc09-44df-a679-e1bdaa2787ed}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cpp\imgui">
-      <UniqueIdentifier>{425a02f8-0a0d-4a92-9009-4ca66192686e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="headers\Exception">
-      <UniqueIdentifier>{024e838b-c172-4b83-9744-db7508c843eb}</UniqueIdentifier>
-    </Filter>
+    <Text Include="..\shaders\main_game_pass.frag">
+      <Filter>shader</Filter>
+    </Text>
+    <Text Include="..\shaders\main_game_pass.vert">
+      <Filter>shader</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\shaders\main_game_pass.vert">
-      <Filter>shaders</Filter>
-    </Text>
-    <Text Include="..\shaders\main_game_pass.frag">
-      <Filter>shaders</Filter>
-    </Text>
+    <Filter Include="header">
+      <UniqueIdentifier>{e73ffd85-f6d6-4a39-b8c0-f563c53bc077}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{5abc9399-0ee9-4d04-93e1-8b78ace6dd02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cpp">
+      <UniqueIdentifier>{055fc183-85b1-49e5-a815-4bdcd4a21a24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shader">
+      <UniqueIdentifier>{88e820a2-4f2d-4612-a202-ee6470f712e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

@@ -33,18 +33,19 @@ Region::Region(int x, int y){
 	//TODO
 	//this->hp = maxHp
 	//this->maxHp = ?;
-	Config config = Config::getInstance();
-	std::tuple<int, int> hpRange = config.getConfig({ "region", "hp" }).template get<std::tuple<int ,int>>();
+	Config& config = Config::getInstance();
+	std::tuple<int, int> hpRange = config.getConfig({ "Region", "hp" }).template get<std::tuple<int ,int>>();
 
 	
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(0.0, 1.0);
-	float X = dis(gen);
-	float Y = dis(gen);
+	std::uniform_int_distribution<> dis(0.0, 1000);
+	float X = dis(gen)/1000.0;
+	float Y = dis(gen)/1000.0;
 	this->owner = -1; 
 	this->weapons = std::vector<int>(3, 0);
 	this->position = Point(X + x, Y + y);
+	DEBUG::DebugOutput("X", X + x, "Y", Y + y);
 	std::uniform_int_distribution<> disHp(std::get<0>(hpRange), std::get<1>(hpRange));
 	this->hp = disHp(gen);
 	this->maxHp = this->hp;

@@ -6,6 +6,7 @@
 using json = nlohmann::json;
 
 Config::Config(const std::string& path) {
+	DEBUG::DebugOutput("Loading config from ", path);
 	std::ifstream file(path);
 	if (!file.is_open()) {
 		throw std::runtime_error("Could not open file: " + path);
@@ -17,6 +18,7 @@ Config::Config(const std::string& path) {
 		throw std::runtime_error("Could not parse file: " + path);
 	}
 	file.close();
+	DEBUG::DebugOutput("Config loaded");
 }
 
 Config::~Config() {}
@@ -62,8 +64,7 @@ const json Config::getBuildings() {
 const json Config::getResearch() {
 	return getConfig({"ResearchInstitution"});
 }
-
+static Config instance("./config.json");
 Config& Config::getInstance() {
-	static Config instance("./config.json");
 	return instance;
 }

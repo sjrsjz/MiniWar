@@ -40,11 +40,10 @@ private:
 	double current_time{};
 	
 	void clear_building(Region& region);
-	RegionManager();
-
 	double calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end);
 	
 public:
+	RegionManager();
 	RegionManager(int width, int height);
 	~RegionManager();
 	Weapon& get_weapon(int id);

@@ -774,10 +774,12 @@ void Player::product(Operation operation) {
 		throw "No military factory";
 	}
 	Config& configer = Config::getInstance();
+	int cost{};
+	std::vector<int> cost0;
 	switch (operation.getOp())
 	{
 	case Operator::ProductArmy:
-		int cost = configer.getConfig({ "Army","cost" }).get<int>() * operation.getSize();
+		cost = configer.getConfig({ "Army","cost" }).get<int>() * operation.getSize();
 		if (gold < cost) {
 			throw "Not enough gold";
 		}
@@ -785,7 +787,7 @@ void Player::product(Operation operation) {
 		end_region.addArmy(operation.getSize());
 		break;
 	case Operator::ProductWeapon0:
-		std::vector<int> cost0 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
+		cost0 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
 		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
 			throw "Not enough resource";
 		}
@@ -796,8 +798,8 @@ void Player::product(Operation operation) {
 		end_region.addWeapon(0);
 		break;
 	case Operator::ProductWeapon1:
-		std::vector<int> cost1 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
-		if (gold < cost1[0] || oil < cost1[1] || electricity < cost1[2] || steel < cost1[3] || labor_limit - ocupied_labor < cost1[4]) {
+		cost0 = configer.getConfig({ "Weapon", "1", "cost" }).template get<std::vector<int>>();
+		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
 			throw "Not enough resource";
 		}
 		gold -= cost0[0];
@@ -807,8 +809,8 @@ void Player::product(Operation operation) {
 		end_region.addWeapon(0);
 		break;
 	case Operator::ProductWeapon2:
-		std::vector<int> cost2 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
-		if (gold < cost2[0] || oil < cost2[1] || electricity < cost2[2] || steel < cost2[3] || labor_limit - ocupied_labor < cost2[4]) {
+		cost0 = configer.getConfig({ "Weapon", "2", "cost" }).template get<std::vector<int>>();
+		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
 			throw "Not enough resource";
 		}
 		gold -= cost0[0];

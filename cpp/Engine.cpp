@@ -3,19 +3,21 @@
 #include "../header/globals.h"
 #include "../header/utils/Config.h"
 #include "../header/utils/Operation.h"
+#include <thread>
 #include <queue>
 
-AI ai;
+//AI ai;
 bool isPause = false;
-RegionManager regionManager(0, 0);
-Config config("./config.json");
-GlobalTimer timer;
 
+static bool s_exit_game = false;
+static std::thread s_main_loop;
 void initial_game(int width, int height) {
-	regionManager.set(width, height);
+	s_exit_game = false;
+	RegionManager::getInstance().set(width, height);
 }
 
 void read_input() {
+	if (g_main_operation.empty()) return;
 	Operation& op = g_main_operation.front();
 	g_main_operation.pop();
 	int id = op.getSize();
@@ -23,119 +25,131 @@ void read_input() {
 	int size = op.getSize();
 	switch (op.getOp()) {
 		case Operator::Quit:
-			exit(0);
+			s_exit_game = true;
 			break;
 		case Operator::Pause:
-			isPause = true;
-			
+			isPause = true;			
 			break;
 		case Operator::Start:
 			isPause = false;
 			break;
 		case Operator::MapSet:
-			ai.setParameter(id); //1,2,3
+			//ai.setParameter(id); //1,2,3
 			break;
 		case Operator::SetPowerStation:
-			regionManager.get_player().build(op);
+			RegionManager::getInstance().get_player().build(op);
 			break;
 		case Operator::SetRefinery:
-			regionManager.get_player().build(op);
+			RegionManager::getInstance().get_player().build(op);
 			break;
 		case Operator::SetSteelFactory:
-			regionManager.get_player().build(op);
+			RegionManager::getInstance().get_player().build(op);
 			break;
 		case Operator::SetCivilFactory:
-			regionManager.get_player().build(op);
+			RegionManager::getInstance().get_player().build(op);
 			break;
 		case Operator::SetMilitaryFactory:
-			regionManager.get_player().build(op);
+			RegionManager::getInstance().get_player().build(op);
 			break;
 		case Operator::RemoveBuilding:
-			regionManager.get_player().remove_building(op);
+			RegionManager::getInstance().get_player().remove_building(op);
 			break;
 		case Operator::SetResearch:
-			regionManager.get_player().set_research(op);
+			RegionManager::getInstance().get_player().set_research(op);
 			break;
 		case Operator::BuildingLevel:
-			regionManager.get_player().upgrade_building(op);
+			RegionManager::getInstance().get_player().upgrade_building(op);
 			break;
 		case Operator::PowerStationUpLevel:
-			regionManager.get_player().research(op);
+			RegionManager::getInstance().get_player().research(op);
 			break;
 		case Operator::RefineryUpLevel:
-			regionManager.get_player().research(op);
+			RegionManager::getInstance().get_player().research(op);
 			break;
 		case Operator::SteelFactoryUpLevel:
-			regionManager.get_player().research(op);
+			RegionManager::getInstance().get_player().research(op);
 			break;
 		case Operator::CivilFactoryUpLevel:
-			regionManager.get_player().research(op);
+			RegionManager::getInstance().get_player().research(op);
 			break;
 		case Operator::MilitaryFactoryUpLevel:
-			regionManager.get_player().research(op);
+			RegionManager::getInstance().get_player().research(op);
 			break;
 		case Operator::ArmyUpLevel:
-			regionManager.get_player().research(op);
+			RegionManager::getInstance().get_player().research(op);
 			break;
 		case Operator::Weapon0UpLevel:
-			regionManager.get_player().research(op);
+			RegionManager::getInstance().get_player().research(op);
 			break;
 		case Operator::Weapon1UpLevel:
-			regionManager.get_player().research(op);
+			RegionManager::getInstance().get_player().research(op);
 			break;
 		case Operator::Weapon2UpLevel:
-			regionManager.get_player().research(op);
+			RegionManager::getInstance().get_player().research(op);
 			break;
 		case Operator::ArmyMove:
-			regionManager.get_player().move_army(op, size);
+			RegionManager::getInstance().get_player().move_army(op, size);
 			break;
 		case Operator::Weapon0Attack:
-			regionManager.get_player().attack(op);
+			RegionManager::getInstance().get_player().attack(op);
 			break;
 		case Operator::Weapon1Attack:
-			regionManager.get_player().attack(op);
+			RegionManager::getInstance().get_player().attack(op);
 			break;
 		case Operator::Weapon2Attack:
-			regionManager.get_player().attack(op);
+			RegionManager::getInstance().get_player().attack(op);
 			break;
 		case Operator::RangeAttack:
-			regionManager.get_player().rangeAttack(op);
+			RegionManager::getInstance().get_player().rangeAttack(op);
 			break;
 		case Operator::ProductArmy:
-			regionManager.get_player().product(op);
+			RegionManager::getInstance().get_player().product(op);
 			break;
 		case Operator::ProductWeapon0:
-			regionManager.get_player().product(op);
+			RegionManager::getInstance().get_player().product(op);
 			break;
 		case Operator::ProductWeapon1:
-			regionManager.get_player().product(op);
+			RegionManager::getInstance().get_player().product(op);
 			break;
 		case Operator::ProductWeapon2:
-			regionManager.get_player().product(op);
+			RegionManager::getInstance().get_player().product(op);
 			break;
 		default:
 			break;
 	}
 }
 
+void push_input(const Operation& op) {
+	g_main_operation.push(op);
+}
+
 void update() {
-	regionManager.update(timer);
-	ai.update(isPause);
+	RegionManager::getInstance().update(GlobalTimer::getInstance());
+	//ai.update(isPause);
 }
 
 void main_loop() {
-	while (true) {
-		timer.start();
+	while (!s_exit_game) {
+		//DEBUG::DebugOutput("New Loop\n");
+		GlobalTimer::getInstance().start();
 
 		read_input();
 
-		timer.stop();
+		GlobalTimer::getInstance().stop();
 		update();
+		//DEBUG::DebugOutput("End Loop\n");
 	}
 }
 
+
 void run_game(int width, int height) {
 	initial_game(width, height);
-	main_loop();
-	//release resoure
+
+	// Æô¶¯Ïß³Ì
+	s_main_loop = std::thread(main_loop);
+	s_main_loop.detach();
+	
+}
+void wait_for_exit() {
+	s_main_loop.join();
 }
