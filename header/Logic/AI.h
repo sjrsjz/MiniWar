@@ -81,7 +81,7 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 10000.0;
+	double A = 1000000.0;
 	double k = 0.01;
 	double t0 = 50;
 	AITimer Timer;
@@ -313,10 +313,10 @@ public:
 						canAttack = false;
 						DEBUG::DebugOutput("WeaponAttack() finished");
 					}
-					break;
-					if (cnt >= 20) {
+					if (cnt >= 1) {
 						return;
 					}
+					break;
 				}
 			}
 		}
@@ -382,6 +382,12 @@ public:
 				capitalAlive = true;
 				break;
 			}
+		}
+
+		if (!capitalAlive) {
+			int SIZE = AIRegions.size();
+			int mid = SIZE / 2;
+			capital = AIRegions[mid];
 		}
 
 		averageForce /= regionSize;
@@ -482,11 +488,11 @@ public:
 		int weapon1cost = INF;
 		int weapon2cost = INF;
 		int weapon3cost = INF;
-		if (arm_level[1] < maxLevel)
+		if (arm_level[1] <= maxLevel)
 			weapon1cost = weaponCost["0"].template get<std::vector<int>>()[arm_level[1]];
-		if (arm_level[2] < maxLevel)
+		if (arm_level[2] <= maxLevel)
 			weapon2cost = weaponCost["1"].template get<std::vector<int>>()[arm_level[2]];
-		if (arm_level[3] < maxLevel)
+		if (arm_level[3] <= maxLevel)
 			weapon3cost = weaponCost["2"].template get<std::vector<int>>()[arm_level[3]];
 		if (dist <= 0.25) {
 			if (buildLevel >= weapon1cost && arm_level[1] < maxLevel) {
