@@ -8,10 +8,18 @@
 
 AI ai;
 bool isPause = false;
+bool aiState = true;
+
+void release_game() {
+	RegionManager::getInstance().~RegionManager();
+	ai.~AI();
+}
 
 static bool s_exit_game = false;
 static std::thread s_main_loop;
 void initial_game(int width, int height) {
+	isPause = false;
+	aiState = true;
 	s_exit_game = false;
 	RegionManager::getInstance().set(width, height);
 	RegionManager::getInstance().get_player().create();
@@ -127,7 +135,7 @@ void push_input(const Operation& op) {
 
 void update() {
 	RegionManager::getInstance().update(GlobalTimer::getInstance());
-	ai.update(isPause);
+	ai.update(isPause, aiState);
 }
 
 void main_loop() {
@@ -146,8 +154,12 @@ void main_loop() {
 
 		update();
 		//DEBUG::DebugOutput("End Loop\n");
+		if (!aiState) {
+			break;
+		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
+	release_game();
 }
 
 

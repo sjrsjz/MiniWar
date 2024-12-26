@@ -378,8 +378,9 @@ public:
 		this->gold += formula(Timer.elapsedSeconds());	
 		delta_t -= 1;
 		int buildArmy = std::min((int)(this->gold * 0.3), 8000);
-		//json ArmyInfo = config.getConfig({"Army"});
-		int cost = 1000;// ArmyInfo["cost"].template get<int>();
+		json ArmyInfo = config.getConfig({"Army"});
+		//int cost = 1000;// ArmyInfo["cost"].template get<int>();
+		int cost = ArmyInfo["cost"].template get<int>();
 		Army& army = regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).getArmy();
 		army.addArmy(buildArmy / cost);
 		this->gold -= buildArmy;
@@ -751,7 +752,9 @@ public:
 		}
 	}
 
-	void update(bool isPause = false) {
+	void update(bool& isPause, bool& aiState) {
+
+
 		if (isPause) {
 			Timer.pause();
 			return;
@@ -765,6 +768,10 @@ public:
 		//DEBUG::DebugOutput("AI Called increse()");
 		
 		this->increase();
+		if (regionSize == 0) {
+			aiState = false;
+			return;
+		}
 		//DEBUG::DebugOutput("AI Called defend()");
 		this->defend();
 		//DEBUG::DebugOutput("AI Called expand()");
