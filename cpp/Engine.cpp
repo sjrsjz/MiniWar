@@ -11,6 +11,7 @@
 #include <vector>
 
 AI ai;
+AI ai2;
 bool isPause = false;
 
 static bool s_exit_game = false;
@@ -20,6 +21,7 @@ void initial_game(int width, int height) {
 	RegionManager::getInstance().set(width, height);
 	RegionManager::getInstance().get_player().create();
 	ai.create();
+	ai2.create();
 }
 
 static std::vector<std::string> s_error_messages;
@@ -147,6 +149,7 @@ void push_input(const Operation& op) {
 void update() {
 	RegionManager::getInstance().update(GlobalTimer::getInstance());
 	ai.update(isPause);
+	ai2.update(isPause);
 }
 
 void main_loop() {
@@ -177,7 +180,7 @@ void exit_curr_game() {
 void run_game(int width, int height) {
 	initial_game(width, height);
 
-	// Æô¶¯Ïß³Ì
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½
 	s_main_loop = std::thread(main_loop);
 	s_main_loop.detach();
 	
