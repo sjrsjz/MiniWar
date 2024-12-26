@@ -8,4 +8,8 @@ void main_loop();
 void read_input();
 void update();
 void run_game(int width, int height);
+void wait_for_exit();
+void exit_curr_game();
 void push_input(const Operation& op);
+void push_error_message(const std::string& msg);
+std::vector<std::string> get_error_messages();

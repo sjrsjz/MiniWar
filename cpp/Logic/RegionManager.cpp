@@ -16,6 +16,7 @@ RegionManager::RegionManager(int width, int height){
 }
 
 RegionManager::~RegionManager() {
+
 }
 
 struct Node {

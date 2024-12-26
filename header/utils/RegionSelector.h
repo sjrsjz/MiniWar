@@ -133,7 +133,7 @@ public:
 	inline std::tuple<bool, int, int> selectRegion(float mouseX, float mouseY) {
 		auto [u, v, t] = intersectPlane(mouseX, mouseY);
 
-		if (abs(u)>1 || abs(v)>1) return { false, 0, 0 };
+		if (abs(u)>1 || abs(v)>1) return { false, -1, -1 };
 
 		auto [x, y, cell_u, cell_v] = uv_to_cell_position(u, v);
 		vec2 cell_center[3][3];
