@@ -182,6 +182,9 @@ void Player::attack(Operation operation) {
 	Weapon weapon = regionmanager.get_weapon(weapon_id);
 
 	std::tuple<float, float> AttackRange= weapon.getAttackRange();
+	if (start_region.getWeapons()[weapon_id] <= 0) {
+		throw std::invalid_argument(u8"武器数量不足");
+	}
 
 	if (distance > std::get<1>(AttackRange) || distance < std::get<0>(AttackRange)) {
 		throw std::invalid_argument(u8"超出攻击范围");
@@ -627,7 +630,7 @@ void Player::product(Operation operation) {
 		oil -= cost0[1];
 		electricity -= cost0[2];
 		steel -= cost0[3];
-		end_region.addWeapon(0);
+		end_region.addWeapon(1);
 		break;
 	case Operator::ProductWeapon2:
 		cost0 = configer.getConfig({ "Weapon", "2", "cost" }).template get<std::vector<int>>();
@@ -638,7 +641,7 @@ void Player::product(Operation operation) {
 		oil -= cost0[1];
 		electricity -= cost0[2];
 		steel -= cost0[3];
-		end_region.addWeapon(0);
+		end_region.addWeapon(2);
 		break;
 	}
 }
@@ -756,6 +759,11 @@ void Player::create() {
 	labor_limit = 1000;
 	ocupied_labor = 0;
 	steel = 100000;
+
+	arm_level = { 1, 1, 1, 1 };
+	institution_level_limit = { 1, 1, 1, 1, 1 };
+	have_research_institution = false;
+
 
 
 	return;

@@ -34,7 +34,7 @@ struct RegionData{
 	vec2 cell_center;
     vec2 army_position; // 标记的军队位置，用于显示军队，当 x = -1e6 时表示没有军队
 	float identity;
-	float padding_1;
+	float is_capital;
 };
 RegionData empty_region(){
 	return RegionData(vec2(1000000), vec2(-1e6), -1, 0);	
@@ -267,6 +267,11 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     // 区块中心
     // color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
 
+    float p_s = pow(0.65 + 0.35 * sin(g_time*5),3);
+    // 首都区块（金色高亮）
+    color = mix(color, vec3(7,10,0), float(region.is_capital > 0.5) * p_s);
+
+
     // 军队位置
     color = mix(color, vec3(10,10,10), float(cell_idx.army_data.z < 0.05));
     
@@ -284,7 +289,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     bool is_mouse_valid_selection = g_mouse_selected.x >= 0 && g_mouse_selected.y >= 0;
 
     if(is_valid_selection && (g_radioactive_selected.w > 0.5 || g_scatter_target.w > 0.5)){
-        float s = pow(0.65 + 0.35 * sin(g_time*5),3) * 0.25;
+        float s = p_s * 0.25;
         color = mix(color, vec3(1,0,0), float(distance(cell_idx.real_idx,g_selected) <= g_valid_attack_range) * s);
     }
 
@@ -305,7 +310,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
             float radius = g_radioactive_selected.z;
             float dist = length(vec2(cell_idx.real_idx) - center);
             if(dist < radius){
-                float weight = pow(0.65 + 0.35 * sin(g_time*5),3) * exp(-7*dist/(radius+1e-3));
+                float weight = p_s * exp(-7*dist/(radius+1e-3));
                 color = mix(color, vec3(20,20,0), weight);
                 vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
                 vec2 d_uv = (uv - region_uv) * g_map_size / radius * 1.25 * 0.25 + 0.5;
@@ -335,7 +340,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
              float radius = g_scatter_target.z;
              float dist = length(vec2(cell_idx.real_idx) - center);
              if(dist < radius){
-		         float weight = pow(0.65 + 0.35 * sin(g_time*5),3);
+		         float weight = p_s;
 		         color = mix(color, vec3(0.5,0,0), weight);
 		         vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
 		         vec2 d_uv = (uv - region_uv) * g_map_size / radius * 1.25 * 0.25 + 0.5;

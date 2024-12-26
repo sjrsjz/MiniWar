@@ -719,8 +719,8 @@ public:
 		case NUCLEAR_MISSILE:
 			ImGui::Text(u8"选中: 核导弹");
 			// 显示当前选择的武器等级
+			ImGui::SameLine();
 			ImGui::Text(u8"武器等级: %d", s_nuclear_missile_level + 1);
-
 			break;
 		case ARMY:
 			ImGui::Text(u8"选中：军队");
@@ -750,6 +750,9 @@ public:
 					ImGui::Text(u8"所有者: 玩家");
 					if (s_selected_weapon == ARMY) {
 						ImGui::Text(u8"军队: %d", region.getArmy().getForce());
+					}
+					if (s_selected_weapon == NUCLEAR_MISSILE) {
+						ImGui::Text(u8"导弹数量：%d", region.getWeapons()[s_nuclear_missile_level]);
 					}
 				}
 				else {
@@ -1060,7 +1063,7 @@ void render_update_info() {
 			region.army_position_x = -1e6;
 			region.army_position_y = -1e6;
 			region.identity = region_info.getOwner();
-			region.padding_1 = 0;
+			region.is_capital = i == RegionManager::getInstance().get_player().get_capital_x() && j == RegionManager::getInstance().get_player().get_capital_y();
 			map_info.setRegion(i, j, region);
 		}
 	}
@@ -1109,7 +1112,7 @@ void load_new_game(const LevelConfig& level_config) {
 			region.army_position_x = -1e6;
 			region.army_position_y = -1e6;
 			region.identity = 0;
-			region.padding_1 = 0;
+			region.is_capital = 0;
 			map_info.setRegion(i, j, region);
 		}
 	}
@@ -2132,6 +2135,26 @@ void KeyRelease(int key) {
 		}
 		if (GAMESTATUS::s_enable_control && s_selected_weapon == NUCLEAR_MISSILE) {
 			s_nuclear_missile_level = (s_nuclear_missile_level - 1 + 3) % 3;
+		}
+		break;
+	case GLFW_KEY_1:
+		if (GAMESTATUS::s_enable_control) {
+			s_selected_weapon = NONE;
+		}
+		break;
+	case GLFW_KEY_2:
+		if (GAMESTATUS::s_enable_control) {
+			s_selected_weapon = NUCLEAR_MISSILE;
+		}
+		break;
+	case GLFW_KEY_3:
+		if (GAMESTATUS::s_enable_control) {
+			s_selected_weapon = ARMY;
+		}
+		break;
+	case GLFW_KEY_4:
+		if (GAMESTATUS::s_enable_control) {
+			s_selected_weapon = SCATTER_BOMB;
 		}
 		break;
 	default:
