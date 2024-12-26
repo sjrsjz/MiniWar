@@ -5,6 +5,10 @@
 #include "../header/utils/Operation.h"
 #include <thread>
 #include <queue>
+#include <mutex>
+#include <iostream>
+#include <string>
+#include <vector>
 
 AI ai;
 bool isPause = false;
@@ -16,6 +20,21 @@ void initial_game(int width, int height) {
 	RegionManager::getInstance().set(width, height);
 	RegionManager::getInstance().get_player().create();
 	ai.create();
+}
+
+static std::vector<std::string> s_error_messages;
+static std::mutex s_error_mutex;
+
+void push_error_message(const std::string& msg) {
+	std::lock_guard<std::mutex> lock(s_error_mutex);
+	s_error_messages.push_back(msg);
+}
+
+std::vector<std::string> get_error_messages() {
+	std::lock_guard<std::mutex> lock(s_error_mutex);
+	std::vector<std::string> result = s_error_messages;
+	s_error_messages.clear();
+	return result;
 }
 
 void read_input() {
@@ -141,15 +160,19 @@ void main_loop() {
 			read_input();
 		}
 		catch (std::exception& e) {
-			DEBUG::DebugOutput(e.what());
+			push_error_message(e.what());
 		}
 
 		update();
 		//DEBUG::DebugOutput("End Loop\n");
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
+	DEBUG::DebugOutput("Loop Exited!");
 }
 
+void exit_curr_game() {
+	s_exit_game = true;
+}
 
 void run_game(int width, int height) {
 	initial_game(width, height);
@@ -160,5 +183,5 @@ void run_game(int width, int height) {
 	
 }
 void wait_for_exit() {
-	s_main_loop.join();
+	//s_main_loop.join();
 }

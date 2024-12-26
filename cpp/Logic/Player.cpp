@@ -238,7 +238,7 @@ int Player::get_capital_y() {
 void Player:: gold_cost(int cost){
     if (gold < cost){
 		DEBUG::DebugOutput("Player::gold_cost() throws");
-        throw new std::exception();
+		throw std::invalid_argument(u8"金钱不足");
     }
     gold -= cost;
 }
@@ -246,7 +246,7 @@ void Player:: gold_cost(int cost){
 void Player:: oil_cost(int cost){
     if (oil < cost){
 		DEBUG::DebugOutput("Player::oil_cost() throws");
-        throw new std::exception();
+		throw std::invalid_argument(u8"石油不足");
     }
     oil -= cost;
 }
@@ -254,7 +254,7 @@ void Player:: oil_cost(int cost){
 void Player:: electricity_cost(int cost){
     if (electricity < cost){
 		DEBUG::DebugOutput("Player::electricity_cost() throws");
-        throw new std::exception();
+		throw std::invalid_argument(u8"电力不足");
     }
     electricity -= cost;
 }
@@ -262,7 +262,7 @@ void Player:: electricity_cost(int cost){
 void Player:: labor_cost(int cost){
     if (labor_limit - ocupied_labor < cost){
 		DEBUG::DebugOutput("Player::labor_cost() throws");
-        throw new std::exception();
+		throw std::invalid_argument(u8"劳动力不足");
     }
     ocupied_labor += cost;
 }
@@ -270,7 +270,7 @@ void Player:: labor_cost(int cost){
 void Player:: steel_cost(int cost){
     if (steel < cost){
 		DEBUG::DebugOutput("Player::steel_cost() throws");
-        throw new std::exception();
+		throw std::invalid_argument(u8"钢铁不足");
     }
     steel -= cost;
 }
@@ -296,11 +296,11 @@ void Player:: add_steel(int amount){
 }
 
 int Player::get_building_level_limit(std::string name) {
-    if (name == "PowerStation") return 0;
-	if (name == "Refinery") return 1;
-    if (name == "SteelFactory") return 2;
-	if (name == "CivilFactory") return 3;
-	if (name == "MilitaryFactory") return 4;
+    if (name == "PowerStation") return institution_level_limit[0];
+	if (name == "Refinery") return institution_level_limit[1];
+    if (name == "SteelFactory") return institution_level_limit[2];
+	if (name == "CivilFactory") return institution_level_limit[3];
+	if (name == "MilitaryFactory") return institution_level_limit[4];
 	return -1;
 }
 
@@ -336,10 +336,10 @@ void Player:: move_army(Operation operation, int amount){
 	Region& end_region = regionmanager.get_region(end_x, end_y);
 
 	if (start_region.getOwner() != id) {
-		throw std::invalid_argument("非占有地块");
+		throw std::invalid_argument(u8"区块未被占有");
 	}
 	if (start_region.getArmy().getForce() < amount || amount == 0) {
-		throw std::invalid_argument("军队数量不足");
+		throw std::invalid_argument(u8"军队数量不足");
 	}
 
 	regionmanager.move_army(start, end, amount, arm_level[0]);
@@ -375,7 +375,7 @@ void Player::attack(Operation operation) {
 	std::tuple<float, float> AttackRange= weapon.getAttackRange();
 
 	if (distance > std::get<1>(AttackRange) || distance < std::get<0>(AttackRange)) {
-		throw "Not in attack range";
+		throw std::invalid_argument(u8"超出攻击范围");
 	}
 
     double time = distance / weapon.getAttackSpeed(arm_level[id+1]);
@@ -411,17 +411,17 @@ void Player::build(Operation operation) {
 
 	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
 	if (region.getOwner() != id) {
-		throw "Not your region";
+		throw std::invalid_argument(u8"区块未被占有");
 	}
-    if (region.getBuilding().getName() == "none") {
-		throw "Already has a building";
+    if (region.getBuilding().getName() != "none") {
+		throw std::invalid_argument(u8"已放置建筑");
 	}
     //wait for configure.h complete
 	Config& configer = Config::getInstance();
 	json BuildCost = configer.getConfig({ "Building",building_name, "BuildCost" });
 	std::vector<int> Level1Cost = BuildCost.template get<std::vector<int>>();
 	if (gold < Level1Cost[0] || oil < Level1Cost[1] || steel < Level1Cost[2] || electricity < Level1Cost[3] || labor_limit - ocupied_labor < Level1Cost[4]) {
-		throw "Not enough resource";
+		throw std::invalid_argument(u8"资源不足");
 	}
 	gold -= Level1Cost[0];
 	oil -= Level1Cost[1];
@@ -436,16 +436,16 @@ void Player::upgrade_building(Operation operation) {
 	Point location = operation.getCur();
 	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
     if (region.getBuilding().getName() == "none") {
-        throw "No building exits";
+        throw std::invalid_argument(u8"当前区块没有建筑");
     }
 	if (region.getOwner() != id) {
-		throw "Not your region";
+		throw std::invalid_argument(u8"区块未被占有");
 	}
 
 	//wait for configure.h complete
 	//make sure cost is enough, then uplevel
     if (region.getBuilding().getLevel() == institution_level_limit[get_building_level_limit(region.getBuilding().getName())]) {
-        throw "Already reach your level limit!";
+        throw std::invalid_argument(u8"已升级到最高级");
     }
 
 	Config& configer = Config::getInstance();
@@ -474,10 +474,10 @@ void Player::remove_building(Operation operation) {
 	Point location = operation.getCur();
 	Region& region = regionmanager.get_region(std::floor(location.getX()), std::floor(location.getY()));
     if (region.getOwner() != id) {
-		throw "Not your region";
+		throw std::invalid_argument(u8"区块未被占有");
 	}
     if (region.getBuilding().getName() == "none") {
-		throw "No building exits";
+		throw std::invalid_argument(u8"区块没有建筑");
 	}
 	region.removeBuilding();
 	//return the cost of the building
@@ -520,7 +520,7 @@ void Player::set_research(Operation operation) {
 	Config& configer = Config::getInstance();
 	int cost = configer.getConfig({ "ResearchInstitution","BuildCost" }).get<int>();
 	if (gold < cost) {
-		throw "Not enough gold";
+		throw std::invalid_argument(u8"金钱不足");
 	}
 	gold -= cost;
 	have_research_institution = true;
@@ -528,7 +528,7 @@ void Player::set_research(Operation operation) {
 
 void Player::research(Operation operation) {
 	if (!have_research_institution) {
-		throw "Research institution not built";
+		throw std::invalid_argument(u8"未解锁研究所");
 	}
 	//wait for configure.h complete
 	//make sure cost is enough, then research
@@ -547,12 +547,12 @@ void Player::research(Operation operation) {
 	switch (operation.getOp()) {
 	case Operator::PowerStationUpLevel:
 		if (institution_level_limit[0] == 3) {
-			throw "Already reach max level";
+			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
 			if (institution_level_limit[0] == 1) {
 				if (gold < Uplevelcost_PowerStation[0]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_PowerStation[0];
@@ -561,7 +561,7 @@ void Player::research(Operation operation) {
 			}
 			if (institution_level_limit[0] == 2) {
 				if (gold < Uplevelcost_PowerStation[1]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_PowerStation[1];
@@ -572,12 +572,12 @@ void Player::research(Operation operation) {
 		break;
 	case Operator::RefineryUpLevel:
 		if (institution_level_limit[1] == 3) {
-			throw "Already reach max level";
+			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
 			if (institution_level_limit[1] == 1) {
 				if (gold < Uplevelcost_Refinery[0]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_Refinery[0];
@@ -586,7 +586,7 @@ void Player::research(Operation operation) {
 			}
 			if (institution_level_limit[1] == 2) {
 				if (gold < Uplevelcost_Refinery[1]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_Refinery[1];
@@ -597,12 +597,12 @@ void Player::research(Operation operation) {
 		break;
 	case Operator::SteelFactoryUpLevel:
 		if (institution_level_limit[2] == 3) {
-			throw "Already reach max level";
+			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
 			if (institution_level_limit[2] == 1) {
 				if (gold < Uplevelcost_SteelFactory[0]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_SteelFactory[0];
@@ -611,7 +611,7 @@ void Player::research(Operation operation) {
 			}
 			if (institution_level_limit[2] == 2) {
 				if (gold < Uplevelcost_SteelFactory[1]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_SteelFactory[1];
@@ -622,12 +622,12 @@ void Player::research(Operation operation) {
 		break;
 	case Operator::CivilFactoryUpLevel:
 		if (institution_level_limit[3] == 3) {
-			throw "Already reach max level";
+			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
 			if (institution_level_limit[3] == 1) {
 				if (gold < Uplevelcost_CivilFactory[0]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_CivilFactory[0];
@@ -636,7 +636,7 @@ void Player::research(Operation operation) {
 			}
 			if (institution_level_limit[3] == 2) {
 				if (gold < Uplevelcost_CivilFactory[1]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_CivilFactory[1];
@@ -647,12 +647,12 @@ void Player::research(Operation operation) {
 		break;
 	case Operator::MilitaryFactoryUpLevel:
 		if (institution_level_limit[4] == 3) {
-			throw "Already reach max level";
+			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
 			if (institution_level_limit[4] == 1) {
 				if (gold < Uplevelcost_MilitaryFactory[0]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_MilitaryFactory[0];
@@ -661,7 +661,7 @@ void Player::research(Operation operation) {
 			}
 			if (institution_level_limit[4] == 2) {
 				if (gold < Uplevelcost_MilitaryFactory[1]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_MilitaryFactory[1];
@@ -672,12 +672,12 @@ void Player::research(Operation operation) {
 		break;
 	case Operator::ArmyUpLevel:
 		if (arm_level[0] == 3) {
-			throw "Already reach max level";
+			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
 			if (arm_level[0] == 1) {
 				if (gold < Uplevelcost_Army[0]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_Army[0];
@@ -686,7 +686,7 @@ void Player::research(Operation operation) {
 			}
 			if (arm_level[0] == 2) {
 				if (gold < Uplevelcost_Army[1]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_Army[1];
@@ -697,12 +697,12 @@ void Player::research(Operation operation) {
 		break;
 	case Operator::Weapon0UpLevel:
 		if (arm_level[1] == 3) {
-			throw "Already reach max level";
+			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
 			if (arm_level[1] == 1) {
 				if (gold < Uplevelcost_CM[0]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_CM[0];
@@ -711,7 +711,7 @@ void Player::research(Operation operation) {
 			}
 			if (arm_level[1] == 2) {
 				if (gold < Uplevelcost_CM[1]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_CM[1];
@@ -722,12 +722,12 @@ void Player::research(Operation operation) {
 		break;
 	case Operator::Weapon1UpLevel:
 		if (arm_level[2] == 3) {
-			throw "Already reach max level";
+			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
 			if (arm_level[2] == 1) {
 				if (gold < Uplevelcost_MRBM[0]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_MRBM[0];
@@ -736,7 +736,7 @@ void Player::research(Operation operation) {
 			}
 			if (arm_level[2] == 2) {
 				if (gold < Uplevelcost_MRBM[1]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_MRBM[1];
@@ -747,12 +747,12 @@ void Player::research(Operation operation) {
 		break;
 	case Operator::Weapon2UpLevel:
 		if (arm_level[3] == 3) {
-			throw "Already reach max level";
+			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
 			if (arm_level[3] == 1) {
 				if (gold < Uplevelcost_ICBM[0]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_ICBM[0];
@@ -761,7 +761,7 @@ void Player::research(Operation operation) {
 			}
 			if (arm_level[3] == 2) {
 				if (gold < Uplevelcost_ICBM[1]) {
-					throw "Not enough gold";
+					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_ICBM[1];
@@ -780,10 +780,10 @@ void Player::product(Operation operation) {
 	Region& end_region = regionmanager.get_region(std::floor(end.getX()), std::floor(end.getY()));
 
 	if (start_region.getOwner() != id || end_region.getOwner() != id) {
-		throw "Not your region";
+		throw std::invalid_argument(u8"区块未被占有");
 	}
 	if (start_region.getBuilding().getName() != "MilitaryFactory") {
-		throw "No military factory";
+		throw std::invalid_argument(u8"没有军事工厂");
 	}
 	Config& configer = Config::getInstance();
 	int cost{};
@@ -793,7 +793,7 @@ void Player::product(Operation operation) {
 	case Operator::ProductArmy:
 		cost = configer.getConfig({ "Army","cost" }).get<int>() * operation.getSize();
 		if (gold < cost) {
-			throw "Not enough gold";
+			throw std::invalid_argument(u8"金钱不足");
 		}
 		gold -= cost;
 		end_region.addArmy(operation.getSize());
@@ -801,7 +801,7 @@ void Player::product(Operation operation) {
 	case Operator::ProductWeapon0:
 		cost0 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
 		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
-			throw "Not enough resource";
+			throw std::invalid_argument(u8"资源不足");
 		}
 		gold -= cost0[0];
 		oil -= cost0[1];
@@ -812,7 +812,7 @@ void Player::product(Operation operation) {
 	case Operator::ProductWeapon1:
 		cost0 = configer.getConfig({ "Weapon", "1", "cost" }).template get<std::vector<int>>();
 		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
-			throw "Not enough resource";
+			throw std::invalid_argument(u8"资源不足");
 		}
 		gold -= cost0[0];
 		oil -= cost0[1];
@@ -823,7 +823,7 @@ void Player::product(Operation operation) {
 	case Operator::ProductWeapon2:
 		cost0 = configer.getConfig({ "Weapon", "2", "cost" }).template get<std::vector<int>>();
 		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
-			throw "Not enough resource";
+			throw std::invalid_argument(u8"资源不足");
 		}
 		gold -= cost0[0];
 		oil -= cost0[1];
@@ -935,6 +935,15 @@ void Player::create() {
 			regionmanager.get_region(x + i, y + j).setOwner(0);
 		}
 	}
+
+	gold = 100000;
+	oil = 100000;
+	electricity = 100000;
+	labor_limit = 1000;
+	ocupied_labor = 0;
+	steel = 100000;
+
+
 	return;
 }
 

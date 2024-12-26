@@ -58,6 +58,17 @@ public:
 	void add_steel(int amount);
 
 	int get_building_level_limit(std::string name);
+	int get_army_level(int id) {
+		try {
+			return arm_level[id];
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	bool get_have_research_institution() {
+		return have_research_institution;
+	}
 	//Interaction functions below
 	void move_army(Operation operation, int amount);
 	void attack(Operation operation);

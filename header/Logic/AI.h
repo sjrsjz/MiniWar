@@ -81,7 +81,7 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 10000000.0;
+	double A = 100.0;
 	double k = 0.01;
 	double t0 = 50;
 	AITimer Timer;

@@ -265,7 +265,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     //color *= sky_color * max(dot(region_normal,sun_light_dir),0.1);
     
     // 区块中心
-    color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
+    // color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
 
     // 军队位置
     color = mix(color, vec3(10,10,10), float(cell_idx.army_data.z < 0.05));
