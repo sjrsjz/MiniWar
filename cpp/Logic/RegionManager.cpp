@@ -1,6 +1,7 @@
 #include "../../header/Logic/RegionManager.h"
 #include "../../header/debug.h"
 #include "../../header/Logic/Player.h"
+#include <cmath>
 #include <vector>
 #include <random>
 #include <mutex>
@@ -649,28 +650,56 @@ void RegionManager::update(GlobalTimer& timer) {
 	army_mutex.unlock();
 	missle_mutex.lock();
 
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(3000, 5000);
+	std::uniform_int_distribution<>	dis2(0, 2000);
+
 	while (!moving_missles.empty()) {
 		MovingMissle missle = moving_missles.top();
 		moving_missles.pop();
 		//update current postion
 		float mix = fmin(1, (1 + (current_time - missle.reach_time) / missle.time));
 
-		int x_L = std::get<0>(missle.start_point);
-		int y_L = std::get<1>(missle.start_point);
-
-		int x_R = std::get<0>(missle.end_point);
-		int y_R = std::get<1>(missle.end_point);
-
-		float center_x_L = get_region(x_L, y_L).getPosition().getX();
-		float center_y_L = get_region(x_L, y_L).getPosition().getY();
-
-		float center_x_R = get_region(x_R, y_R).getPosition().getX();
-		float center_y_R = get_region(x_R, y_R).getPosition().getY();
-
-		float mix_x = center_x_L * (1 - mix) + center_x_R * mix;
-		float mix_y = center_y_L * (1 - mix) + center_y_R * mix;
+		auto start = missle.start_point;
+		auto end = missle.end_point;
+		std::tuple<int, int> middle = std::make_tuple((std::get<0>(start) + std::get<0>(end)) / 2, (std::get<1>(start) + std::get<1>(end)) / 2);
+		auto [middleX, middleY] = middle;
+		auto [startX, startY] = start;
+		auto [endX, endY] = end;
 		
-		missle.current_pos = std::make_tuple(mix_x, mix_y);
+		float M = dis2(gen) / 10000.0;
+
+		float P1X = startX - (middleX - startX) * M;
+		float P1Y = startY - (middleY - startY) * M;
+
+		float P2X = middleX - (middleX - endX) * M;
+		float P2Y = middleY - (middleY - endY) * M;
+
+		float h = dis(gen) / 1000.0;
+		float x = (1 - h) * (1 - h) * (1 - h) * startX + 3 * h * (1 - h) * (1 - h) * P1X + 3 * h * h * (1 - h) * P2X + h * h * h * endX;
+		float y = (1 - h) * (1 - h) * (1 - h) * startY + 3 * h * (1 - h) * (1 - h) * P1Y + 3 * h * h * (1 - h) * P2Y + h * h * h * endY;
+		float z = 3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix;
+		missle.current_pos = std::make_tuple(x, y, z);
+		
+
+
+		/* int x_L = std::get<0>(missle.start_point); */
+		/* int y_L = std::get<1>(missle.start_point); */
+
+		/* int x_R = std::get<0>(missle.end_point); */
+		/* int y_R = std::get<1>(missle.end_point); */
+
+		/* float center_x_L = get_region(x_L, y_L).getPosition().getX(); */
+		/* float center_y_L = get_region(x_L, y_L).getPosition().getY(); */
+
+		/* float center_x_R = get_region(x_R, y_R).getPosition().getX(); */
+		/* float center_y_R = get_region(x_R, y_R).getPosition().getY(); */
+
+		/* float mix_x = center_x_L * (1 - mix) + center_x_R * mix; */
+		/* float mix_y = center_y_L * (1 - mix) + center_y_R * mix; */
+		
+		/* missle.current_pos = std::make_tuple(mix_x, mix_y); */
 
 		temp_missles.push_back(missle);
 	}

@@ -384,6 +384,12 @@ public:
 			}
 		}
 
+		if (!capitalAlive) {
+			int SIZE = AIRegions.size();
+			int mid = SIZE / 2;
+			capital = AIRegions[mid];
+		}
+
 		averageForce /= regionSize;
 
 		for (auto playerRegion : playerRegions) {
@@ -482,11 +488,11 @@ public:
 		int weapon1cost = INF;
 		int weapon2cost = INF;
 		int weapon3cost = INF;
-		if (arm_level[1] < maxLevel)
+		if (arm_level[1] <= maxLevel)
 			weapon1cost = weaponCost["0"].template get<std::vector<int>>()[arm_level[1]];
-		if (arm_level[2] < maxLevel)
+		if (arm_level[2] <= maxLevel)
 			weapon2cost = weaponCost["1"].template get<std::vector<int>>()[arm_level[2]];
-		if (arm_level[3] < maxLevel)
+		if (arm_level[3] <= maxLevel)
 			weapon3cost = weaponCost["2"].template get<std::vector<int>>()[arm_level[3]];
 		if (dist <= 0.25) {
 			if (buildLevel >= weapon1cost && arm_level[1] < maxLevel) {
