@@ -1142,7 +1142,7 @@ void render_update_info() {
 	}
 	auto missile = rm.get_moving_missle_position();
 	for (auto& m : missile) {
-		Vertex tmp = { std::get<0>(m.current_pos) / map_info.getWidth() * 2 - 1, -0.62, std::get<1>(m.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 0 };
+		Vertex tmp = { std::get<0>(m.current_pos) / map_info.getWidth() * 2 - 1, -0.62 + std::get<2>(m.current_pos), std::get<1>(m.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 0 };
 		vertices.push_back(tmp);
 	}
 	//DEBUG::DebugOutput("Army size", army.size());
@@ -2076,7 +2076,7 @@ void KeyProcess() {
 
 	float dx = 0, dz = 0;
 
-	float speed = exp(- 0.25 * scale_map_camera.getZ());
+	float speed = 0.5 * exp(- 0.25 * scale_map_camera.getZ());
 
 	if (keys[GLFW_KEY_W]) {
 		dz += speed;

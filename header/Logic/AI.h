@@ -81,9 +81,9 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 1000000.0;
+	double A = 500.0;
 	double k = 0.01;
-	double t0 = 50;
+	double t0 = 250;
 	AITimer Timer;
 	double attackTime = 0;
 	double last_at = 0;
@@ -313,10 +313,10 @@ public:
 						canAttack = false;
 						DEBUG::DebugOutput("WeaponAttack() finished");
 					}
-					if (cnt >= 1) {
+					if (cnt >= 20) {
 						return;
 					}
-					break;
+					//break;
 				}
 			}
 		}

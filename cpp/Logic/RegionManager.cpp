@@ -687,7 +687,7 @@ void RegionManager::update(GlobalTimer& timer) {
 		float h = missle.h / 1000.0;
 		float x = (1 - mix) * (1 - mix) * (1 - mix) * startX + 3 * mix * (1 - mix) * (1 - mix) * P1X + 3 * mix * mix * (1 - mix) * P2X + mix * mix * mix * endX;
 		float y = (1 - mix) * (1 - mix) * (1 - mix) * startY + 3 * mix * (1 - mix) * (1 - mix) * P1Y + 3 * mix * mix * (1 - mix) * P2Y + mix * mix * mix * endY;
-		float z = 3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix;
+		float z = (3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix) * 0.025;
 		DEBUG::DebugOutput("z: ", z);
 		missle.current_pos = std::make_tuple(x, y, z);
 		
