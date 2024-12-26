@@ -1,5 +1,6 @@
 #include "../../header/Logic/Weapon.h"
 #include "../../header/utils/Config.h"
+#include "../../header/Logic/RegionManager.h"
 
 using json = nlohmann::json;
 
@@ -32,7 +33,7 @@ float Weapon::getDamageRange(int level){
 }
 
 float Weapon::getAttackSpeed(int level){
-	float AttackSpeed = this->attackSpeed * (1 + level * 0.2);
+	float AttackSpeed = this->attackSpeed * (1 + level * 0.2) * RegionManager::getInstance().get_map_width();
 	return AttackSpeed; 
 }
 
