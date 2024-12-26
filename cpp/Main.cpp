@@ -2170,7 +2170,7 @@ void KeyRelease(int key) {
 						break;
 					case ARMY:
 						DEBUG::DebugOutput("Army");
-						push_input({ start_point, end_point, from_region.getArmy().getForce(), Operator::ArmyMove });
+						push_input({ start_point, end_point, from_region.getArmy().getForce() / 2, Operator::ArmyMove });
 						break;
 					case SCATTER_BOMB:
 						DEBUG::DebugOutput("Scatter Bomb");
@@ -2181,6 +2181,63 @@ void KeyRelease(int key) {
 				}
 				catch (std::exception e) {
 					
+				}
+			}
+
+		}
+		break;
+	case GLFW_KEY_G: // 快速生产
+		if (GAMESTATUS::s_enable_control) {
+			if (s_selected_gui.is_selected) {
+				Point start_point = Point::toPoint(s_selected_gui.grid);
+				Point end_point = Point::toPoint(s_current_selected_grid);
+				try {
+					Region& from_region = RegionManager::getInstance().get_region(start_point.getX(), start_point.getY());
+					Region& to_region = RegionManager::getInstance().get_region(end_point.getX(), end_point.getY());
+					std::string result = "";
+					switch (s_selected_weapon)
+					{
+					case NONE:
+						GAMESOUND::play_error_sound();
+						break;
+					case NUCLEAR_MISSILE:
+						if (from_region.getOwner() != 0) {
+							s_selected_gui.message = u8"无效区块！";
+							s_selected_gui.shake_gui(timer);
+							break;
+						}
+
+						switch (s_nuclear_missile_level)
+						{
+						case 0:
+							result = push_input_wait_for_result({ start_point, end_point, Operator::ProductWeapon0 });
+							break;
+						case 1:
+							result = push_input_wait_for_result({ start_point, end_point, Operator::ProductWeapon1 });
+							break;
+						case 2:
+							result = push_input_wait_for_result({ start_point, end_point, Operator::ProductWeapon2 });
+							break;
+						default:
+							break;
+						}
+						if (result == "Success") {
+							DEBUG::DebugOutput("Nuclear Missile");
+						}
+						break;
+					case ARMY:
+						DEBUG::DebugOutput("Army");
+						push_input({ start_point, end_point, 100, Operator::ProductArmy });
+						break;
+					case SCATTER_BOMB:
+						DEBUG::DebugOutput("Scatter Bomb");
+						break;
+					default:
+						break;
+					}
+				}
+				catch (std::exception e) {
+
 				}
 			}
 
@@ -2365,8 +2422,8 @@ int main() {
 	glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
-	//glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", primary, NULL);
-	glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", 0, NULL);
+	glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", primary, NULL);
+	//glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", 0, NULL);
 
 	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
 	glfwSetCursorPosCallback(glfw_win, (GLFWcursorposfun)glfwMouseCallback);

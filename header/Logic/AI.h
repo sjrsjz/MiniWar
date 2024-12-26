@@ -818,7 +818,8 @@ public:
 		if (isPause) {
 			Timer.pause();
 			return;
-		} else {
+		}
+		else {
 			Timer.resume();
 		}
 
@@ -826,18 +827,23 @@ public:
 		//DEBUG::DebugOutput("AI source", this->gold);
 		//DEBUG::DebugOutput("canMove: ", this->canMove);
 		//DEBUG::DebugOutput("AI Called increse()");
-		
-		this->increase();
-		if (regionSize == 0) {
-			aiState = false;
-			return;
+		try {
+			this->increase();
+			if (regionSize == 0) {
+				aiState = false;
+				return;
+			}
+			//DEBUG::DebugOutput("AI Called defend()");
+			this->defend();
+			//DEBUG::DebugOutput("AI Called expand()");
+			this->expand();
+			//DEBUG::DebugOutput("AI Called attack()");
+			this->attack();
+
 		}
-		//DEBUG::DebugOutput("AI Called defend()");
-		this->defend();
-		//DEBUG::DebugOutput("AI Called expand()");
-		this->expand();
-		//DEBUG::DebugOutput("AI Called attack()");
-		this->attack();
+		catch (std::exception e) {
+
+		}
 	}
 	
 };
