@@ -884,6 +884,7 @@ public:
 		return n;
 	}
 	void update(const Timer& timer) {
+		if (!GAMESTATUS::s_in_game) return;
 		gold_amount.update_sin(timer.getTime());
 		gold_amount_back.update_sin(timer.getTime());
 		electricity_amount.update_sin(timer.getTime());
@@ -1002,7 +1003,7 @@ public:
 		ImGui::Text(u8"生产");
 		if (ImGui::BeginListBox("##ProductionList")) {
 			if (ImGui::Selectable(u8"军队")) {
-				push_input({ Point::toPoint(grid),Point::toPoint(grid),Operator::ProductArmy });
+				push_input({ Point::toPoint(grid),Point::toPoint(grid),100,Operator::ProductArmy });
 				open = false;
 			}
 			if (ImGui::Selectable(u8"核导弹一级")) {

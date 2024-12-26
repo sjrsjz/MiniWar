@@ -156,7 +156,8 @@ void Player:: move_army(Operation operation, int amount){
 void Player::attack(Operation operation) {
 	Point start = operation.getStart();
 	Point end = operation.getEnd();
-	double distance = sqrt(pow(start.getX() - end.getX(), 2) + pow(start.getY() - end.getY(), 2));
+	double distance_origin = sqrt(pow(start.getX() - end.getX(), 2) + pow(start.getY() - end.getY(), 2));
+	double distance = sqrt(pow(start.getX() - end.getX(), 2) + pow(start.getY() - end.getY(), 2)) / fmax(regionmanager.get_map_width(), regionmanager.get_map_height());
 
     int start_x = std::floor(start.getX());
     int start_y = std::floor(start.getY());
@@ -186,7 +187,7 @@ void Player::attack(Operation operation) {
 		throw std::invalid_argument(u8"超出攻击范围");
 	}
 
-    double time = distance / weapon.getAttackSpeed(arm_level[id+1]);
+    double time = distance_origin / weapon.getAttackSpeed(arm_level[id+1]);
 
 	start_region.removeWeapon(weapon_id);
 

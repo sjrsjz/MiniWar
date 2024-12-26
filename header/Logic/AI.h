@@ -97,7 +97,7 @@ class AI {
 	std::vector<std::pair<std::tuple<int, int>, int>> distance;
 	double averageForce;
 	double playerAverageForce;
-	json weaponCost;
+	json weaponCost{};
 	std::list<std::tuple<int, int>> isAttacked;
 
 	const double formula(double t) {

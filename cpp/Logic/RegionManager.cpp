@@ -334,9 +334,8 @@ std::vector<Region*> RegionManager::get_damaged_regions(Point position, float ra
 			if (std::sqrt(i * i + j * j) <= range)
 				result.push_back(&get_region(start_x + i, start_y + j));
 		}
-
-		return result;
 	}
+	return result;
 }
 
 Weapon& RegionManager::get_weapon(int id) {
