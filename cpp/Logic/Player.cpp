@@ -156,7 +156,7 @@ void Player:: move_army(Operation operation, int amount){
 void Player::attack(Operation operation) {
 	Point start = operation.getStart();
 	Point end = operation.getEnd();
-	double distance = sqrt(pow(start.getX() - end.getX(), 2) + pow(start.getY() - end.getY(), 2)) / fmax(this->regionmanager.get_map_width(), this->regionmanager.get_map_height());
+	double distance = sqrt(pow(start.getX() - end.getX(), 2) + pow(start.getY() - end.getY(), 2));
 
     int start_x = std::floor(start.getX());
     int start_y = std::floor(start.getY());

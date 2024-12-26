@@ -322,26 +322,21 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 }
 
 std::vector<Region*> RegionManager::get_damaged_regions(Point position, float range) {
-	float start_x = std::floor(position.getX()) + 0.5;
-	float start_y = std::floor(position.getY()) + 0.5;
+	float start_x = position.getX();
+	float start_y = position.getY();
 	std::vector<Region*> result;
 
-	int left_range = std::floor(start_x - range < 0.f ? 0.f : start_x - range);
-	int right_range = std::floor(start_x + range > get_map_width() ? get_map_width() : start_x + range);
-	int down_range = std::floor(start_y - range < 0.f ? 0.f : start_y - range);
-	int up_range = std::floor(start_y + range > get_map_width() ? get_map_width() : start_x + range);
-
-	for (int i = left_range; i <= right_range; i++) {
-		for (int j = down_range; j <= up_range; j++) {
-			float x = i + 0.5;
-			float y = j + 0.5;
-			if (range <= sqrt(pow(x - start_x, 2) + pow(y - start_y, 2))) {
-				result.push_back(&get_region(i , j));
+	for (int i = -2; i <= 2; i++) {
+		for (int j = -2; j <= 2; j++) {
+			if (start_x + i < 0 || start_x + i >= get_map_width() || start_y + j < 0 || start_y + j >= get_map_height()) {
+				continue;
 			}
+			if (std::sqrt(i * i + j * j) <= range)
+				result.push_back(&get_region(start_x + i, start_y + j));
 		}
-	}
 
-	return result;
+		return result;
+	}
 }
 
 Weapon& RegionManager::get_weapon(int id) {
