@@ -85,6 +85,8 @@ class AI {
 	double k = 0.01;
 	double t0 = 50;
 	AITimer Timer;
+	double attackTime = 0;
+	double last_at = 0;
 	bool canMove = true;
 	bool canDefend = true;
 	bool capitalAlive = true;
@@ -292,6 +294,7 @@ public:
 		if (!canAttack) {
 			return;
 		}
+		int cnt = 0;
 		for (int i = 0; i < weapons.size(); i++) {
 			if (weapons[i] == 0) continue;
 			for (auto playerRegion: playerRegions) {
@@ -306,8 +309,12 @@ public:
 					if (dist >= min && dist <= max) {
 						DEBUG::DebugOutput("WeaponAttack() called");
 						regionManager.attack_region_missle(i, arm_level[i + 1], start, end, time);
+						cnt++;
 						canAttack = false;
 						DEBUG::DebugOutput("WeaponAttack() finished");
+					}
+					break;
+					if (cnt >= 20) {
 						return;
 					}
 				}
@@ -407,9 +414,12 @@ public:
 		// TODO
 		timeInit();		
 		delta_t += Timer.elapsedSeconds() - last_t;
+		attackTime += Timer.elapsedSeconds() - last_at;	
 		last_t = Timer.elapsedSeconds();
+		last_at = Timer.elapsedSeconds();
 		if (delta_t < 1) return;
-		if (!canAttack) {
+		if (attackTime >= 30) {
+			attackTime = 0;
 			canAttack = true;
 		}
 

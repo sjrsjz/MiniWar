@@ -228,7 +228,7 @@ void main_loop() {
 
 		update();
 		//DEBUG::DebugOutput("End Loop\n");
-		if (!aiState) {
+		if (!aiState && !aiState2) {
 			break;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));

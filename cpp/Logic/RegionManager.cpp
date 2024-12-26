@@ -548,6 +548,7 @@ void RegionManager::update(GlobalTimer& timer) {
 	//DEBUG::DebugOutput("RegionManager::update() called", moving_armies.size());
 	while (!moving_armies.empty() && moving_armies.top().reach_time <= current_time) {
 		DEBUG::DebugOutput("Moving army: ", moving_armies.top().amount);
+		if (moving_armies.size() == 0) break;
 		MovingArmy army = moving_armies.top();
 		moving_armies.pop();
 		Region& end_region = get_region(std::get<0>(army.path.back()), std::get<1>(army.path.back()));

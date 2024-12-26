@@ -512,21 +512,30 @@ void Player::research(Operation operation) {
 			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
-			if (arm_level[1] == 1) {
+			if (arm_level[1] == 0) {
 				if (gold < Uplevelcost_CM[0]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_CM[0];
-					arm_level[1] = 2;
+					arm_level[1] = 1;
 				}
 			}
-			if (arm_level[1] == 2) {
+			if (arm_level[1] == 1) {
 				if (gold < Uplevelcost_CM[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_CM[1];
+					arm_level[1] = 2;
+				}
+			}
+			if (arm_level[1] == 2) {
+				if (gold < Uplevelcost_CM[2]) {
+					throw std::invalid_argument(u8"金钱不足");
+				}
+				else {
+					gold -= Uplevelcost_CM[2];
 					arm_level[1] = 3;
 				}
 			}	
@@ -537,21 +546,30 @@ void Player::research(Operation operation) {
 			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
-			if (arm_level[2] == 1) {
+			if (arm_level[2] == 0) {
 				if (gold < Uplevelcost_MRBM[0]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_MRBM[0];
-					arm_level[2] = 2;
+					arm_level[2] = 1;
 				}
 			}
-			if (arm_level[2] == 2) {
+			if (arm_level[2] == 1) {
 				if (gold < Uplevelcost_MRBM[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_MRBM[1];
+					arm_level[2] = 2;
+				}
+			}
+			if (arm_level[2] == 2) {
+				if (gold < Uplevelcost_MRBM[2]) {
+					throw std::invalid_argument(u8"金钱不足");
+				}
+				else {
+					gold -= Uplevelcost_MRBM[2];
 					arm_level[2] = 3;
 				}
 			}
@@ -562,7 +580,7 @@ void Player::research(Operation operation) {
 			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
-			if (arm_level[3] == 1) {
+			if (arm_level[3] == 0) {
 				if (gold < Uplevelcost_ICBM[0]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
@@ -571,12 +589,21 @@ void Player::research(Operation operation) {
 					arm_level[3] = 2;
 				}
 			}
-			if (arm_level[3] == 2) {
+			if (arm_level[3] == 1) {
 				if (gold < Uplevelcost_ICBM[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_ICBM[1];
+					arm_level[3] = 2;
+				}
+			}
+			if (arm_level[3] == 2) {
+				if (gold < Uplevelcost_ICBM[2]) {
+					throw std::invalid_argument(u8"金钱不足");
+				}
+				else {
+					gold -= Uplevelcost_ICBM[2];
 					arm_level[3] = 3;
 				}
 			}
