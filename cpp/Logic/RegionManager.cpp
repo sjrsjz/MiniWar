@@ -50,6 +50,7 @@ static std::vector<Point> reconstruct_path(Node* end_node) {
 
 
 std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point end) {
+	DEBUG::DebugOutput("RegionManager::astar() called");
     int rows = grid.size();
     int cols = grid[0].size();
 
@@ -81,6 +82,7 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
 
         // ����Ƿ񵽴��յ�
         if (current.pt.getX() == end.getX() && current.pt.getY() == end.getY()) {
+			DEBUG::DebugOutput("RegionManager::astar() finished");
             return reconstruct_path(&current);
         }
 
@@ -99,6 +101,7 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
     }
 
     // ����Ҳ���·�������ؿ�
+	DEBUG::DebugOutput("RegionManager::astar() finished");
     return {};
 }
 
@@ -431,8 +434,7 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	double distance = calculate_distance(start, end, path);
 	DEBUG::DebugOutput("distance finished");
 	if (distance == -1.f) {
-		DEBUG::DebugOutput("RegionManager::move_army() throws");
-		throw "Can't find a path";
+		DEBUG::DebugOutput("RegionManager::move_army() can not find a path");
 	}
 
 	int start_x = std::floor(start.getX());
@@ -575,8 +577,8 @@ void RegionManager::update(GlobalTimer& timer) {
 	}
 	army_mutex.unlock();
 	missle_mutex.lock();
-	while (!moving_missles.empty() && moving_missles.top().reach_time <= current_time) {
-		DEBUG::DebugOutput("Moving missle: ", moving_missles.top().weapon_id);
+	while (!moving_missles.empty() && moving_missles.top().time <= current_time) {
+		//DEBUG::DebugOutput("Moving missle: ", moving_missles.top().weapon_id);
 		MovingMissle missle = moving_missles.top();
 		moving_missles.pop();
 		Region& end_region = get_region(std::get<0>(missle.end_point), std::get<1>(missle.end_point));

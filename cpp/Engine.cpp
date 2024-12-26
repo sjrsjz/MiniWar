@@ -13,15 +13,25 @@
 AI ai;
 AI ai2;
 bool isPause = false;
+bool aiState = true;
+bool aiState2 = true;
+
+void release_game() {
+	RegionManager::getInstance().~RegionManager();
+	ai.~AI();
+	ai2.~AI();
+}
 
 static bool s_exit_game = false;
 static std::thread s_main_loop;
 void initial_game(int width, int height) {
+	isPause = false;
+	aiState = true;
 	s_exit_game = false;
 	RegionManager::getInstance().set(width, height);
 	RegionManager::getInstance().get_player().create();
 	ai.create();
-	ai2.create();
+	ai2.create(2);
 }
 
 static std::vector<std::string> s_error_messages;
@@ -191,9 +201,8 @@ std::string push_input_wait_for_result(const Operation& op) {
 
 void update() {
 	RegionManager::getInstance().update(GlobalTimer::getInstance());
-	RegionManager::getInstance().get_player().update(GlobalTimer::getInstance());
-	ai.update(isPause);
-	ai2.update(isPause);
+	ai.update(isPause, aiState);
+	ai2.update(isPause, aiState2);
 }
 
 void main_loop() {
@@ -221,8 +230,12 @@ void main_loop() {
 
 		update();
 		//DEBUG::DebugOutput("End Loop\n");
+		if (!aiState) {
+			break;
+		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
+	release_game();
 	DEBUG::DebugOutput("Loop Exited!");
 	s_wait_lock.unlock();
 }

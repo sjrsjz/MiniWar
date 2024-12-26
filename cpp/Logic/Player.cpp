@@ -734,6 +734,11 @@ void Player::create() {
 	int size = disSize(gen);
 	int x = disX(gen);
 	int y = disY(gen);
+	capital = std::make_tuple(x, y);
+	float Hp = config.getConfig({"Region", "CapitalHp"}).get<float>();
+	int Force = config.getConfig({"Region", "CapitalArmy"}).get<int>();
+	regionmanager.get_region(x, y).setHp(Hp);
+	regionmanager.get_region(x, y).getArmy().addArmy(Force);
 	regionmanager.get_region(x, y).setOwner(0);
 	for (int i = -3; i <= 3; i++) {
 		for (int j = -3; j <= 3; j++) {

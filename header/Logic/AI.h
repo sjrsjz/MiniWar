@@ -81,12 +81,14 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 500.0;
+	double A = 10000.0;
 	double k = 0.01;
-	double t0 = 250;
+	double t0 = 50;
 	AITimer Timer;
 	bool canMove = true;
 	bool canDefend = true;
+	bool capitalAlive = true;
+	bool canAttack = true;
 	double delta_t = 0;
 	double last_t = 0;
 	std::vector<std::tuple<int, int>> AIRegions;
@@ -266,6 +268,9 @@ public:
 
 	void attack() {
 		// TODO
+		if (!canAttack) {
+			return;
+		}
 		for (int i = 0; i < weapons.size(); i++) {
 			if (weapons[i] == 0) continue;
 			for (auto playerRegion: playerRegions) {
@@ -278,7 +283,11 @@ public:
 					int damage = regionManager.get_weapon(i).getDamage(arm_level[i + 1]);
 					double time = start.distance(end) / regionManager.get_weapon(i).getAttackSpeed(arm_level[i + 1]);
 					if (dist >= min && dist <= max) {
+						DEBUG::DebugOutput("WeaponAttack() called");
 						regionManager.attack_region_missle(i, arm_level[i + 1], start, end, time);
+						canAttack = false;
+						DEBUG::DebugOutput("WeaponAttack() finished");
+						return;
 					}
 				}
 			}
@@ -303,7 +312,7 @@ public:
 			for (int j = 0; j < regionManager.get_map_height(); j++) {
 				if (regionManager.get_region(i, j).getOwner() == id) {
 					AIRegions.push_back(std::make_tuple(i, j));
-				} else if (regionManager.get_region(i, j).getOwner() == 0) {
+				} else if (regionManager.get_region(i, j).getOwner() != id && regionManager.get_region(i, j).getOwner() != -1) {
 					playerRegions.push_back(std::make_tuple(i, j));
 				} 
 			}
@@ -338,6 +347,15 @@ public:
 			averageForce += regionArmy.getForce();
 		}
 
+		for (auto AIRegion : AIRegions) {
+			auto [x, y] = AIRegion;
+			auto [capitalX, capitalY] = capital;
+			if (x == capitalX && y == capitalY) {
+				capitalAlive = true;
+				break;
+			}
+		}
+
 		averageForce /= regionSize;
 
 		for (auto playerRegion : playerRegions) {
@@ -370,6 +388,9 @@ public:
 		delta_t += Timer.elapsedSeconds() - last_t;
 		last_t = Timer.elapsedSeconds();
 		if (delta_t < 1) return;
+		if (!canAttack) {
+			canAttack = true;
+		}
 
 		DEBUG::DebugOutput("gold: ", this->gold);
 		DEBUG::DebugOutput("army: ", this->averageForce);
@@ -377,12 +398,15 @@ public:
 		DEBUG::DebugOutput("canDefend: ", this->canDefend);
 		this->gold += formula(Timer.elapsedSeconds());	
 		delta_t -= 1;
-		int buildArmy = std::min((int)(this->gold * 0.3), 8000);
-		//json ArmyInfo = config.getConfig({"Army"});
-		int cost = 1000;// ArmyInfo["cost"].template get<int>();
-		Army& army = regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).getArmy();
-		army.addArmy(buildArmy / cost);
-		this->gold -= buildArmy;
+		if (capitalAlive) {
+			int buildArmy = std::min((int)(this->gold * 0.3), 8000);
+			json ArmyInfo = config.getConfig({"Army"});
+			//int cost = 1000;// ArmyInfo["cost"].template get<int>();
+			int cost = ArmyInfo["cost"].template get<int>();
+			Army& army = regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).getArmy();
+			army.addArmy(buildArmy / cost);
+			this->gold -= buildArmy;
+		}
 
 		int biuldWeapon = (int)this->gold * 0.5;
 		int sumDis = 0;
@@ -662,7 +686,7 @@ public:
 
 		if (regionSize < playerRegionSize && averageForce < playerAverageForce) {
 			// TODO
-			for (int i = regionSize - 1; i >= regionSize / 2; i--) {
+			for (int i = borderDistance.size() - 1; i >= borderDistance.size() / 2; i--) {
 				auto [x, y] = borderDistance[i].first;
 				Army& borderArmy = regionManager.get_region(x, y).getArmy();
 				int borderArmyForce = borderArmy.getForce(); 
@@ -672,7 +696,7 @@ public:
 					for (int j = -1; j <= 1; j++) {
 						for (int k = -1; k <= 1; k++) {
 							if (x + j < 0 || x + j >= regionManager.get_map_width() || y + k < 0 || y + k >= regionManager.get_map_height()) continue;
-							if (regionManager.get_region(x + i, y + j).getOwner() == id) {
+							if (regionManager.get_region(x + j, y + k).getOwner() == id) {
 								Army& tmp = regionManager.get_region(x + j, y + k).getArmy();
 								if (tmp.getForce() >= maxForceValue) {
 									maxForceValue = tmp.getForce();
@@ -705,7 +729,7 @@ public:
 			}
 		} else {
 			// TODO
-			for (int i = 0; i <= regionSize / 2; i++) {
+			for (int i = 0; i <= borderDistance.size() / 2; i++) {
 				auto [x, y] = borderDistance[i].first;
 				Army& borderArmy = regionManager.get_region(x, y).getArmy();
 				int borderArmyForce = borderArmy.getForce(); 
@@ -751,7 +775,9 @@ public:
 		}
 	}
 
-	void update(bool isPause = false) {
+	void update(bool& isPause, bool& aiState) {
+
+
 		if (isPause) {
 			Timer.pause();
 			return;
@@ -765,6 +791,10 @@ public:
 		//DEBUG::DebugOutput("AI Called increse()");
 		
 		this->increase();
+		if (regionSize == 0) {
+			aiState = false;
+			return;
+		}
 		//DEBUG::DebugOutput("AI Called defend()");
 		this->defend();
 		//DEBUG::DebugOutput("AI Called expand()");
