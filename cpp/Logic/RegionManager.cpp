@@ -474,7 +474,14 @@ void RegionManager::attack_region_missle(int weapon_id, int level, Point start, 
 	missle.reach_time = current_time + time;
 	missle.start_point = std::make_tuple(std::floor(start.getX()), std::floor(start.getY()));
 	missle.end_point = std::make_tuple(std::floor(end.getX()), std::floor(end.getY()));
-	missle.current_pos = std::make_tuple(std::floor(start.getX()) + 0.5, std::floor(end.getY()) + 0.5);
+	missle.current_pos = std::make_tuple(std::floor(start.getX()) + 0.5, std::floor(end.getY()) + 0.5, 0);
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(4000, 5000);
+	std::uniform_int_distribution<>	dis2(0, 2000);
+	missle.h = dis(gen);
+	missle.M = dis2(gen);
+
 	missle_mutex.lock();
 	moving_missles.push(missle);
 	missle_mutex.unlock();
@@ -650,17 +657,13 @@ void RegionManager::update(GlobalTimer& timer) {
 	army_mutex.unlock();
 	missle_mutex.lock();
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(3000, 5000);
-	std::uniform_int_distribution<>	dis2(0, 2000);
 
 	while (!moving_missles.empty()) {
 		MovingMissle missle = moving_missles.top();
 		moving_missles.pop();
 		//update current postion
 		float mix = fmin(1, (1 + (current_time - missle.reach_time) / missle.time));
-
+		DEBUG::DebugOutput("mix: ", mix);
 		auto start = missle.start_point;
 		auto end = missle.end_point;
 		std::tuple<int, int> middle = std::make_tuple((std::get<0>(start) + std::get<0>(end)) / 2, (std::get<1>(start) + std::get<1>(end)) / 2);
@@ -668,7 +671,7 @@ void RegionManager::update(GlobalTimer& timer) {
 		auto [startX, startY] = start;
 		auto [endX, endY] = end;
 		
-		float M = dis2(gen) / 10000.0;
+		float M = missle.M / 10000.0;
 
 		float P1X = startX - (middleX - startX) * M;
 		float P1Y = startY - (middleY - startY) * M;
@@ -676,10 +679,11 @@ void RegionManager::update(GlobalTimer& timer) {
 		float P2X = middleX - (middleX - endX) * M;
 		float P2Y = middleY - (middleY - endY) * M;
 
-		float h = dis(gen) / 1000.0;
-		float x = (1 - h) * (1 - h) * (1 - h) * startX + 3 * h * (1 - h) * (1 - h) * P1X + 3 * h * h * (1 - h) * P2X + h * h * h * endX;
-		float y = (1 - h) * (1 - h) * (1 - h) * startY + 3 * h * (1 - h) * (1 - h) * P1Y + 3 * h * h * (1 - h) * P2Y + h * h * h * endY;
+		float h = missle.h / 1000.0;
+		float x = (1 - mix) * (1 - mix) * (1 - mix) * startX + 3 * mix * (1 - mix) * (1 - mix) * P1X + 3 * mix * mix * (1 - mix) * P2X + mix * mix * mix * endX;
+		float y = (1 - mix) * (1 - mix) * (1 - mix) * startY + 3 * mix * (1 - mix) * (1 - mix) * P1Y + 3 * mix * mix * (1 - mix) * P2Y + mix * mix * mix * endY;
 		float z = 3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix;
+		DEBUG::DebugOutput("z: ", z);
 		missle.current_pos = std::make_tuple(x, y, z);
 		
 

@@ -28,6 +28,8 @@ struct MovingMissle {
 	std::tuple<int, int> start_point{};
 	std::tuple<int, int> end_point{};
 	std::tuple<float, float, float> current_pos{};
+	int h;
+	int M;
 	bool operator<(const MovingMissle& rhs) const {
 		return reach_time > rhs.reach_time;
 	}
