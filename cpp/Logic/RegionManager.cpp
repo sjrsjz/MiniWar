@@ -577,7 +577,7 @@ void RegionManager::update(GlobalTimer& timer) {
 	}
 	army_mutex.unlock();
 	missle_mutex.lock();
-	while (!moving_missles.empty() && moving_missles.top().time <= current_time) {
+	while (!moving_missles.empty() && moving_missles.top().reach_time <= current_time) {
 		//DEBUG::DebugOutput("Moving missle: ", moving_missles.top().weapon_id);
 		MovingMissle missle = moving_missles.top();
 		moving_missles.pop();

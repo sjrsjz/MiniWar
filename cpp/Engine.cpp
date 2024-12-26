@@ -201,6 +201,7 @@ std::string push_input_wait_for_result(const Operation& op) {
 
 void update() {
 	RegionManager::getInstance().update(GlobalTimer::getInstance());
+	RegionManager::getInstance().get_player().update(GlobalTimer::getInstance());
 	ai.update(isPause, aiState);
 	ai2.update(isPause, aiState2);
 }

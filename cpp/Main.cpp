@@ -537,7 +537,7 @@ public:
 		tree_offset_Y.clamp(-1, 1, timer.getTime());
 
 		if (is_active()) {
-			float speed = 50 * timer.dt;
+			float speed = 0.25 * exp(timer.dt);
 			if (keys[GLFW_KEY_W]) {
 				tree_offset_Y.newEndPosition(tree_offset_Y.getX() + speed, timer.getTime());
 			}
@@ -909,8 +909,8 @@ public:
 		electricity_amount_max = _10_n_max_than(electricity);
 		double labor = RegionManager::getInstance().get_player().get_ocupied_labor();
 		labor_amount_max = RegionManager::getInstance().get_player().get_labor_limit();
-		labor_amount.newEndPosition(labor_amount_max - labor, timer.getTime());
-		labor_amount_back.newEndPosition(labor_amount_max - labor, timer.getTime());
+		labor_amount.newEndPosition(fmax(0, labor_amount_max - labor), timer.getTime());
+		labor_amount_back.newEndPosition(fmax(0, labor_amount_max - labor), timer.getTime());
 		double oil = RegionManager::getInstance().get_player().get_oil();
 		oil_amount.newEndPosition(oil, timer.getTime());
 		oil_amount_back.newEndPosition(oil, timer.getTime());
@@ -2005,7 +2005,7 @@ void KeyProcess() {
 
 	float dx = 0, dz = 0;
 
-	float speed = 100 * exp(- 0.25 * scale_map_camera.getZ());
+	float speed = exp(- 0.25 * scale_map_camera.getZ());
 
 	if (keys[GLFW_KEY_W]) {
 		dz += speed;
@@ -2021,8 +2021,8 @@ void KeyProcess() {
 	}
 
 	if (dx != 0 || dz != 0) {
-		dx *= timer.dt;
-		dz *= timer.dt;
+		dx *= exp(timer.dt);
+		dz *= exp(timer.dt);
 		camera.move(dx, 0, dz, timer.getTime());
 
 	}
