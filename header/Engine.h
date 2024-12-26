@@ -14,3 +14,5 @@ void push_input(const Operation& op);
 std::string push_input_wait_for_result(const Operation& op);
 void push_error_message(const std::string& msg);
 std::vector<std::string> get_error_messages();
+void push_game_effects(int effect);
+std::vector<int> get_game_effects();

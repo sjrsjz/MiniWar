@@ -206,7 +206,7 @@ public:
 	void create(int id) {
 		clear();
 		weaponCost = config.getConfig({"ResearchInstitution", "OUpLevelCost"});
-		gold = 1000;
+		gold = 100000;
 		weapons = { 0, 0, 0 };
 		arm_level = { 1, 0, 0, 0 };
 		this->id = id;

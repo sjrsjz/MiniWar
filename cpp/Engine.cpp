@@ -47,6 +47,23 @@ std::vector<std::string> get_error_messages() {
 	return result;
 }
 
+static std::vector<int> s_game_effects;
+static std::mutex s_game_effects_mutex;
+
+void push_game_effects(int effect) {
+	std::lock_guard<std::mutex> lock(s_game_effects_mutex);
+	s_game_effects.push_back(effect);
+}
+
+std::vector<int> get_game_effects() {
+	std::lock_guard<std::mutex> lock(s_game_effects_mutex);
+	std::vector<int> result = s_game_effects;
+	s_game_effects.clear();
+	return result;
+}
+
+
+
 int result_dict_counter = 0;
 std::map<int, std::string> result_dict{};
 std::mutex result_dict_mutex;
@@ -203,33 +220,44 @@ void update() {
 	ai2.update(isPause, aiState2);
 }
 
+bool g_game_stop = false;
+bool g_game_over = false;
+
 void main_loop() {
+	g_game_over = false;
+	g_game_stop = false;
 	s_wait_lock.lock();
 	GlobalTimer::getInstance().reset();
 	while (!s_exit_game) {
-		//DEBUG::DebugOutput("New Loop\n");
-		GlobalTimer::getInstance().update();
+		if ((aiState || aiState2) && RegionManager::getInstance().get_player().is_alive()) {
+			//DEBUG::DebugOutput("New Loop\n");
+			GlobalTimer::getInstance().update();
 
-		int idx = -1;
-		result_dict_mutex.lock();
-		std::string result = "";
-		try {
-			read_input(idx);
-			result = "Success";
-		}
-		catch (std::exception& e) {
-			push_error_message(e.what());
-			result = "Error";
-		}
-		result_dict[idx] = result;
-		if(idx != -1)
-			DEBUG::DebugOutput("Result: ", result, "Idx", idx);
-		result_dict_mutex.unlock();
+			int idx = -1;
+			result_dict_mutex.lock();
+			std::string result = "";
+			try {
+				read_input(idx);
+				result = "Success";
+			}
+			catch (std::exception& e) {
+				push_error_message(e.what());
+				result = "Error";
+			}
+			result_dict[idx] = result;
+			if(idx != -1)
+				DEBUG::DebugOutput("Result: ", result, "Idx", idx);
+			result_dict_mutex.unlock();
 
-		update();
-		//DEBUG::DebugOutput("End Loop\n");
-		if (!aiState && !aiState2) {
-			break;
+			update();
+			//DEBUG::DebugOutput("End Loop\n");
+
+		}
+		else {
+			g_game_stop = true;
+			if (!RegionManager::getInstance().get_player().is_alive()) {
+				g_game_over = true;
+			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}

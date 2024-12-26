@@ -69,6 +69,8 @@ public:
 	bool get_have_research_institution() {
 		return have_research_institution;
 	}
+	bool is_alive();
+
 	//Interaction functions below
 	void move_army(Operation operation, int amount);
 	void attack(Operation operation);

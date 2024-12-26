@@ -103,6 +103,17 @@ void Player:: add_steel(int amount){
     steel += amount;
 }
 
+bool Player::is_alive() {
+	for (int i{}; i < regionmanager.get_map_width(); i++) {
+		for (int j{}; j < regionmanager.get_map_height(); j++) {
+			if (regionmanager.get_region(i, j).getOwner() == id) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 int Player::get_building_level_limit(std::string name) {
     if (name == "PowerStation") return institution_level_limit[0];
 	if (name == "Refinery") return institution_level_limit[1];
@@ -371,7 +382,7 @@ void Player::research(Operation operation) {
 					institution_level_limit[0] = 2;
 				}
 			}
-			if (institution_level_limit[0] == 2) {
+			else if (institution_level_limit[0] == 2) {
 				if (gold < Uplevelcost_PowerStation[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
@@ -396,7 +407,7 @@ void Player::research(Operation operation) {
 					institution_level_limit[1] = 2;
 				}
 			}
-			if (institution_level_limit[1] == 2) {
+			else if (institution_level_limit[1] == 2) {
 				if (gold < Uplevelcost_Refinery[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
@@ -421,7 +432,7 @@ void Player::research(Operation operation) {
 					institution_level_limit[2] = 2;
 				}
 			}
-			if (institution_level_limit[2] == 2) {
+			else if (institution_level_limit[2] == 2) {
 				if (gold < Uplevelcost_SteelFactory[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
@@ -586,7 +597,7 @@ void Player::research(Operation operation) {
 				}
 				else {
 					gold -= Uplevelcost_ICBM[0];
-					arm_level[3] = 2;
+					arm_level[3] = 1;
 				}
 			}
 			else if (arm_level[3] == 1) {
@@ -638,6 +649,9 @@ void Player::product(Operation operation) {
 		end_region.addArmy(operation.getSize());
 		break;
 	case Operator::ProductWeapon0:
+		if (arm_level[1] == 0) {
+			throw std::invalid_argument(u8"未解锁短程核导弹");
+		}
 		cost0 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
 		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
 			throw std::invalid_argument(u8"资源不足");
@@ -649,6 +663,9 @@ void Player::product(Operation operation) {
 		end_region.addWeapon(0);
 		break;
 	case Operator::ProductWeapon1:
+		if (arm_level[2] == 0) {
+			throw std::invalid_argument(u8"未解锁中程核导弹");
+		}
 		cost0 = configer.getConfig({ "Weapon", "1", "cost" }).template get<std::vector<int>>();
 		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
 			throw std::invalid_argument(u8"资源不足");
@@ -660,6 +677,9 @@ void Player::product(Operation operation) {
 		end_region.addWeapon(1);
 		break;
 	case Operator::ProductWeapon2:
+		if (arm_level[3] == 0) {
+			throw std::invalid_argument(u8"未解锁远程核导弹");
+		}
 		cost0 = configer.getConfig({ "Weapon", "2", "cost" }).template get<std::vector<int>>();
 		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
 			throw std::invalid_argument(u8"资源不足");

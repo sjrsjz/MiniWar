@@ -96,6 +96,9 @@ namespace GAMESOUND {
 	static const wchar_t* s_sound_error[] = {
 		L"resources/sounds/interact/error.mp3"
 	};
+	static const wchar_t* s_sound_bomb_explosion[] = {
+		L"resources/sounds/interact/bomb_explosion.mp3"
+	};
 
 	static int s_sound_background_idx = 0;
 	static HSTREAM s_background_stream;
@@ -250,7 +253,26 @@ namespace GAMESOUND {
 		// 循环使用通道
 		s_current_sound_idx = (s_current_sound_idx + 1) % MAX_SOUND_CHANNELS;
 	}
+	void play_bomb_explosion_sound() {
+		// 释放已经播放完的音效
+		if (s_sound_streams[s_current_sound_idx] &&
+			BASS_ChannelIsActive(s_sound_streams[s_current_sound_idx]) == BASS_ACTIVE_STOPPED) {
+			BASS_StreamFree(s_sound_streams[s_current_sound_idx]);
+		}
+		// 创建新的音效流
+		int rand_idx = rand() % (sizeof(s_sound_bomb_explosion) / sizeof(s_sound_bomb_explosion[0]));
+		s_sound_streams[s_current_sound_idx] = BASS_StreamCreateFile(
+			FALSE, s_sound_bomb_explosion[rand_idx], 0, 0, 0);
 
+		if (s_sound_streams[s_current_sound_idx]) {
+			BASS_ChannelSetAttribute(s_sound_streams[s_current_sound_idx],
+				BASS_ATTRIB_VOL, 1.0f);  // 设置音量
+			BASS_ChannelPlay(s_sound_streams[s_current_sound_idx], FALSE);
+		}
+
+		// 循环使用通道
+		s_current_sound_idx = (s_current_sound_idx + 1) % MAX_SOUND_CHANNELS;
+	}
 }
 
 namespace GAMESTATUS {
@@ -1047,6 +1069,42 @@ public:
 
 } s_sub_menu_gui;
 
+extern bool g_game_over;
+extern bool g_game_stop;
+static class GameOverGui {
+	bool open = false;
+public:
+	void open_gui(bool open) {
+		this->open = open;
+	}
+	void render_gui(ImGuiIO& io) {
+		if (!open) return;
+		ImGui::SetNextWindowBgAlpha(0.5);
+		ImGui::Begin("Game Over", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
+		ImGui::SetWindowPos(ImVec2(0, 0));
+		ImGui::PushFont(UIFonts::large_font);
+		ImVec2 text_size = ImGui::CalcTextSize(u8"游戏结束");
+		ImGui::SetCursorPosY(io.DisplaySize.y / 3 - text_size.y);
+		ImGui::SetCursorPosX(io.DisplaySize.x / 2 - text_size.x / 2);
+		ImGui::Text(u8"游戏结束");
+		if (g_game_over) {
+			ImVec2 text_size = ImGui::CalcTextSize(u8"AI胜利");
+			ImGui::SetCursorPosX(io.DisplaySize.x / 2 - text_size.x / 2);
+			ImGui::Text(u8"AI胜利");
+		}
+		else {
+			ImVec2 text_size = ImGui::CalcTextSize(u8"玩家胜利");
+			ImGui::SetCursorPosX(io.DisplaySize.x / 2 - text_size.x / 2);
+			ImGui::Text(u8"玩家胜利");
+		}
+		ImGui::PopFont();
+		ImGui::End();
+	}
+	bool is_open() {
+		return open;
+	}
+} s_game_over_gui;
 
 float randfloat() {
 	return (float)rand() / RAND_MAX;
@@ -1063,7 +1121,7 @@ void render_update_info() {
 			region.army_position_x = -1e6;
 			region.army_position_y = -1e6;
 			region.identity = region_info.getOwner();
-			region.is_capital = i == RegionManager::getInstance().get_player().get_capital_x() && j == RegionManager::getInstance().get_player().get_capital_y();
+			region.is_capital = (i == RegionManager::getInstance().get_player().get_capital_x() && j == RegionManager::getInstance().get_player().get_capital_y()) && region_info.getHp() > 1e-3;
 			map_info.setRegion(i, j, region);
 		}
 	}
@@ -1470,6 +1528,7 @@ void render_imgui(ImGuiIO& io) {
 
 
 		s_tech_tree_gui.render_gui(io);
+		s_game_over_gui.render_gui(io);
 		
 	}
 	s_menu_gui.render_gui(io);
@@ -1642,7 +1701,7 @@ void prepare_render() {
 
 	s_shake_effect.update(timer);
 
-	GAMESTATUS::s_enable_control = !s_menu_gui.is_activitied() && !s_tech_tree_gui.is_open() && !s_sub_menu_gui.is_open();
+	GAMESTATUS::s_enable_control = !s_menu_gui.is_activitied() && !s_tech_tree_gui.is_open() && !s_sub_menu_gui.is_open() && !s_game_over_gui.is_open();
 
 	if (GAMESTATUS::s_in_game) {
 		GAMESOUND::set_background_volume(0.5);
@@ -1658,6 +1717,14 @@ void prepare_render() {
 		s_selected_gui.shake_gui(timer);
 		GAMESOUND::play_error_sound();
 	}
+
+	std::vector<int> effects = get_game_effects();
+	if (effects.size() > 0) {
+		s_shake_effect.push_shake(timer);
+		GAMESOUND::play_bomb_explosion_sound();
+	}
+
+	s_game_over_gui.open_gui(g_game_stop);
 }
 
 void render_points() {

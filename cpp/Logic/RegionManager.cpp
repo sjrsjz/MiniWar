@@ -1,4 +1,4 @@
-#include "../../header/Logic/RegionManager.h"
+﻿#include "../../header/Logic/RegionManager.h"
 #include "../../header/debug.h"
 #include "../../header/Logic/Player.h"
 #include <vector>
@@ -429,6 +429,7 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	DEBUG::DebugOutput("distance finished");
 	if (distance == -1.f) {
 		DEBUG::DebugOutput("RegionManager::move_army() can not find a path");
+		throw std::invalid_argument(u8"无法移动军队到指定位置");
 	}
 
 	int start_x = std::floor(start.getX());
@@ -542,6 +543,8 @@ void RegionManager::clear_building(Region& region) {
 	region.getBuilding().remove();
 }
 
+void push_game_effects(int effect);
+
 void RegionManager::update(GlobalTimer& timer) {
 	current_time = timer.get_running_time();
 	army_mutex.lock();
@@ -551,6 +554,7 @@ void RegionManager::update(GlobalTimer& timer) {
 		if (moving_armies.size() == 0) break;
 		MovingArmy army = moving_armies.top();
 		moving_armies.pop();
+		if (army.path.size() < 2) continue;
 		Region& end_region = get_region(std::get<0>(army.path.back()), std::get<1>(army.path.back()));
 		Region& start_region = get_region(std::get<0>(army.path.front()), std::get<1>(army.path.front()));
 		if (end_region.getOwner() == start_region.getOwner())
@@ -600,6 +604,7 @@ void RegionManager::update(GlobalTimer& timer) {
 				region->setHp(rest_hp);
 			}
 		}
+		push_game_effects(0);
 	}
 	missle_mutex.unlock();
 
