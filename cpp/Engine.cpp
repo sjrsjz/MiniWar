@@ -17,9 +17,6 @@ bool aiState = true;
 bool aiState2 = true;
 
 void release_game() {
-	RegionManager::getInstance().~RegionManager();
-	ai.~AI();
-	ai2.~AI();
 }
 
 static bool s_exit_game = false;
