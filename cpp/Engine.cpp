@@ -183,11 +183,8 @@ void main_loop() {
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
-<<<<<<< HEAD
 	release_game();
-=======
 	DEBUG::DebugOutput("Loop Exited!");
->>>>>>> 596ebe55c0aece324369b2520e5d89441117e725
 }
 
 void exit_curr_game() {
