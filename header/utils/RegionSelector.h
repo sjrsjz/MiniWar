@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 #include "../../include/linmath.h"
 #include "RegionData.h"
 #include <tuple>
@@ -63,11 +63,11 @@ private:
 
 public:
     inline std::tuple<float, float, float> intersectPlane(float mouseX, float mouseY) {
-        // NDC◊¯±Í◊™ªª
+        // NDCÂùêÊ†áËΩ¨Êç¢
         float ndcX = (2.0f * mouseX / this->width) - 1.0f;
         float ndcY = 1.0f - (2.0f * mouseY / this->height);
 
-        // …‰œﬂ∑ΩœÚº∆À„
+        // Â∞ÑÁ∫øÊñπÂêëËÆ°ÁÆó
         float aspect = this->width / this->height;
         vec3 dir = { ndcX * aspect, ndcY , this->fov };
         vec3_norm(dir, dir);
@@ -76,12 +76,12 @@ public:
 		float dirW[4] = { dir[0], dir[1], dir[2], 0.0f };
         mat4x4_mul_vec4(dirWorld, this->viewMat, dirW);
 
-        // …‰œﬂ‘≠µ„
+        // Â∞ÑÁ∫øÂéüÁÇπ
         vec4 rayOrigin;
 		vec4 zero = { 0,0,0,1.0f };
         mat4x4_mul_vec4(rayOrigin, this->viewMat, zero);
 
-        // ∆Ω√Ê≤Œ ˝
+        // Âπ≥Èù¢ÂèÇÊï∞
         vec4 planeU, planeV, planePos;
 		vec4 u0 = { 1,0,0,0 };
 		vec4 v0 = { 0,0,1,0 };
@@ -90,13 +90,13 @@ public:
         mat4x4_mul_vec4(planeV, this->modelMat, v0);
         mat4x4_mul_vec4(planePos, this->modelMat, pos0);
 
-        // ∆Ω√Ê∑®œÚ¡ø
+        // Âπ≥Èù¢Ê≥ïÂêëÈáè
         vec3 normal;
 		vec3 planeU3 = { planeU[0],planeU[1],planeU[2] };
 		vec3 planeV3 = { planeV[0],planeV[1],planeV[2] };
 		vec3_mul_cross(normal, planeU3, planeV3);
 
-        // «ÛΩª
+        // Ê±Ç‰∫§
         vec3 po = {
             planePos[0] - rayOrigin[0],
             planePos[1] - rayOrigin[1],
@@ -110,14 +110,14 @@ public:
 
         if (t < 0) return { -1, 0, 0 };
 
-        // Ωªµ„
+        // ‰∫§ÁÇπ
         vec3 pos = {
             rayOrigin[0] + dirWorld[0] * t,
             rayOrigin[1] + dirWorld[1] * t,
             rayOrigin[2] + dirWorld[2] * t
         };
 
-        // UVº∆À„
+        // UVËÆ°ÁÆó
         vec3 posLocal = {
             pos[0] - planePos[0],
             pos[1] - planePos[1],
@@ -133,7 +133,7 @@ public:
 	inline std::tuple<bool, int, int> selectRegion(float mouseX, float mouseY) {
 		auto [u, v, t] = intersectPlane(mouseX, mouseY);
 
-		if (abs(u)>1 || abs(v)>1) return { false, 0, 0 };
+		if (abs(u)>1 || abs(v)>1) return { false, -1, -1 };
 
 		auto [x, y, cell_u, cell_v] = uv_to_cell_position(u, v);
 		vec2 cell_center[3][3];

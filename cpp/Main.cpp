@@ -93,6 +93,9 @@ namespace GAMESOUND {
 	static const wchar_t* s_sound_nuclear_launch[] = {
 		L"resources/sounds/interact/nuclear_launch.mp3"
 	};
+	static const wchar_t* s_sound_error[] = {
+		L"resources/sounds/interact/error.mp3"
+	};
 
 	static int s_sound_background_idx = 0;
 	static HSTREAM s_background_stream;
@@ -226,6 +229,28 @@ namespace GAMESOUND {
 		// 循环使用通道
 		s_current_sound_idx = (s_current_sound_idx + 1) % MAX_SOUND_CHANNELS;
 	}
+
+	void play_error_sound() {
+		// 释放已经播放完的音效
+		if (s_sound_streams[s_current_sound_idx] &&
+			BASS_ChannelIsActive(s_sound_streams[s_current_sound_idx]) == BASS_ACTIVE_STOPPED) {
+			BASS_StreamFree(s_sound_streams[s_current_sound_idx]);
+		}
+		// 创建新的音效流
+		int rand_idx = rand() % (sizeof(s_sound_error) / sizeof(s_sound_error[0]));
+		s_sound_streams[s_current_sound_idx] = BASS_StreamCreateFile(
+			FALSE, s_sound_error[rand_idx], 0, 0, 0);
+
+		if (s_sound_streams[s_current_sound_idx]) {
+			BASS_ChannelSetAttribute(s_sound_streams[s_current_sound_idx],
+				BASS_ATTRIB_VOL, 1.0f);  // 设置音量
+			BASS_ChannelPlay(s_sound_streams[s_current_sound_idx], FALSE);
+		}
+
+		// 循环使用通道
+		s_current_sound_idx = (s_current_sound_idx + 1) % MAX_SOUND_CHANNELS;
+	}
+
 }
 
 namespace GAMESTATUS {
@@ -301,6 +326,7 @@ static class TechTreeGui {
 		std::vector<int> dependencies;  // 依赖节点的索引
 		ImVec2 pos;                    // 节点位置
 		GLuint tex;                   // 节点纹理
+		std::function<void()> on_click{};  // 点击事件
 	};
 
 	SmoothMove tree_offset_X{};
@@ -370,7 +396,7 @@ static class TechTreeGui {
 					}
 					if (unlock) {
 						GAMESOUND::play_click_sound();
-						node.unlocked = true;
+						node.on_click();
 					}
 				}
 				ImGui::SetCursorScreenPos(
@@ -395,48 +421,92 @@ public:
 		tree_offset_X.setStartPosition(0, 0);
 		tree_offset_Y.setStartPosition(0, 0);
 
-		tree.nodes.push_back({ u8"发电站", true, {} , ImVec2(-450,400), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"炼油厂", true, {} , ImVec2(-500,200), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"炼钢厂", true, {} , ImVec2(-600,0), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"民生工厂", true, {} , ImVec2(-500,-200), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"军事工厂", true, {} , ImVec2(-450,-400), TEXTURE::s_image_guard });
+		tree.nodes.push_back({ u8"发电站", true, {} , ImVec2(-450,400), TEXTURE::s_image_lightning,[]() {} });
+		tree.nodes.push_back({ u8"炼油厂", true, {} , ImVec2(-500,200), TEXTURE::s_image_lightning,[]() {} });
+		tree.nodes.push_back({ u8"炼钢厂", true, {} , ImVec2(-600,0), TEXTURE::s_image_lightning,[]() {} });
+		tree.nodes.push_back({ u8"民生工厂", true, {} , ImVec2(-500,-200), TEXTURE::s_image_lightning,[]() {} });
+		tree.nodes.push_back({ u8"军事工厂", true, {} , ImVec2(-450,-400), TEXTURE::s_image_guard,[]() {} });
 
-		tree.nodes.push_back({ u8"研究所",false, {0, 1, 2, 3, 4, 25}, ImVec2(0,0), TEXTURE::s_image_guard });
+		tree.nodes.push_back({ u8"研究所",false, {0, 1, 2, 3, 4, 25}, ImVec2(0,0), TEXTURE::s_image_guard,[]() {
+				push_input({Operator::SetResearch});
+			} });
 
-		tree.nodes.push_back({ u8"发电站二级", false, {5}, ImVec2(300,400), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"炼油厂二级", false, {5}, ImVec2(400,200), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"炼钢厂二级", false, {5}, ImVec2(500,0), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"民生工厂二级", false, {5}, ImVec2(400,-200), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"军事工厂二级", false, {5}, ImVec2(300,-400), TEXTURE::s_image_guard });
+		tree.nodes.push_back({ u8"发电站二级", false, {5}, ImVec2(300,400), TEXTURE::s_image_lightning ,[]() {
+				push_input({Operator::PowerStationUpLevel});
+			} });
+		tree.nodes.push_back({ u8"炼油厂二级", false, {5}, ImVec2(400,200), TEXTURE::s_image_lightning ,[]() {
+				push_input({Operator::RefineryUpLevel});
+			} });
+		tree.nodes.push_back({ u8"炼钢厂二级", false, {5}, ImVec2(500,0), TEXTURE::s_image_lightning ,[]() {
+				push_input({Operator::SteelFactoryUpLevel});
+			} });
+		tree.nodes.push_back({ u8"民生工厂二级", false, {5}, ImVec2(400,-200), TEXTURE::s_image_lightning ,[]() {
+				push_input({Operator::CivilFactoryUpLevel});
+			} });
+		tree.nodes.push_back({ u8"军事工厂二级", false, {5}, ImVec2(300,-400), TEXTURE::s_image_guard ,[]() {
+				push_input({Operator::MilitaryFactoryUpLevel});
+			} });
 
 		// 三级
-		tree.nodes.push_back({ u8"发电站三级", false, {6}, ImVec2(600,400), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"炼油厂三级", false, {7}, ImVec2(700,200), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"炼钢厂三级", false, {8}, ImVec2(800,0), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"民生工厂三级", false, {9}, ImVec2(700,-200), TEXTURE::s_image_lightning });
-		tree.nodes.push_back({ u8"军事工厂三级", false, {10}, ImVec2(600,-400), TEXTURE::s_image_guard });
+		tree.nodes.push_back({ u8"发电站三级", false, {6}, ImVec2(600,400), TEXTURE::s_image_lightning ,[]() {
+				push_input({Operator::PowerStationUpLevel});
+			} });
+		tree.nodes.push_back({ u8"炼油厂三级", false, {7}, ImVec2(700,200), TEXTURE::s_image_lightning ,[]() {
+				push_input({Operator::RefineryUpLevel});
+			} });
+		tree.nodes.push_back({ u8"炼钢厂三级", false, {8}, ImVec2(800,0), TEXTURE::s_image_lightning ,[]() {
+				push_input({Operator::SteelFactoryUpLevel});
+			} });
+		tree.nodes.push_back({ u8"民生工厂三级", false, {9}, ImVec2(700,-200), TEXTURE::s_image_lightning ,[]() {
+				push_input({Operator::CivilFactoryUpLevel});
+			} });
+		tree.nodes.push_back({ u8"军事工厂三级", false, {10}, ImVec2(600,-400), TEXTURE::s_image_guard ,[]() {
+				push_input({Operator::MilitaryFactoryUpLevel});
+			} });
 
 		// 导弹
-		tree.nodes.push_back({ u8"短程核导弹", false, {5}, ImVec2(0,300), TEXTURE::s_image_radioactive });
-		tree.nodes.push_back({ u8"中程核导弹", false, {16}, ImVec2(300,600), TEXTURE::s_image_radioactive });
-		tree.nodes.push_back({ u8"长程核导弹", false, {17}, ImVec2(100,1000), TEXTURE::s_image_radioactive });
+		tree.nodes.push_back({ u8"短程核导弹", false, {5}, ImVec2(0,300), TEXTURE::s_image_radioactive ,[]() {
+				push_input({Operator::Weapon0UpLevel});
+			} });
+		tree.nodes.push_back({ u8"中程核导弹", false, {16}, ImVec2(300,600), TEXTURE::s_image_radioactive ,[]() {
+				push_input({Operator::Weapon1UpLevel});
+			} });
+		tree.nodes.push_back({ u8"长程核导弹", false, {17}, ImVec2(100,1000), TEXTURE::s_image_radioactive ,[]() {
+				push_input({Operator::Weapon2UpLevel});
+			} });
 
 		// 短程2、3级
-		tree.nodes.push_back({ u8"短程二级", false, {16}, ImVec2(-100,450), TEXTURE::s_image_radioactive });
-		tree.nodes.push_back({ u8"短程三级", false, {19}, ImVec2(-100,600), TEXTURE::s_image_radioactive });
+		tree.nodes.push_back({ u8"短程二级", false, {16}, ImVec2(-100,450), TEXTURE::s_image_radioactive ,[]() {
+				push_input({Operator::Weapon0UpLevel});
+			} });
+		tree.nodes.push_back({ u8"短程三级", false, {19}, ImVec2(-100,600), TEXTURE::s_image_radioactive ,[]() {
+				push_input({Operator::Weapon0UpLevel});
+			} });
 
 		// 中程2、3级
-		tree.nodes.push_back({ u8"中程二级", false, {17}, ImVec2(300,850), TEXTURE::s_image_radioactive });
-		tree.nodes.push_back({ u8"中程三级", false, {21}, ImVec2(500,850), TEXTURE::s_image_radioactive });
+		tree.nodes.push_back({ u8"中程二级", false, {17}, ImVec2(300,850), TEXTURE::s_image_radioactive ,[]() {
+				push_input({Operator::Weapon1UpLevel});
+			} });
+		tree.nodes.push_back({ u8"中程三级", false, {21}, ImVec2(500,850), TEXTURE::s_image_radioactive ,[]() {
+				push_input({Operator::Weapon1UpLevel});
+			} });
 
 		// 长程2、3级
-		tree.nodes.push_back({ u8"长程二级", false, {18}, ImVec2(100,1200), TEXTURE::s_image_radioactive });
-		tree.nodes.push_back({ u8"长程三级", false, {23}, ImVec2(300,1200), TEXTURE::s_image_radioactive });
+		tree.nodes.push_back({ u8"长程二级", false, {18}, ImVec2(100,1200), TEXTURE::s_image_radioactive ,[]() {
+				push_input({Operator::Weapon2UpLevel});
+			} });
+		tree.nodes.push_back({ u8"长程三级", false, {23}, ImVec2(300,1200), TEXTURE::s_image_radioactive ,[]() {
+				push_input({Operator::Weapon2UpLevel});
+			} });
 
 		// 军队
-		tree.nodes.push_back({ u8"军队", true, {}, ImVec2(-200,-400), TEXTURE::s_image_guard });
-		tree.nodes.push_back({ u8"军队二级", false, {5}, ImVec2(0,-300), TEXTURE::s_image_guard });
-		tree.nodes.push_back({ u8"军队三级", false, {26}, ImVec2(-100,-500), TEXTURE::s_image_guard });
+		tree.nodes.push_back({ u8"军队", true, {}, ImVec2(-200,-400), TEXTURE::s_image_guard ,[]() {} });
+		tree.nodes.push_back({ u8"军队二级", false, {5}, ImVec2(0,-300), TEXTURE::s_image_guard ,[]() {
+				push_input({Operator::ArmyUpLevel});
+			} });
+		tree.nodes.push_back({ u8"军队三级", false, {26}, ImVec2(-100,-500), TEXTURE::s_image_guard ,[]() {
+				push_input({Operator::ArmyUpLevel});
+			} });
 
 	}
 	bool is_active() {
@@ -467,7 +537,7 @@ public:
 		tree_offset_Y.clamp(-1, 1, timer.getTime());
 
 		if (is_active()) {
-			float speed = 50 * timer.dt;
+			float speed = 0.25 * exp(timer.dt);
 			if (keys[GLFW_KEY_W]) {
 				tree_offset_Y.newEndPosition(tree_offset_Y.getX() + speed, timer.getTime());
 			}
@@ -480,7 +550,64 @@ public:
 			if (keys[GLFW_KEY_D]) {
 				tree_offset_X.newEndPosition(tree_offset_X.getX() - speed, timer.getTime());
 			}
+			int powerstation_level = RegionManager::getInstance().get_player().get_building_level_limit("PowerStation");
+			int refinery_level = RegionManager::getInstance().get_player().get_building_level_limit("Refinery");
+			int steelfactory_level = RegionManager::getInstance().get_player().get_building_level_limit("SteelFactory");
+			int civilian_factory_level = RegionManager::getInstance().get_player().get_building_level_limit("CivilFactory");
+			int military_factory_level = RegionManager::getInstance().get_player().get_building_level_limit("MilitaryFactory");
+
+			int army_level = RegionManager::getInstance().get_player().get_army_level(0);
+			int cm_level = RegionManager::getInstance().get_player().get_army_level(1);
+			int mbrm_level = RegionManager::getInstance().get_player().get_army_level(2);
+			int icbm_level = RegionManager::getInstance().get_player().get_army_level(3);
+
+			bool research_institution = RegionManager::getInstance().get_player().get_have_research_institution();
+
+			try {
+
+				tree.nodes[0].unlocked = powerstation_level > 0;
+				tree.nodes[1].unlocked = refinery_level > 0;
+				tree.nodes[2].unlocked = steelfactory_level > 0;
+				tree.nodes[3].unlocked = civilian_factory_level > 0;
+				tree.nodes[4].unlocked = military_factory_level > 0;
+
+				tree.nodes[5].unlocked = research_institution;
+
+				tree.nodes[6].unlocked = powerstation_level > 1;
+				tree.nodes[7].unlocked = refinery_level > 1;
+				tree.nodes[8].unlocked = steelfactory_level > 1;
+				tree.nodes[9].unlocked = civilian_factory_level > 1;
+				tree.nodes[10].unlocked = military_factory_level > 1;
+
+				tree.nodes[11].unlocked = powerstation_level > 2;
+				tree.nodes[12].unlocked = refinery_level > 2;
+				tree.nodes[13].unlocked = steelfactory_level > 2;
+				tree.nodes[14].unlocked = civilian_factory_level > 2;
+				tree.nodes[15].unlocked = military_factory_level > 2;
+
+				tree.nodes[16].unlocked = cm_level > 0;
+				tree.nodes[17].unlocked = mbrm_level > 0;
+				tree.nodes[18].unlocked = icbm_level > 0;
+
+				tree.nodes[19].unlocked = cm_level > 1;
+				tree.nodes[20].unlocked = cm_level > 2;
+
+				tree.nodes[21].unlocked = mbrm_level > 1;
+				tree.nodes[22].unlocked = mbrm_level > 2;
+
+				tree.nodes[23].unlocked = icbm_level > 1;
+				tree.nodes[24].unlocked = icbm_level > 2;
+
+				tree.nodes[25].unlocked = army_level > 0;
+				tree.nodes[26].unlocked = army_level > 1;
+				tree.nodes[27].unlocked = army_level > 2;
+			}
+			catch (std::exception e) {
+			}
 		}
+
+
+		
 	}
 
 	void open(bool open, const Timer& timer) {
@@ -613,26 +740,31 @@ public:
 		}
 
 		ImGui::Text(u8"区块坐标: %d, %d", grid[0], grid[1]);
-		Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
-		std::string building_name = region.getBuilding().getName();
-		if(building_name != "none")
-			ImGui::Text(u8"建筑: %s", building_name.c_str());
-		if (region.getOwner() >= 0) {
-			if (region.getOwner() == 0) {
-				ImGui::Text(u8"所有者: 玩家");
-				if (s_selected_weapon == ARMY) {
-					ImGui::Text(u8"军队: %d", region.getArmy().getForce());
+		try {
+			Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
+			std::string building_name = region.getBuilding().getName();
+			if (building_name != "none")
+				ImGui::Text(u8"建筑: %s", building_name.c_str());
+			if (region.getOwner() >= 0) {
+				if (region.getOwner() == 0) {
+					ImGui::Text(u8"所有者: 玩家");
+					if (s_selected_weapon == ARMY) {
+						ImGui::Text(u8"军队: %d", region.getArmy().getForce());
+					}
+				}
+				else {
+					ImGui::Text(u8"所有者: AI");
+					if (s_selected_weapon == ARMY) {
+						ImGui::Text(u8"军队: %d", region.getArmy().getForce());
+					}
 				}
 			}
-			else {
-				ImGui::Text(u8"所有者: AI");
-				if (s_selected_weapon == ARMY) {
-					ImGui::Text(u8"军队: %d", region.getArmy().getForce());
-				}
-			}
+			ImGui::SameLine();
+			ImGui::Text("HP: %.2f", region.getHp());
 		}
-		ImGui::SameLine();
-		ImGui::Text("HP: %d", region.getHp());
+		catch (std::exception e) {
+			// nothing
+		}
 		ImGui::End();
 		ImGui::PopStyleVar();
 	}
@@ -663,18 +795,22 @@ private:
 	SmoothMove oil_amount_back{};
 	SmoothMove steel_amount{};
 	SmoothMove steel_amount_back{};
+	SmoothMove army_amount{};
+	SmoothMove army_amount_back{};
+
 
 	int gold_amount_max = 0;
 	int electricity_amount_max = 0;
 	int labor_amount_max = 0;
 	int oil_amount_max = 0;
 	int steel_amount_max = 0;
+	int army_amount_max = 0;
 
 	SmoothMove occupation_amount{};
 	SmoothMove occupation_amount_back{}; // 已占有资源
 	int occupation_amount_max = 0;
 
-	void render_bar(ImGuiIO& io, const SmoothMove& f, const SmoothMove& b, const char* title, GLuint tex, int scale, const ImVec4& fc, const ImVec4& bc) {
+	void render_bar(ImGuiIO& io, const SmoothMove& f, const SmoothMove& b, const char* title, GLuint tex, int scale, const ImVec4& fc, const ImVec4& bc, const ImVec4& tc) {
 		ImGui::Image(tex, ImVec2(30, 30));
 		ImGui::SameLine();
 		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, bc); // 前景色
@@ -689,8 +825,8 @@ private:
 		ImGui::PopStyleColor(2); // 恢复颜色设置
 		ImVec2 text_size = ImGui::CalcTextSize(title);
 		ImGui::SetCursorPos(ImVec2(pos.x + 5, pos.y + 30 - text_size.y));
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.15,0.15,0.15,0.5)); // 前景色
-		ImGui::Text(title, (int)(f.getX()));
+		ImGui::PushStyleColor(ImGuiCol_Text, tc); // 前景色
+		ImGui::Text(title, (int)round(f.getX()));
 		ImGui::PopStyleColor(1);
 	}
 
@@ -713,6 +849,9 @@ public:
 			steel_amount.setTotalDuration(0.125);
 			steel_amount_back.setTotalDuration(0.5);
 			steel_amount_max = 100;
+			army_amount.setTotalDuration(0.125);
+			army_amount_back.setTotalDuration(0.5);
+			army_amount_max = 100;
 			occupation_amount.setTotalDuration(1);
 			occupation_amount_back.setTotalDuration(2);
 			occupation_amount_max = 100;
@@ -721,21 +860,31 @@ public:
 	}
 	void render_gui(ImGuiIO& io) {
 		ImGui::Begin("Status", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoCollapse);
-		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 225));
-		ImGui::SetWindowPos(ImVec2(50, io.DisplaySize.y - 250));
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 250));
+		ImGui::SetWindowPos(ImVec2(50, io.DisplaySize.y - 275));
 
 		// 资源条
-		render_bar(io, gold_amount, gold_amount_back, u8"金钱:%d", TEXTURE::s_image_lightning, gold_amount_max, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5));
-		render_bar(io, electricity_amount, electricity_amount_back, u8"电力:%d", TEXTURE::s_image_lightning, electricity_amount_max, ImVec4(1, 1, 1, 1), ImVec4(0, 0, 1, 0.5));
-		render_bar(io, labor_amount, labor_amount_back, u8"劳动力:%d", TEXTURE::s_image_lightning, labor_amount_max, ImVec4(1, 1, 1, 1), ImVec4(0, 1, 0, 0.5));
-		render_bar(io, oil_amount, oil_amount_back, u8"石油:%d", TEXTURE::s_image_lightning, oil_amount_max, ImVec4(1, 1, 1, 1), ImVec4(1, 0.5, 0, 0.5));
-		render_bar(io, steel_amount, steel_amount_back, u8"钢铁:%d", TEXTURE::s_image_lightning, steel_amount_max, ImVec4(1, 1, 1, 1), ImVec4(0.5, 0.5, 0.5, 0.5));
-		render_bar(io, occupation_amount, occupation_amount_back, u8"已占有:%d", TEXTURE::s_image_guard, occupation_amount_max, ImVec4(1, 1, 1, 1), ImVec4(1, 0.25, 0.25, 0.5));
+		render_bar(io, gold_amount, gold_amount_back, u8"金钱:%d", TEXTURE::s_image_lightning, gold_amount_max, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
+		render_bar(io, electricity_amount, electricity_amount_back, u8"电力:%d", TEXTURE::s_image_lightning, electricity_amount_max, ImVec4(0, 1, 1, 1), ImVec4(0, 0, 1, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
+		render_bar(io, labor_amount, labor_amount_back, u8"可用劳动力:%d", TEXTURE::s_image_lightning, labor_amount_max, ImVec4(0.5, 1, 0.5, 0.5), ImVec4(0, 1, 0, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
+		render_bar(io, oil_amount, oil_amount_back, u8"石油:%d", TEXTURE::s_image_lightning, oil_amount_max, ImVec4(0.1, 0.1, 0.1, 1), ImVec4(1, 0.5, 0, 0.5), ImVec4(0.75, 0.75, 0.75, 0.5));
+		render_bar(io, steel_amount, steel_amount_back, u8"钢铁:%d", TEXTURE::s_image_lightning, steel_amount_max, ImVec4(1, 1, 1, 1), ImVec4(0.5, 0.5, 0.5, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
+		render_bar(io, army_amount, army_amount_back, u8"军队:%d", TEXTURE::s_image_guard, army_amount_max, ImVec4(0.5, 0.5, 1, 1), ImVec4(0.5, 0.5, 1, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
+		render_bar(io, occupation_amount, occupation_amount_back, u8"已占有:%d", TEXTURE::s_image_guard, occupation_amount_max, ImVec4(0.6, 0.5, 1, 1), ImVec4(1, 0.25, 0.25, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
 
 
 		ImGui::End();
 	}
+	int _10_n_max_than(int x) {
+		// 计算比x大的最小的10的n次方
+		int n = 1;
+		while (n < x && n > 0) {
+			n *= 10;
+		}
+		return n;
+	}
 	void update(const Timer& timer) {
+		if (!GAMESTATUS::s_in_game) return;
 		gold_amount.update_sin(timer.getTime());
 		gold_amount_back.update_sin(timer.getTime());
 		electricity_amount.update_sin(timer.getTime());
@@ -746,35 +895,47 @@ public:
 		oil_amount_back.update_sin(timer.getTime());
 		steel_amount.update_sin(timer.getTime());
 		steel_amount_back.update_sin(timer.getTime());
+		army_amount.update_sin(timer.getTime());
+		army_amount_back.update_sin(timer.getTime());
 		occupation_amount.update_sin(timer.getTime());
 		occupation_amount_back.update_sin(timer.getTime());
 
 		double gold = RegionManager::getInstance().get_player().get_gold();
 		gold_amount.newEndPosition(gold, timer.getTime());
 		gold_amount_back.newEndPosition(gold, timer.getTime());
+		gold_amount_max = _10_n_max_than(gold);
 		double electricity = RegionManager::getInstance().get_player().get_electricity();
 		electricity_amount.newEndPosition(electricity, timer.getTime());
 		electricity_amount_back.newEndPosition(electricity, timer.getTime());
+		electricity_amount_max = _10_n_max_than(electricity);
 		double labor = RegionManager::getInstance().get_player().get_ocupied_labor();
-		labor_amount.newEndPosition(labor, timer.getTime());
-		labor_amount_back.newEndPosition(labor, timer.getTime());
+		labor_amount_max = RegionManager::getInstance().get_player().get_labor_limit();
+		labor_amount.newEndPosition(fmax(0, labor_amount_max - labor), timer.getTime());
+		labor_amount_back.newEndPosition(fmax(0, labor_amount_max - labor), timer.getTime());
 		double oil = RegionManager::getInstance().get_player().get_oil();
 		oil_amount.newEndPosition(oil, timer.getTime());
 		oil_amount_back.newEndPosition(oil, timer.getTime());
+		oil_amount_max = _10_n_max_than(oil);
 		double steel = RegionManager::getInstance().get_player().get_steel();
 		steel_amount.newEndPosition(steel, timer.getTime());
 		steel_amount_back.newEndPosition(steel, timer.getTime());
-
-
+		steel_amount_max = _10_n_max_than(steel);
 		
 		int region_count = 0;
+		int army_count = 0;
 		for (int i{}; i < RegionManager::getInstance().get_map_width(); i++) {
 			for (int j{}; j < RegionManager::getInstance().get_map_height(); j++) {
 				if (RegionManager::getInstance().get_region(i, j).getOwner() == 0) {
 					region_count++;
+					army_count += RegionManager::getInstance().get_region(i, j).getArmy().getForce();
 				}
 			}
 		}
+		army_amount_max = _10_n_max_than(army_count);
+		army_amount.newEndPosition(army_count, timer.getTime());
+		army_amount_back.newEndPosition(army_count, timer.getTime());
+
+
 		occupation_amount_max = RegionManager::getInstance().get_map_width() * RegionManager::getInstance().get_map_height();
 		double x = region_count;
 		occupation_amount.newEndPosition(x, timer.getTime());
@@ -789,6 +950,100 @@ static struct LevelConfig {
 	int map_height = 16;
 
 };
+
+static class SubMenuGui
+{
+	// 弹出建筑选择
+	ImVec2 mouse_position;
+	int grid[2]{};
+	bool open = false;
+public:
+	void open_gui(bool open, const ImVec2& mouse_position, int grid_x, int grid_y) {
+		this->open = open;
+		this->mouse_position = mouse_position;
+		grid[0] = grid_x;
+		grid[1] = grid_y;
+	}
+	void render_gui(ImGuiIO& io) {
+		if (!open) return;
+		ImGui::SetNextWindowBgAlpha(0.75);
+		ImGui::Begin("Building", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+		//ImGui::SetWindowSize(ImVec2(200, 200));
+		ImGui::SetWindowPos(mouse_position);
+		ImGui::Text(u8"建筑");
+		// 列表
+		if (ImGui::BeginListBox("##BuildingList")) {
+			if (ImGui::Selectable(u8"发电站")) {
+				push_input({ Point::toPoint(grid),Operator::SetPowerStation });
+				open = false;
+			}
+			if (ImGui::Selectable(u8"炼油厂")) {
+				push_input({ Point::toPoint(grid),Operator::SetRefinery });
+				open = false;
+			}
+			if (ImGui::Selectable(u8"炼钢厂")) {
+				push_input({ Point::toPoint(grid),Operator::SetSteelFactory });
+				open = false;
+			}
+			if (ImGui::Selectable(u8"民生工厂")) {
+				push_input({ Point::toPoint(grid),Operator::SetCivilFactory });
+				open = false;
+			}
+			if (ImGui::Selectable(u8"军事工厂")) {
+				push_input({ Point::toPoint(grid),Operator::SetMilitaryFactory });
+				open = false;
+			}
+			if (ImGui::Selectable(u8"移除建筑")) {
+				push_input({ Point::toPoint(grid),Operator::RemoveBuilding });
+				open = false;
+			}
+			ImGui::EndListBox();
+		}
+		// 生产菜单
+		ImGui::Text(u8"生产");
+		if (ImGui::BeginListBox("##ProductionList")) {
+			if (ImGui::Selectable(u8"军队")) {
+				push_input({ Point::toPoint(grid),Point::toPoint(grid),100,Operator::ProductArmy });
+				open = false;
+			}
+			if (ImGui::Selectable(u8"核导弹一级")) {
+				push_input({ Point::toPoint(grid),Point::toPoint(grid),Operator::ProductWeapon0 });
+				open = false;
+			}
+			if (ImGui::Selectable(u8"核导弹二级")) {
+				push_input({ Point::toPoint(grid),Point::toPoint(grid),Operator::ProductWeapon1 });
+				open = false;
+			}
+			if (ImGui::Selectable(u8"核导弹三级")) {
+				push_input({ Point::toPoint(grid),Point::toPoint(grid),Operator::ProductWeapon2 });
+				open = false;
+			}
+			ImGui::EndListBox();
+		}
+		ImGui::End();
+	}
+	void update(const Timer& timer) {
+		if (s_selected_weapon != NONE) {
+			open = false;
+		}
+		try {
+			if (RegionManager::getInstance().get_region(grid[0], grid[1]).getOwner() != 0) {
+				open = false;
+			}
+		}
+		catch (std::exception e) {
+			open = false;
+		}
+		if (grid[0] < 0 || grid[1] < 0) {
+			open = false;
+		}
+	}
+	bool is_open() {
+		return open;
+	}
+
+} s_sub_menu_gui;
+
 
 float randfloat() {
 	return (float)rand() / RAND_MAX;
@@ -814,7 +1069,19 @@ void render_update_info() {
 	std::vector<Vertex> vertices;
 	auto army = rm.get_moving_army_position();
 	for (auto& a : army) {
-		Vertex tmp = { std::get<0>(a.current_pos) / map_info.getWidth() * 2 - 1, -0.62, std::get<1>(a.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 0};
+		Vertex tmp = { std::get<0>(a.current_pos) / map_info.getWidth() * 2 - 1, -0.62, std::get<1>(a.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 1 };
+		if (a.owner_id == 0)
+		{
+			tmp.r = 0; tmp.g = 1; tmp.b = 0;
+		}
+		else {
+			tmp.r = 1; tmp.g = 0; tmp.b = 0;
+		}
+		vertices.push_back(tmp);
+	}
+	auto missile = rm.get_moving_missle_position();
+	for (auto& m : missile) {
+		Vertex tmp = { std::get<0>(m.current_pos) / map_info.getWidth() * 2 - 1, -0.62, std::get<1>(m.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 0 };
 		vertices.push_back(tmp);
 	}
 	//DEBUG::DebugOutput("Army size", army.size());
@@ -875,6 +1142,8 @@ void exit_game() {
 	DEBUG::DebugOutput("Exiting game..");
 	GAMESTATUS::s_in_game = false;
 	GAMESTATUS::s_enable_control = false;
+	exit_curr_game();
+	wait_for_exit();
 	map_info.release();
 	DEBUG::DebugOutput("Game exited");
 }
@@ -1139,7 +1408,9 @@ void render_imgui(ImGuiIO& io) {
 
 		ImGui::End();
 		ImGui::PopStyleVar();
-
+		s_selected_gui.render_gui(io);
+		s_status_gui.render_gui(io);
+		s_sub_menu_gui.render_gui(io);
 		// 设置控件组位置和大小
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(ImVec2(glfw_width, glfw_height));
@@ -1157,20 +1428,31 @@ void render_imgui(ImGuiIO& io) {
 		ImGui::SetCursorPos(ImVec2(10, 50));
 
 		// 检查窗口是否被点击
-		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && GAMESTATUS::s_enable_control) {
-
-			// 显示格子信息
-			if (s_is_selected && s_current_selected_grid[0] == s_selected_gui.grid[0] && s_current_selected_grid[1] == s_selected_gui.grid[1]) {
-				s_selected_gui.is_selected = !s_selected_gui.is_selected;
-				GAMESOUND::play_click_sound();
-			}
-			else {
-				s_selected_gui.is_selected = s_is_selected;
-				s_selected_gui.grid[0] = s_current_selected_grid[0];
-				s_selected_gui.grid[1] = s_current_selected_grid[1];
-				GAMESOUND::play_click_sound();
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+			s_sub_menu_gui.open_gui(false, ImVec2(io.MousePos.x, io.MousePos.y), s_current_selected_grid[0], s_current_selected_grid[1]);
+			if (GAMESTATUS::s_enable_control) {
+				// 显示格子信息
+				if (s_is_selected && s_current_selected_grid[0] == s_selected_gui.grid[0] && s_current_selected_grid[1] == s_selected_gui.grid[1]) {
+					s_selected_gui.is_selected = !s_selected_gui.is_selected;
+					GAMESOUND::play_click_sound();
+				}
+				else {
+					s_selected_gui.is_selected = s_is_selected;
+					s_selected_gui.grid[0] = s_current_selected_grid[0];
+					s_selected_gui.grid[1] = s_current_selected_grid[1];
+					GAMESOUND::play_click_sound();
+				}
 			}
 		}
+		// 检查窗口是否被点击
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && GAMESTATUS::s_enable_control) {
+			s_selected_gui.is_selected = s_is_selected;
+			s_selected_gui.grid[0] = s_current_selected_grid[0];
+			s_selected_gui.grid[1] = s_current_selected_grid[1];
+			s_sub_menu_gui.open_gui(s_is_selected, ImVec2(io.MousePos.x, io.MousePos.y), s_current_selected_grid[0], s_current_selected_grid[1]);
+			GAMESOUND::play_click_sound();
+		}
+
 		// 检查鼠标是否移动
 		if (ImGui::IsWindowHovered() && GAMESTATUS::s_enable_control) {
 			ImVec2 mouse_pos = ImGui::GetMousePos();
@@ -1183,9 +1465,9 @@ void render_imgui(ImGuiIO& io) {
 
 		ImGui::End();
 
-		s_selected_gui.render_gui(io);
-		s_status_gui.render_gui(io);
+
 		s_tech_tree_gui.render_gui(io);
+		
 	}
 	s_menu_gui.render_gui(io);
 }
@@ -1284,7 +1566,7 @@ void render_main_game_pass() {
 	bool s_if_selected = s_selected_gui.is_selected;
 
 	// 核辐射标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, 2.5, s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, RegionManager::getInstance().get_weapon(s_nuclear_missile_level).getDamageRange(RegionManager::getInstance().get_player().get_army_level(s_nuclear_missile_level + 1)), s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_radioactive);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_radioactive"), 0);
@@ -1353,10 +1635,11 @@ void prepare_render() {
 	s_status_gui.update(timer);
 	s_tech_tree_gui.update(timer);
 	s_selected_gui.update(timer);
+	s_sub_menu_gui.update(timer);
 
 	s_shake_effect.update(timer);
 
-	GAMESTATUS::s_enable_control = !s_menu_gui.is_activitied() && !s_tech_tree_gui.is_open();
+	GAMESTATUS::s_enable_control = !s_menu_gui.is_activitied() && !s_tech_tree_gui.is_open() && !s_sub_menu_gui.is_open();
 
 	if (GAMESTATUS::s_in_game) {
 		GAMESOUND::set_background_volume(0.5);
@@ -1364,6 +1647,13 @@ void prepare_render() {
 	}
 	else {
 		GAMESOUND::set_background_volume(1);
+	}
+
+	std::vector<std::string> errs = get_error_messages();
+	if (errs.size() > 0) {
+		s_selected_gui.message = errs[0];
+		s_selected_gui.shake_gui(timer);
+		GAMESOUND::play_error_sound();
 	}
 }
 
@@ -1716,7 +2006,7 @@ void KeyProcess() {
 
 	float dx = 0, dz = 0;
 
-	float speed = 100 * exp(- 0.25 * scale_map_camera.getZ());
+	float speed = exp(- 0.25 * scale_map_camera.getZ());
 
 	if (keys[GLFW_KEY_W]) {
 		dz += speed;
@@ -1732,8 +2022,8 @@ void KeyProcess() {
 	}
 
 	if (dx != 0 || dz != 0) {
-		dx *= timer.dt;
-		dz *= timer.dt;
+		dx *= exp(timer.dt);
+		dz *= exp(timer.dt);
 		camera.move(dx, 0, dz, timer.getTime());
 
 	}
@@ -1771,6 +2061,7 @@ void KeyRelease(int key) {
 				try {
 					Region& from_region = RegionManager::getInstance().get_region(start_point.getX(), start_point.getY());
 					Region& to_region = RegionManager::getInstance().get_region(end_point.getX(), end_point.getY());
+					std::string result = "";
 					switch (s_selected_weapon)
 					{
 					case NONE:
@@ -1782,12 +2073,29 @@ void KeyRelease(int key) {
 							s_selected_gui.shake_gui(timer);
 							break;
 						}
-						DEBUG::DebugOutput("Nuclear Missile");
-						GAMESOUND::play_nuclear_launch_sound();
-						s_selected_gui.message = u8"核导弹已发射";
+
+						switch (s_nuclear_missile_level)
+						{
+						case 0:
+							result = push_input_wait_for_result({ start_point, end_point, Operator::Weapon0Attack });
+							break;
+						case 1:
+							result = push_input_wait_for_result({ start_point, end_point, Operator::Weapon1Attack });
+							break;
+						case 2:
+							result = push_input_wait_for_result({ start_point, end_point, Operator::Weapon2Attack });
+							break;
+						default:
+							break;
+						}
+						if (result == "Success") {
+							DEBUG::DebugOutput("Nuclear Missile");
+							GAMESOUND::play_nuclear_launch_sound();
+							s_selected_gui.message = u8"核导弹已发射";
+							s_selected_gui.shake_gui(timer);
+							s_shake_effect.push_shake(timer);
+						}
 						// do something
-						s_selected_gui.shake_gui(timer);
-						s_shake_effect.push_shake(timer);
 						s_selected_gui.is_selected = false;
 						break;
 					case ARMY:

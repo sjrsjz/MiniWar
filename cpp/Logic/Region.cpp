@@ -1,4 +1,4 @@
-#include "../../header/Logic/Region.h"
+﻿#include "../../header/Logic/Region.h"
 #include "../../header/Exception/FullHpException.h"
 #include "../../header/Exception/SurrenderNotAttackedException.h"
 #include "../../header/utils/Config.h"

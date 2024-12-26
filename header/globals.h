@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "passes/FragmentBuffer.h"
 #include "passes/FlameRenderPass.h"
 #include "Timer.h"

@@ -1,4 +1,4 @@
-#include "../../header/utils/Operation.h"
+﻿#include "../../header/utils/Operation.h"
 
 Operation::Operation() {
 }

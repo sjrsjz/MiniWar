@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "../../include/json.hpp"
 #include "../debug.h"
 #include <initializer_list>

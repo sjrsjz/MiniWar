@@ -29,7 +29,6 @@
     <ClInclude Include="..\header\Logic\AI.h" />
     <ClInclude Include="..\header\Logic\Building.h" />
     <ClInclude Include="..\header\Logic\Player.h" />
-    <ClInclude Include="..\header\Logic\PowerStation.h" />
     <ClInclude Include="..\header\Logic\Region.h" />
     <ClInclude Include="..\header\Logic\RegionManager.h" />
     <ClInclude Include="..\header\Logic\Army.h" />

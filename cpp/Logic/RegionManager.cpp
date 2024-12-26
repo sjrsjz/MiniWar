@@ -16,6 +16,7 @@ RegionManager::RegionManager(int width, int height){
 }
 
 RegionManager::~RegionManager() {
+
 }
 
 struct Node {
@@ -49,6 +50,7 @@ static std::vector<Point> reconstruct_path(Node* end_node) {
 
 
 std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point end) {
+	DEBUG::DebugOutput("RegionManager::astar() called");
     int rows = grid.size();
     int cols = grid[0].size();
 
@@ -80,6 +82,7 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
 
         // ����Ƿ񵽴��յ�
         if (current.pt.getX() == end.getX() && current.pt.getY() == end.getY()) {
+			DEBUG::DebugOutput("RegionManager::astar() finished");
             return reconstruct_path(&current);
         }
 
@@ -98,6 +101,7 @@ std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point
     }
 
     // ����Ҳ���·�������ؿ�
+	DEBUG::DebugOutput("RegionManager::astar() finished");
     return {};
 }
 
@@ -317,26 +321,20 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 	//return distance;
 }
 
-std::vector<Region> RegionManager::get_damaged_regions(Point position, float range) {
-	float start_x = std::floor(position.getX()) + 0.5;
-	float start_y = std::floor(position.getY()) + 0.5;
-	std::vector<Region> result;
+std::vector<Region*> RegionManager::get_damaged_regions(Point position, float range) {
+	float start_x = position.getX();
+	float start_y = position.getY();
+	std::vector<Region*> result;
 
-	int left_range = std::floor(start_x - range < 0.f ? 0.f : start_x - range);
-	int right_range = std::floor(start_x + range > get_map_width() ? get_map_width() : start_x + range);
-	int down_range = std::floor(start_y - range < 0.f ? 0.f : start_y - range);
-	int up_range = std::floor(start_y + range > get_map_width() ? get_map_width() : start_x + range);
-
-	for (int i = left_range; i <= right_range; i++) {
-		for (int j = down_range; j <= up_range; j++) {
-			float x = i + 0.5;
-			float y = j + 0.5;
-			if (range <= sqrt(pow(x - start_x, 2) + pow(y - start_y, 2))) {
-				result.push_back(get_region(i , j));
+	for (int i = -2; i <= 2; i++) {
+		for (int j = -2; j <= 2; j++) {
+			if (start_x + i < 0 || start_x + i >= get_map_width() || start_y + j < 0 || start_y + j >= get_map_height()) {
+				continue;
 			}
+			if (std::sqrt(i * i + j * j) <= range)
+				result.push_back(&get_region(start_x + i, start_y + j));
 		}
 	}
-
 	return result;
 }
 
@@ -393,6 +391,10 @@ void RegionManager::set(int width, int height) {
 	this->regions = Array<Region>(width, height);
 	this->width = width;
 	this->height = height;
+	this->player.create();
+	weapons.clear();
+	moving_armies = {};
+	moving_missles = {};
 
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
@@ -426,8 +428,7 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	double distance = calculate_distance(start, end, path);
 	DEBUG::DebugOutput("distance finished");
 	if (distance == -1.f) {
-		DEBUG::DebugOutput("RegionManager::move_army() throws");
-		throw "Can't find a path";
+		DEBUG::DebugOutput("RegionManager::move_army() can not find a path");
 	}
 
 	int start_x = std::floor(start.getX());
@@ -547,6 +548,7 @@ void RegionManager::update(GlobalTimer& timer) {
 	//DEBUG::DebugOutput("RegionManager::update() called", moving_armies.size());
 	while (!moving_armies.empty() && moving_armies.top().reach_time <= current_time) {
 		DEBUG::DebugOutput("Moving army: ", moving_armies.top().amount);
+		if (moving_armies.size() == 0) break;
 		MovingArmy army = moving_armies.top();
 		moving_armies.pop();
 		Region& end_region = get_region(std::get<0>(army.path.back()), std::get<1>(army.path.back()));
@@ -570,8 +572,8 @@ void RegionManager::update(GlobalTimer& timer) {
 	}
 	army_mutex.unlock();
 	missle_mutex.lock();
-	while (!moving_missles.empty() && moving_missles.top().time <= current_time) {
-		DEBUG::DebugOutput("Moving missle: ", moving_missles.top().weapon_id);
+	while (!moving_missles.empty() && moving_missles.top().reach_time <= current_time) {
+		//DEBUG::DebugOutput("Moving missle: ", moving_missles.top().weapon_id);
 		MovingMissle missle = moving_missles.top();
 		moving_missles.pop();
 		Region& end_region = get_region(std::get<0>(missle.end_point), std::get<1>(missle.end_point));
@@ -580,23 +582,22 @@ void RegionManager::update(GlobalTimer& timer) {
 		int damage = weapon.getDamage(missle.weapon_level);
 		float damage_range = weapon.getDamageRange(missle.weapon_level);
 
-		std::vector<Region> damaged_regions = get_damaged_regions(end_region.getPosition(), damage_range);
+		std::vector<Region*> damaged_regions = get_damaged_regions(end_region.getPosition(), damage_range);
 
-		while (!damaged_regions.empty())
+		for(auto& region:damaged_regions)
 		{
-			Region region = damaged_regions.back();
-			int rest_hp = region.getHp() - damage;
+			int rest_hp = region->getHp() - damage;
 			if (rest_hp <= 0) {
-				region.setOwner(-1);
+				region->setOwner(-1);
 				std::random_device rd;
 				std::mt19937 gen(rd());
 				std::uniform_int_distribution<> dis(200, 300);
-				region.setHp(dis(gen));
-				region.getWeapons().clear();
-				clear_building(region);
+				region->setHp(dis(gen));
+				region->getWeapons().clear();
+				clear_building(*region);
 			}
 			else {
-				region.setHp(rest_hp);
+				region->setHp(rest_hp);
 			}
 		}
 	}
@@ -681,72 +682,73 @@ void RegionManager::update(GlobalTimer& timer) {
 	missle_mutex.unlock();
 }
 
-void RegionManager::calculate_delta_resources(std::vector<int> delta_resourcce, double delta_t, int player_id) {
+void RegionManager::calculate_delta_resources(std::vector<double>& delta_resource, double delta_t, int player_id) {
 	int owned_regions = 0;
 	Config& configer = Config::getInstance();
+	int PowerStation_product = configer.getConfig({ "Building","PowerStation","Product" }).template get<std::vector<int>>()[3];
+	int Refinery_product = configer.getConfig({ "Building","Refinery","Product" }).template get<std::vector<int>>()[1];
+	int SteelFactory_product = configer.getConfig({ "Building","SteelFactory","Product" }).template get<std::vector<int>>()[2];
+	int CivilFactory_product = configer.getConfig({ "Building","CivilFactory","Product" }).template get<std::vector<int>>()[0];
+	float UpLevelFactor1 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<float>>()[0];
+	float UpLevelFactor2 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<float>>()[1];
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++) {
 			Region& region = get_region(i, j);
-			int PowerStation_product = configer.getConfig({ "Building","PowerStation","Product" }).template get<std::vector<int>>()[3];
-			int Refinery_product = configer.getConfig({ "Building","Refinery","Product" }).template get<std::vector<int>>()[1];
-			int SteelFactory_product = configer.getConfig({ "Building","SteelFactory","Product" }).template get<std::vector<int>>()[2];
-			int CivilFactory_product = configer.getConfig({ "Building","CivilFactory","Product" }).template get<std::vector<int>>()[0];
-			float UpLevelFactor1 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<float>>()[0];
-			float UpLevelFactor2 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<float>>()[1];
+
 			if (region.getOwner() == player_id) {
 				owned_regions++;
 				if (region.getBuilding().getName() != "none") {
 					if (region.getBuilding().getName() == "PowerStation") {
-						int delta = PowerStation_product * delta_t;
+						double delta = PowerStation_product * delta_t;
 						if (region.getBuilding().getLevel() == 1) {
-							delta_resourcce[3] += delta;
+							delta_resource[3] += delta;
 						}
 						else if (region.getBuilding().getLevel() == 2) {
-							delta_resourcce[3] += delta * UpLevelFactor1;
+							delta_resource[3] += delta * UpLevelFactor1;
 						}
 						else if (region.getBuilding().getLevel() == 3) {
-							delta_resourcce[3] += delta * UpLevelFactor1 * UpLevelFactor2;
+							delta_resource[3] += delta * UpLevelFactor1 * UpLevelFactor2;
 						}
 					}
 					else if (region.getBuilding().getName() == "Refinery") {
-						int delta = Refinery_product * delta_t;
+						double delta = Refinery_product * delta_t;
 						if (region.getBuilding().getLevel() == 1) {
-							delta_resourcce[1] += delta;
+							delta_resource[1] += delta;
 						}
 						else if (region.getBuilding().getLevel() == 2) {
-							delta_resourcce[1] += delta * UpLevelFactor1;
+							delta_resource[1] += delta * UpLevelFactor1;
 						}
 						else if (region.getBuilding().getLevel() == 3) {
-							delta_resourcce[1] += delta * UpLevelFactor1 * UpLevelFactor2;
+							delta_resource[1] += delta * UpLevelFactor1 * UpLevelFactor2;
 						}
 					}
 					else if (region.getBuilding().getName() == "SteelFactory") {
-						int delta = SteelFactory_product * delta_t;
+						double delta = SteelFactory_product * delta_t;
 						if (region.getBuilding().getLevel() == 1) {
-							delta_resourcce[2] += delta;
+							delta_resource[2] += delta;
 						}
 						else if (region.getBuilding().getLevel() == 2) {
-							delta_resourcce[2] += delta * UpLevelFactor1;
+							delta_resource[2] += delta * UpLevelFactor1;
 						}
 						else if (region.getBuilding().getLevel() == 3) {
-							delta_resourcce[2] += delta * UpLevelFactor1 * UpLevelFactor2;
+							delta_resource[2] += delta * UpLevelFactor1 * UpLevelFactor2;
 						}
 					}
 					else if (region.getBuilding().getName() == "CivilFactory") {
-						int delta = CivilFactory_product * delta_t;
+						double delta = CivilFactory_product * delta_t;
 						if (region.getBuilding().getLevel() == 1) {
-							delta_resourcce[0] += delta;
+							delta_resource[0] += delta;
 						}
 						else if (region.getBuilding().getLevel() == 2) {
-							delta_resourcce[0] += delta * UpLevelFactor1;
+							delta_resource[0] += delta * UpLevelFactor1;
 						}
 						else if (region.getBuilding().getLevel() == 3) {
-							delta_resourcce[0] += delta * UpLevelFactor1 * UpLevelFactor2;
+							delta_resource[0] += delta * UpLevelFactor1 * UpLevelFactor2;
 						}
 					}
 				}
 			}
 		}
 	}
-	delta_resourcce[4] = owned_regions * 30;
+	delta_resource[4] = owned_regions * 30;
 }

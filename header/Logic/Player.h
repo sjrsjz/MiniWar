@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "../Timer.h"
 #include "../utils/Point.h"
 #include "../../header/Logic/Weapon.h"
@@ -21,11 +21,11 @@ class RegionManager;
 
 class Player {
 private:
-	int gold{};
-	int oil{};
-	int electricity{};
-	int ocupied_labor{};
-	int steel{};
+	double gold{};
+	double oil{};
+	double electricity{};
+	double ocupied_labor{};
+	double steel{};
 	int id{};
 	int labor_limit{};
 	bool have_research_institution = false;
@@ -58,6 +58,17 @@ public:
 	void add_steel(int amount);
 
 	int get_building_level_limit(std::string name);
+	int get_army_level(int id) {
+		try {
+			return arm_level[id];
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	bool get_have_research_institution() {
+		return have_research_institution;
+	}
 	//Interaction functions below
 	void move_army(Operation operation, int amount);
 	void attack(Operation operation);

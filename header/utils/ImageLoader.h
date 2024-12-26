@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "../../include/GL/glew.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../include/stb/stb_image.h"
@@ -6,7 +6,7 @@
 
 GLuint LoadPNG(const char* path, bool repeat = false) {
     int width, height, nrChannels;
-    // ·­×ªÍ¼Æ¬YÖá
+    // ç¿»è½¬å›¾ç‰‡Yè½´
     // stbi_set_flip_vertically_on_load(true);
     unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
 
@@ -19,7 +19,7 @@ GLuint LoadPNG(const char* path, bool repeat = false) {
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    // ÉèÖÃÎÆÀí²ÎÊı
+    // è®¾ç½®çº¹ç†å‚æ•°
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repeat ? GL_REPEAT : GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repeat ? GL_REPEAT : GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
