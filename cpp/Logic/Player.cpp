@@ -182,6 +182,9 @@ void Player::attack(Operation operation) {
 	Weapon weapon = regionmanager.get_weapon(weapon_id);
 
 	std::tuple<float, float> AttackRange= weapon.getAttackRange();
+	if (start_region.getWeapons()[weapon_id] <= 0) {
+		throw std::invalid_argument(u8"武器数量不足");
+	}
 
 	if (distance > std::get<1>(AttackRange) || distance < std::get<0>(AttackRange)) {
 		throw std::invalid_argument(u8"超出攻击范围");
@@ -443,7 +446,7 @@ void Player::research(Operation operation) {
 					institution_level_limit[3] = 2;
 				}
 			}
-			if (institution_level_limit[3] == 2) {
+			else if (institution_level_limit[3] == 2) {
 				if (gold < Uplevelcost_CivilFactory[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
@@ -468,7 +471,7 @@ void Player::research(Operation operation) {
 					institution_level_limit[4] = 2;
 				}
 			}
-			if (institution_level_limit[4] == 2) {
+			else if (institution_level_limit[4] == 2) {
 				if (gold < Uplevelcost_MilitaryFactory[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
@@ -493,7 +496,7 @@ void Player::research(Operation operation) {
 					arm_level[0] = 2;
 				}
 			}
-			if (arm_level[0] == 2) {
+			else if (arm_level[0] == 2) {
 				if (gold < Uplevelcost_Army[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
@@ -509,21 +512,30 @@ void Player::research(Operation operation) {
 			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
-			if (arm_level[1] == 1) {
+			if (arm_level[1] == 0) {
 				if (gold < Uplevelcost_CM[0]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_CM[0];
-					arm_level[1] = 2;
+					arm_level[1] = 1;
 				}
 			}
-			if (arm_level[1] == 2) {
+			else if (arm_level[1] == 1) {
 				if (gold < Uplevelcost_CM[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_CM[1];
+					arm_level[1] = 2;
+				}
+			}
+			else if (arm_level[1] == 2) {
+				if (gold < Uplevelcost_CM[2]) {
+					throw std::invalid_argument(u8"金钱不足");
+				}
+				else {
+					gold -= Uplevelcost_CM[2];
 					arm_level[1] = 3;
 				}
 			}	
@@ -534,21 +546,30 @@ void Player::research(Operation operation) {
 			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
-			if (arm_level[2] == 1) {
+			if (arm_level[2] == 0) {
 				if (gold < Uplevelcost_MRBM[0]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_MRBM[0];
-					arm_level[2] = 2;
+					arm_level[2] = 1;
 				}
 			}
-			if (arm_level[2] == 2) {
+			else if (arm_level[2] == 1) {
 				if (gold < Uplevelcost_MRBM[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_MRBM[1];
+					arm_level[2] = 2;
+				}
+			}
+			else if (arm_level[2] == 2) {
+				if (gold < Uplevelcost_MRBM[2]) {
+					throw std::invalid_argument(u8"金钱不足");
+				}
+				else {
+					gold -= Uplevelcost_MRBM[2];
 					arm_level[2] = 3;
 				}
 			}
@@ -559,7 +580,7 @@ void Player::research(Operation operation) {
 			throw std::invalid_argument(u8"已升级到最高等级");
 		}
 		else {
-			if (arm_level[3] == 1) {
+			if (arm_level[3] == 0) {
 				if (gold < Uplevelcost_ICBM[0]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
@@ -568,12 +589,21 @@ void Player::research(Operation operation) {
 					arm_level[3] = 2;
 				}
 			}
-			if (arm_level[3] == 2) {
+			else if (arm_level[3] == 1) {
 				if (gold < Uplevelcost_ICBM[1]) {
 					throw std::invalid_argument(u8"金钱不足");
 				}
 				else {
 					gold -= Uplevelcost_ICBM[1];
+					arm_level[3] = 2;
+				}
+			}
+			else if (arm_level[3] == 2) {
+				if (gold < Uplevelcost_ICBM[2]) {
+					throw std::invalid_argument(u8"金钱不足");
+				}
+				else {
+					gold -= Uplevelcost_ICBM[2];
 					arm_level[3] = 3;
 				}
 			}
@@ -627,7 +657,7 @@ void Player::product(Operation operation) {
 		oil -= cost0[1];
 		electricity -= cost0[2];
 		steel -= cost0[3];
-		end_region.addWeapon(0);
+		end_region.addWeapon(1);
 		break;
 	case Operator::ProductWeapon2:
 		cost0 = configer.getConfig({ "Weapon", "2", "cost" }).template get<std::vector<int>>();
@@ -638,7 +668,7 @@ void Player::product(Operation operation) {
 		oil -= cost0[1];
 		electricity -= cost0[2];
 		steel -= cost0[3];
-		end_region.addWeapon(0);
+		end_region.addWeapon(2);
 		break;
 	}
 }
@@ -750,12 +780,17 @@ void Player::create() {
 		}
 	}
 
-	gold = 300000;
+	gold = 3000000;
 	oil = 100000;
 	electricity = 100000;
 	labor_limit = 1000;
 	ocupied_labor = 0;
 	steel = 100000;
+
+	arm_level = { 1, 0, 0, 0 };
+	institution_level_limit = { 1, 1, 1, 1, 1 };
+	have_research_institution = false;
+
 
 
 	return;

@@ -23,7 +23,7 @@ private:
         region.army_position_x = 0;
 		region.army_position_y = 0;
 		region.identity = 0;
-		region.padding_1 = 0;
+		region.is_capital = 0;
 		return region;
 	}
 	inline RegionData getRegion(int x, int y) {

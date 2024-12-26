@@ -5,5 +5,5 @@ struct RegionData {
 	float army_position_x = -1e6;
 	float army_position_y = -1e6;
     float identity{};
-    float padding_1{};
+    float is_capital{};
 };
