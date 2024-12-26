@@ -1,4 +1,4 @@
-#include "../../header/Logic/Weapon.h"
+﻿#include "../../header/Logic/Weapon.h"
 #include "../../header/utils/Config.h"
 
 using json = nlohmann::json;

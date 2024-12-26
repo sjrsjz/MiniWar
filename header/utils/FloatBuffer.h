@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <memory>
 
@@ -13,7 +13,7 @@ namespace DATA {
 		}
 
 		std::unique_ptr<float[]> buffer() {
-			// ´´½¨Ò»¸ö std::unique_ptr ²¢·µ»Ø
+			// åˆ›å»ºä¸€ä¸ª std::unique_ptr å¹¶è¿”å›ž
 			std::unique_ptr<float[]> ptr(new float[size()]);
 			std::copy(begin(), end(), ptr.get());
 			return ptr;

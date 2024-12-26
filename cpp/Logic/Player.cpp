@@ -1,4 +1,4 @@
-#include "../../header/Logic/Player.h"
+﻿#include "../../header/Logic/Player.h"
 #include "../../header/Logic/RegionManager.h"
 #include "../../header/debug.h"
 #include "../../header/utils/Config.h"
@@ -10,198 +10,6 @@ Player:: Player(): regionmanager(RegionManager::getInstance()){
 
 Player:: ~Player() {
 }
-
-//double Player::calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end) {
-//    Region& start_region = regionmanager.get_region(std::get<0>(start), std::get<1>(start));
-//    Region& end_region = regionmanager.get_region(std::get<0>(end), std::get<1>(end));
-//    Point start_region_position = start_region.getPosition();
-//    Point end_region_position = end_region.getPosition();
-//    return sqrt(pow(start_region_position.getX() - end_region_position.getX(), 2) + pow(start_region_position.getY() - end_region_position.getY(), 2));
-//}
-//
-//double Player::calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path) {
-//	double distance = 0.f;
-//
-//    Array<Region>& regions = regionmanager.get_regions();
-//    int *player_region_martix = new int[regions.get_width() * regions.get_height()];
-//    for(int i = 0; i<regions.get_width(); i++){
-//        for(int j = 0; j<regions.get_height(); j++){
-//            if (regions(i,j).getOwner() == id) {
-//                player_region_martix[i + j * regions.get_width()] = 1;
-//            }
-//            else
-//            player_region_martix[i + j * regions.get_width()] = 0;
-//        }
-//    }
-//
-//    int start_x = std::floor(start.getX());
-//    int start_y = std::floor(start.getY());
-//    int end_x = std::floor(end.getX());
-//    int end_y = std::floor(end.getY());
-//
-//    int temp_x = start_x;
-//    int temp_y = start_y;
-//
-//    static int NOT_AVALIABLE = 1000000;
-//    static int straight_cost = 10;
-//    static int diagonal_cost = 14;
-//
-//    int cost_list[8] = {};//0: left up 1: up 2: right up 3: left 4: right 5: left down 6: down 7: right down
-//
-//    while(temp_x!= end_x && temp_y != end_y)
-//    {
-//        path.push_back(std::make_tuple(temp_x, temp_y));
-//
-//        bool up = true;
-//		bool down = true;
-//		bool left = true;
-//		bool right = true;
-//        if (temp_x - 1 < 0)
-//        {
-//			cost_list[0] = NOT_AVALIABLE;
-//			cost_list[3] = NOT_AVALIABLE;
-//			cost_list[5] = NOT_AVALIABLE;
-//			left = false;
-//		}
-//        if (temp_x + 1 > regions.get_width())
-//        {
-//			cost_list[2] = NOT_AVALIABLE;
-//			cost_list[4] = NOT_AVALIABLE;
-//			cost_list[7] = NOT_AVALIABLE;
-//			right = false;
-//        }
-//		if (temp_y - 1 < 0)
-//		{
-//			cost_list[5] = NOT_AVALIABLE;
-//			cost_list[6] = NOT_AVALIABLE;
-//			cost_list[7] = NOT_AVALIABLE;
-//			down = false;
-//		}
-//        if (temp_y + 1 > 0)
-//        {
-//			cost_list[0] = NOT_AVALIABLE;
-//			cost_list[1] = NOT_AVALIABLE;
-//			cost_list[2] = NOT_AVALIABLE;
-//			up = false;
-//        }
-//        if (up) {
-//			if (player_region_martix[temp_x + (temp_y + 1) * regions.get_width()] == 1) {
-//				cost_list[0] = straight_cost*(1 + end_x - temp_x + end_y - temp_y);
-//			}
-//            else {
-//				cost_list[0] = NOT_AVALIABLE;
-//			}
-//            if (left) {
-//				if (player_region_martix[temp_x - 1 + (temp_y + 1) * regions.get_width()] == 1) {
-//					cost_list[1] = diagonal_cost + straight_cost*(end_x - temp_x + end_y - temp_y);
-//				}
-//                else {
-//					cost_list[1] = NOT_AVALIABLE;
-//				}
-//            }
-//            if (right) {
-//				if (player_region_martix[temp_x + 1 + (temp_y + 1) * regions.get_width()] == 1) {
-//					cost_list[2] = diagonal_cost + straight_cost*(end_x - temp_x + end_y - temp_y);
-//				}
-//                else {
-//					cost_list[2] = NOT_AVALIABLE;
-//                }
-//            }
-//        }
-//        if (down) {
-//			if (player_region_martix[temp_x + (temp_y - 1) * regions.get_width()] == 1) {
-//				cost_list[5] = straight_cost*(1 + end_x - temp_x + end_y - temp_y);
-//			}
-//            else {
-//				cost_list[5] = NOT_AVALIABLE;
-//			}
-//            if (left) {
-//				if (player_region_martix[temp_x - 1 + (temp_y - 1) * regions.get_width()] == 1) {
-//					cost_list[6] = diagonal_cost + straight_cost*(end_x - temp_x + end_y - temp_y);
-//				}
-//                else {
-//					cost_list[6] = NOT_AVALIABLE;
-//				}
-//            }
-//            if (right) {
-//				if (player_region_martix[temp_x + 1 + (temp_y - 1) * regions.get_width()] == 1) {
-//					cost_list[7] = diagonal_cost + straight_cost*(end_x - temp_x + end_y - temp_y);
-//				}
-//                else {
-//					cost_list[7] = NOT_AVALIABLE;
-//				}
-//            }
-//        }
-//        if (left) {
-//			if (player_region_martix[temp_x - 1 + temp_y * regions.get_width()] == 1) {
-//				cost_list[3] = straight_cost*(1 + end_x - temp_x + end_y - temp_y);
-//			}
-//            else {
-//				cost_list[3] = NOT_AVALIABLE;
-//			}
-//        }
-//        if (right) {
-//			if (player_region_martix[temp_x + 1 + temp_y * regions.get_width()] == 1) {
-//				cost_list[4] = straight_cost*(1 + end_x - temp_x + end_y - temp_y);
-//			}
-//            else {
-//				cost_list[4] = NOT_AVALIABLE;
-//			}
-//        }
-//
-//		int min_cost = NOT_AVALIABLE, min_way = 0;
-//        for (int i = 0; i < 8; i++) {
-//			if (cost_list[i] < min_cost) {
-//				min_cost = cost_list[i];
-//				min_way = i;
-//			}
-//        }
-//		if (min_cost == NOT_AVALIABLE) {
-//			return -1.f;
-//		}
-//
-//        switch (min_way) {
-//        case 0:
-//            temp_y++;
-//            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y - 1));
-//            break;
-//        case 1:
-//            temp_x--;
-//            temp_y++;
-//            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y - 1));
-//            break;
-//        case 2:
-//            temp_x++;
-//            temp_y++;
-//            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y - 1));
-//            break;
-//        case 3:
-//            temp_x--;
-//            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y));
-//            break;
-//        case 4:
-//            temp_x++;
-//            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y));
-//            break;
-//        case 5:
-//            temp_y--;
-//            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y + 1));
-//            break;
-//        case 6:
-//            temp_x--;
-//            temp_y--;
-//            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y + 1));
-//            break;
-//        case 7:
-//            temp_x++;
-//            temp_y--;
-//            distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y + 1));
-//            break;
-//        }
-//		player_region_martix[temp_x + temp_y * regions.get_width()] = 0;
-//    }
-//    return distance;
-//}
 
 int Player:: get_gold(){
     return gold;
@@ -348,7 +156,7 @@ void Player:: move_army(Operation operation, int amount){
 void Player::attack(Operation operation) {
 	Point start = operation.getStart();
 	Point end = operation.getEnd();
-    double distance = sqrt(pow(start.getX() - end.getX(), 2) + pow(start.getY() - end.getY(), 2));
+	double distance = sqrt(pow(start.getX() - end.getX(), 2) + pow(start.getY() - end.getY(), 2)) / fmax(this->regionmanager.get_map_width(), this->regionmanager.get_map_height());
 
     int start_x = std::floor(start.getX());
     int start_y = std::floor(start.getY());
@@ -479,7 +287,6 @@ void Player::remove_building(Operation operation) {
     if (region.getBuilding().getName() == "none") {
 		throw std::invalid_argument(u8"区块没有建筑");
 	}
-	region.removeBuilding();
 	//return the cost of the building
 
 	Building& building = region.getBuilding();
@@ -514,6 +321,7 @@ void Player::remove_building(Operation operation) {
 		ocupied_labor -= Level1Cost[4] + Level2Cost[4] + Level3Cost[4];
 		break;
     }
+	region.removeBuilding();
 }
 
 void Player::set_research(Operation operation) {
@@ -835,7 +643,7 @@ void Player::product(Operation operation) {
 }
 
 void Player:: update(GlobalTimer& timer){
-	std::vector<int> delta_resource = { 0,0,0,0,0 };
+	std::vector<double> delta_resource = { 0,0,0,0,0 };
 	double delta_t = timer.get_dt();
 	regionmanager.calculate_delta_resources(delta_resource, delta_t, id);
 	gold += delta_resource[0];
@@ -936,7 +744,7 @@ void Player::create() {
 		}
 	}
 
-	gold = 100000;
+	gold = 300000;
 	oil = 100000;
 	electricity = 100000;
 	labor_limit = 1000;

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "../../header/utils/Array.h"
 #include "../../header/Logic/Region.h"
 #include "../../header/utils/Config.h"
@@ -47,7 +47,7 @@ private:
 	
 	void clear_building(Region& region);
 	double calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end);
-	std::vector<Region> get_damaged_regions(Point position, float range);
+	std::vector<Region*> get_damaged_regions(Point position, float range);
 public:
 	RegionManager();
 	RegionManager(int width, int height);
@@ -62,7 +62,7 @@ public:
 
 	void set(int width, int height);
 
-	void calculate_delta_resources(std::vector<int> delta_resource, double delta_t, int player_id);
+	void calculate_delta_resources(std::vector<double>& delta_resource, double delta_t, int player_id);
 	void update(GlobalTimer& timer);
 
 	//void move_army(int amount, double time, std::vector<std::tuple<int, int>>& path);

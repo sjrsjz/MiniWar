@@ -1,4 +1,4 @@
-#include <exception>
+﻿#include <exception>
 #include <string>
 
 class SurrenderNotAttackedException : public std::exception {

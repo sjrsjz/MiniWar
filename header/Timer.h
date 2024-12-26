@@ -1,7 +1,7 @@
-#pragma once
+ï»¿#pragma once
 #ifndef _Timer_h
 #define _Timer_h
-// ¼ÆÊ±Æ÷£¬ÒÔÃëÎªµ¥Î»
+// è®¡æ—¶å™¨ï¼Œä»¥ç§’ä¸ºå•ä½
 class Timer {
 private:
 	double lt = 0;

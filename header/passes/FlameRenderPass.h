@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "FragmentBuffer.h"
 #include "../Timer.h"
 #include "../mash.h"

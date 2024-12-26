@@ -132,9 +132,6 @@
     <ClInclude Include="..\header\points.h">
       <Filter>header</Filter>
     </ClInclude>
-    <ClInclude Include="..\header\Logic\PowerStation.h">
-      <Filter>header</Filter>
-    </ClInclude>
     <ClInclude Include="..\header\Logic\Region.h">
       <Filter>header</Filter>
     </ClInclude>

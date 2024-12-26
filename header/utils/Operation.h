@@ -43,6 +43,7 @@ class Operation{
 	int size{};
 	float radius{};
 public:
+	int idx{};
 	Operation();
 	Operation(Operator op);
 	Operation(int id, Operator op);

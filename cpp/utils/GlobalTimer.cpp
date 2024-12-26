@@ -1,4 +1,4 @@
-#include "../../header/utils/GlobalTimer.h"
+﻿#include "../../header/utils/GlobalTimer.h"
 
 GlobalTimer& GlobalTimer::getInstance()
 {

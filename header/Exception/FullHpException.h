@@ -1,4 +1,4 @@
-#include <exception>
+﻿#include <exception>
 #include <string>
 
 class FullHpException : public std::exception {

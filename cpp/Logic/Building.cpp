@@ -1,4 +1,4 @@
-#include "../../header/Logic/Building.h"
+﻿#include "../../header/Logic/Building.h"
 
 Building::Building(std::string name) {
 	this->name = name;

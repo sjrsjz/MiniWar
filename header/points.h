@@ -1,4 +1,4 @@
-#include "../include/GL/glew.h"
+Ôªø#include "../include/GL/glew.h"
 #include <vector>
 struct Vertex {
     float x, y, z;    // vPos
@@ -37,13 +37,13 @@ public:
 
     void render(GLuint program) {
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        // Œª÷√ Ù–‘ - vPos
+        // ‰ΩçÁΩÆÂ±ûÊÄß - vPos
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
             sizeof(Vertex),
             (void*)offsetof(Vertex, x));
 
-        //// —’…´ Ù–‘ - vColor
+        //// È¢úËâ≤Â±ûÊÄß - vColor
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE,
             sizeof(Vertex),

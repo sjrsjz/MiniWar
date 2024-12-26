@@ -760,7 +760,7 @@ public:
 				}
 			}
 			ImGui::SameLine();
-			ImGui::Text("HP: %d", region.getHp());
+			ImGui::Text("HP: %.2f", region.getHp());
 		}
 		catch (std::exception e) {
 			// nothing
@@ -990,6 +990,10 @@ public:
 			}
 			if (ImGui::Selectable(u8"军事工厂")) {
 				push_input({ Point::toPoint(grid),Operator::SetMilitaryFactory });
+				open = false;
+			}
+			if (ImGui::Selectable(u8"移除建筑")) {
+				push_input({ Point::toPoint(grid),Operator::RemoveBuilding });
 				open = false;
 			}
 			ImGui::EndListBox();
@@ -1561,7 +1565,7 @@ void render_main_game_pass() {
 	bool s_if_selected = s_selected_gui.is_selected;
 
 	// 核辐射标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, 2.5, s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, RegionManager::getInstance().get_weapon(s_nuclear_missile_level).getDamageRange(RegionManager::getInstance().get_player().get_army_level(s_nuclear_missile_level + 1)), s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_radioactive);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_radioactive"), 0);
@@ -2056,6 +2060,7 @@ void KeyRelease(int key) {
 				try {
 					Region& from_region = RegionManager::getInstance().get_region(start_point.getX(), start_point.getY());
 					Region& to_region = RegionManager::getInstance().get_region(end_point.getX(), end_point.getY());
+					std::string result = "";
 					switch (s_selected_weapon)
 					{
 					case NONE:
@@ -2067,12 +2072,29 @@ void KeyRelease(int key) {
 							s_selected_gui.shake_gui(timer);
 							break;
 						}
-						DEBUG::DebugOutput("Nuclear Missile");
-						GAMESOUND::play_nuclear_launch_sound();
-						s_selected_gui.message = u8"核导弹已发射";
+
+						switch (s_nuclear_missile_level)
+						{
+						case 0:
+							result = push_input_wait_for_result({ start_point, end_point, Operator::Weapon0Attack });
+							break;
+						case 1:
+							result = push_input_wait_for_result({ start_point, end_point, Operator::Weapon1Attack });
+							break;
+						case 2:
+							result = push_input_wait_for_result({ start_point, end_point, Operator::Weapon2Attack });
+							break;
+						default:
+							break;
+						}
+						if (result == "Success") {
+							DEBUG::DebugOutput("Nuclear Missile");
+							GAMESOUND::play_nuclear_launch_sound();
+							s_selected_gui.message = u8"核导弹已发射";
+							s_selected_gui.shake_gui(timer);
+							s_shake_effect.push_shake(timer);
+						}
 						// do something
-						s_selected_gui.shake_gui(timer);
-						s_shake_effect.push_shake(timer);
 						s_selected_gui.is_selected = false;
 						break;
 					case ARMY:

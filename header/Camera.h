@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "./utils/SmoothMove.h"
 class Camera
 {
@@ -57,8 +57,8 @@ class Camera
 			move(amt, 0, 0);
 		}
 		void getRotationMatrix(double* m) {
-			//ÒÔÊÓÏß·½ÏòÎªxÖá
-			//ÏÈÈÆyÖáÐý×ªyaw£¬ÔÙÈÆzÖáÐý×ªpitch£¬×îºóÈÆxÖáÐý×ªroll
+			//ä»¥è§†çº¿æ–¹å‘ä¸ºxè½´
+			//å…ˆç»•yè½´æ—‹è½¬yawï¼Œå†ç»•zè½´æ—‹è½¬pitchï¼Œæœ€åŽç»•xè½´æ—‹è½¬roll
 			//m[0] m[1] m[2]
 			//m[3] m[4] m[5]
 			//m[6] m[7] m[8]
@@ -69,22 +69,22 @@ class Camera
 			double cz = cos(pitch);
 			double sz = sin(-pitch);
 
-			// ¼ÆËãÐý×ª¾ØÕóµÄÔªËØ
-			m[0] = cy * cz - sx * sy * sz; // µÚÒ»ÐÐµÚÒ»ÁÐ
-			m[1] = -cx * sz; // µÚÒ»ÐÐµÚ¶þÁÐ
-			m[2] = sy * cz + sx * cy * sz; // µÚÒ»ÐÐµÚÈýÁÐ
-			m[3] = cy * sz + sx * sy * cz; // µÚ¶þÐÐµÚÒ»ÁÐ
-			m[4] = cx * cz; // µÚ¶þÐÐµÚ¶þÁÐ
-			m[5] = sy * sz - sx * cy * cz; // µÚ¶þÐÐµÚÈýÁÐ
-			m[6] = -cx * sy; // µÚÈýÐÐµÚÒ»ÁÐ
-			m[7] = sx; // µÚÈýÐÐµÚ¶þÁÐ
-			m[8] = cx * cy; // µÚÈýÐÐµÚÈýÁÐ
+			// è®¡ç®—æ—‹è½¬çŸ©é˜µçš„å…ƒç´ 
+			m[0] = cy * cz - sx * sy * sz; // ç¬¬ä¸€è¡Œç¬¬ä¸€åˆ—
+			m[1] = -cx * sz; // ç¬¬ä¸€è¡Œç¬¬äºŒåˆ—
+			m[2] = sy * cz + sx * cy * sz; // ç¬¬ä¸€è¡Œç¬¬ä¸‰åˆ—
+			m[3] = cy * sz + sx * sy * cz; // ç¬¬äºŒè¡Œç¬¬ä¸€åˆ—
+			m[4] = cx * cz; // ç¬¬äºŒè¡Œç¬¬äºŒåˆ—
+			m[5] = sy * sz - sx * cy * cz; // ç¬¬äºŒè¡Œç¬¬ä¸‰åˆ—
+			m[6] = -cx * sy; // ç¬¬ä¸‰è¡Œç¬¬ä¸€åˆ—
+			m[7] = sx; // ç¬¬ä¸‰è¡Œç¬¬äºŒåˆ—
+			m[8] = cx * cy; // ç¬¬ä¸‰è¡Œç¬¬ä¸‰åˆ—
 			
 		}
 		void getMatrix(double* m) {
-			//ÒÔÊÓÏß·½ÏòÎªxÖá
-			// ÏÈÈÆyÖáÐý×ªyaw£¬ÔÙÈÆzÖáÐý×ªpitch£¬×îºóÈÆxÖáÐý×ªroll
-			//»ñµÃÐý×ªºóµÄdx,dy,dz
+			//ä»¥è§†çº¿æ–¹å‘ä¸ºxè½´
+			// å…ˆç»•yè½´æ—‹è½¬yawï¼Œå†ç»•zè½´æ—‹è½¬pitchï¼Œæœ€åŽç»•xè½´æ—‹è½¬roll
+			//èŽ·å¾—æ—‹è½¬åŽçš„dx,dy,dz
 			//m[0] m[1] m[2] m[3]
 			//m[4] m[5] m[6] m[7]
 			//m[8] m[9] m[10] m[11]

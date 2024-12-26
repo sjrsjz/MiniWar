@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 struct RegionData {
     float cell_center_x{};
     float cell_center_y{};

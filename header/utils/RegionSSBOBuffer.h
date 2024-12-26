@@ -1,7 +1,7 @@
-#pragma once
+ï»¿#pragma once
 #include "../passes/SSBO.h"
 #include "RegionData.h"
-// SSBO»º³åÇø£¬ÓÃÓÚ´æ´¢ÇøÓòÊı¾İ²¢´«µİ¸øµØÍ¼×ÅÉ«Æ÷
+// SSBOç¼“å†²åŒºï¼Œç”¨äºå­˜å‚¨åŒºåŸŸæ•°æ®å¹¶ä¼ é€’ç»™åœ°å›¾ç€è‰²å™¨
 class RegionSSBOBuffer
 {
 	RegionData* regions;
@@ -72,7 +72,7 @@ public:
 		return regions[y * mapWidth + x];
 	}
 
-	// µü´úÆ÷£¬ÓÃÓÚ±éÀúÇøÓòÊı¾İ£¬Îª {RegionData&, x, y} µÄÔª×é
+	// è¿­ä»£å™¨ï¼Œç”¨äºéå†åŒºåŸŸæ•°æ®ï¼Œä¸º {RegionData&, x, y} çš„å…ƒç»„
 
 	class iterator {
 		RegionData* ptr;

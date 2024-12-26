@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "../Timer.h"
 #include "../utils/Point.h"
 #include "../../header/Logic/Weapon.h"
@@ -21,11 +21,11 @@ class RegionManager;
 
 class Player {
 private:
-	int gold{};
-	int oil{};
-	int electricity{};
-	int ocupied_labor{};
-	int steel{};
+	double gold{};
+	double oil{};
+	double electricity{};
+	double ocupied_labor{};
+	double steel{};
 	int id{};
 	int labor_limit{};
 	bool have_research_institution = false;
