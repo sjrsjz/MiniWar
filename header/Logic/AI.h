@@ -107,10 +107,30 @@ class AI {
 public:
 	AI(){}
 
+	void clear() {
+		gold = 0;
+		weapons.clear();
+		arm_level.clear();
+		capital = std::make_tuple(0, 0);
+		id = -1;
+		AIRegions.clear();
+		playerRegions.clear();
+		border.clear();
+		distance.clear();
+		averageForce = 0;
+		playerAverageForce = 0;
+		size = 0;
+		regionSize = 0;
+		playerRegionSize = 0;
+		weaponCost.clear();
+		isAttacked.clear();
+	}
+
 	void create()
 	{
 		// temp
 		// TODO
+		clear();
 		weaponCost = config.getConfig({"ResearchInstitution", "OUpLevelCost"});
 		gold = 1000;
 		weapons = { 0, 0, 0 };
@@ -182,6 +202,7 @@ public:
 	}		
 
 	void create(int id) {
+		clear();
 		weaponCost = config.getConfig({"ResearchInstitution", "OUpLevelCost"});
 		gold = 1000;
 		weapons = { 0, 0, 0 };
@@ -399,7 +420,7 @@ public:
 		this->gold += formula(Timer.elapsedSeconds());	
 		delta_t -= 1;
 		if (capitalAlive) {
-			int buildArmy = std::min((int)(this->gold * 0.3), 8000);
+			int buildArmy = std::min((int)(this->gold * 0.2), 8000);
 			json ArmyInfo = config.getConfig({"Army"});
 			//int cost = 1000;// ArmyInfo["cost"].template get<int>();
 			int cost = ArmyInfo["cost"].template get<int>();
@@ -440,7 +461,7 @@ public:
 		if (maxLevelCount == 4) {
 			return;
 		}
-		int buildLevel = (int)this->gold * 0.2;
+		int buildLevel = (int)this->gold * 0.8;
 		int armycost = INF;
 		if (arm_level[0] < maxLevel + 1)
 			armycost = weaponCost["Army"].template get<std::vector<int>>()[arm_level[0] - 1];
