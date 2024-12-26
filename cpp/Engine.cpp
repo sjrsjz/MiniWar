@@ -7,12 +7,15 @@
 #include <queue>
 
 AI ai;
+AI ai2;
 bool isPause = false;
 bool aiState = true;
+bool aiState2 = true;
 
 void release_game() {
 	RegionManager::getInstance().~RegionManager();
 	ai.~AI();
+	ai2.~AI();
 }
 
 static bool s_exit_game = false;
@@ -24,6 +27,7 @@ void initial_game(int width, int height) {
 	RegionManager::getInstance().set(width, height);
 	RegionManager::getInstance().get_player().create();
 	ai.create();
+	ai2.create(2);
 }
 
 void read_input() {
@@ -136,6 +140,7 @@ void push_input(const Operation& op) {
 void update() {
 	RegionManager::getInstance().update(GlobalTimer::getInstance());
 	ai.update(isPause, aiState);
+	ai2.update(isPause, aiState2);
 }
 
 void main_loop() {
@@ -166,7 +171,7 @@ void main_loop() {
 void run_game(int width, int height) {
 	initial_game(width, height);
 
-	// Æô¶¯Ïß³Ì
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½
 	s_main_loop = std::thread(main_loop);
 	s_main_loop.detach();
 	
