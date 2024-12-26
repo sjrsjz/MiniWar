@@ -820,7 +820,8 @@ public:
 		if (isPause) {
 			Timer.pause();
 			return;
-		} else {
+		}
+		else {
 			Timer.resume();
 		}
 
