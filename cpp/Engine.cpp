@@ -255,9 +255,9 @@ void main_loop() {
 		}
 		else {
 			g_game_stop = true;
-			if (!RegionManager::getInstance().get_player().is_alive()) {
-				g_game_over = true;
-			}
+			//if (!RegionManager::getInstance().get_player().is_alive()) {
+			//	g_game_over = true;
+			//}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}

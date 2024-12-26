@@ -673,8 +673,12 @@ void RegionManager::update(GlobalTimer& timer) {
 		auto end = missle.end_point;
 		std::tuple<int, int> middle = std::make_tuple((std::get<0>(start) + std::get<0>(end)) / 2, (std::get<1>(start) + std::get<1>(end)) / 2);
 		auto [middleX, middleY] = middle;
-		auto [startX, startY] = start;
-		auto [endX, endY] = end;
+		auto [tstartX, tstartY] = start;
+		auto [tendX, tendY] = end;
+		float startX = get_region(tstartX, tstartY).getPosition().getX();
+		float startY = get_region(tstartX, tstartY).getPosition().getY();
+		float endX = get_region(tendX, tendY).getPosition().getX();
+		float endY = get_region(tendX, tendY).getPosition().getY();
 		
 		float M = missle.M / 10000.0;
 
