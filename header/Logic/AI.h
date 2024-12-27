@@ -81,9 +81,9 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 500.0;
+	double A = 50000.0;
 	double k = 0.01;
-	double t0 = 250;
+	double t0 = 150;
 	AITimer Timer;
 	double attackTime = 0;
 	double last_at = 0;
@@ -206,7 +206,7 @@ public:
 	void create(int id) {
 		clear();
 		weaponCost = config.getConfig({"ResearchInstitution", "OUpLevelCost"});
-		gold = 100000;
+		gold = 1000;
 		weapons = { 0, 0, 0 };
 		arm_level = { 1, 0, 0, 0 };
 		this->id = id;
@@ -215,7 +215,7 @@ public:
 			int playerCapitalX = player.get_capital_x();
 			int playerCapitalY = player.get_capital_y();
 			playerCapital = std::make_tuple(playerCapitalX, playerCapitalY);
-		} catch (std::exception e) {
+		} catch (std::exception& e) {
 			throw new std::runtime_error("Player Capital not found");
 		}
 
@@ -238,7 +238,7 @@ public:
 			{
 				for (int j = -3; j <= 3; j++)
 				{
-					if (i * i + j * j > size*size) continue;
+					if (i*i + j*j > size*size) continue;
 					try {
 						if (regionManager.get_region(x + i, y + j).getOwner() != -1)
 						{
@@ -248,6 +248,7 @@ public:
 					} catch (std::exception& e) {
 						continue;
 					}
+					
 				}
 			}
 			if (flag) {
@@ -263,7 +264,7 @@ public:
 				if (i*i + j*j > size*size) continue;
 				try {
 					regionManager.get_region(std::get<0>(capital) + i, std::get<1>(capital) + j).setOwner(id);
-				}catch(std::exception& e) {
+				} catch (std::exception& e) {
 					continue;
 				}
 			}
@@ -271,7 +272,8 @@ public:
 		regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).setMaxHp(1000);
 		regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).setHp(1000);
 		regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).getArmy().addArmy(200);
-	}		
+
+		}		
 
 	void setParameter(int id) {
 		// TODO
@@ -316,7 +318,7 @@ public:
 					if (cnt >= 20) {
 						return;
 					}
-					//break;
+					break;
 				}
 			}
 		}
@@ -436,7 +438,7 @@ public:
 		this->gold += formula(Timer.elapsedSeconds());	
 		delta_t -= 1;
 		if (capitalAlive) {
-			int buildArmy = std::min((int)(this->gold * 0.2), 8000);
+			int buildArmy = std::min((int)(this->gold * 0.2), 2000);
 			json ArmyInfo = config.getConfig({"Army"});
 			//int cost = 1000;// ArmyInfo["cost"].template get<int>();
 			int cost = ArmyInfo["cost"].template get<int>();
@@ -445,7 +447,7 @@ public:
 			this->gold -= buildArmy;
 		}
 
-		int biuldWeapon = (int)this->gold * 0.5;
+		int biuldWeapon = (int)this->gold * 0.9;
 		int sumDis = 0;
 		for (int i = 0; i < distance.size(); i++) {
 			sumDis += distance[i].second;
@@ -477,7 +479,7 @@ public:
 		if (maxLevelCount == 4) {
 			return;
 		}
-		int buildLevel = (int)this->gold * 0.8;
+		int buildLevel = (int)this->gold * 1;
 		int armycost = INF;
 		if (arm_level[0] < maxLevel + 1)
 			armycost = weaponCost["Army"].template get<std::vector<int>>()[arm_level[0] - 1];
@@ -657,7 +659,7 @@ public:
 		int curForce = army.getForce() * 0.7;
 		if (army.getForce() * 0.7 >= amount) {
 			DEBUG::DebugOutput("armyAttack only one region attack");
-			double time = regionManager.move_army(start, end, amount, this->arm_level[0]);
+			double time = regionManager.move_army(start, end, curForce, this->arm_level[0]);
 			this->isAttacked.emplace_back(std::make_tuple(end.getX(), end.getY()));
 			this->canMove = true;
 			DEBUG::DebugOutput("armyAttack only one region attack need time", time);
@@ -686,7 +688,7 @@ public:
 						std::this_thread::sleep_for(std::chrono::milliseconds((int)(maxTime * 1100)));
 						DEBUG::DebugOutput("ArmyAttack finished: ");
 						this->canMove = true;
-						regionManager.move_army(start, end, amount, armyLevel);
+						regionManager.move_army(start, end, curForce, armyLevel);
 						return;
 					}
 				} catch(std::exception& e) {
@@ -827,6 +829,7 @@ public:
 		//DEBUG::DebugOutput("AI source", this->gold);
 		//DEBUG::DebugOutput("canMove: ", this->canMove);
 		//DEBUG::DebugOutput("AI Called increse()");
+		
 		try {
 			this->increase();
 			if (regionSize == 0) {
@@ -839,10 +842,9 @@ public:
 			this->expand();
 			//DEBUG::DebugOutput("AI Called attack()");
 			this->attack();
-
 		}
 		catch (std::exception e) {
-
+			
 		}
 	}
 	
