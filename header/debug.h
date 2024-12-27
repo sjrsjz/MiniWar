@@ -75,7 +75,8 @@ namespace DEBUG {
         //OutputDebugStringW(tmp.c_str());
         //OutputDebugStringW(L"\n");
 #else
-        //std::cout << tmp << std::endl;
+        std::wstring tmp = DebugOutputString(data, args...).str();
+        //std::wcout << tmp << std::endl;
 #endif
     }
 }

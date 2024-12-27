@@ -236,6 +236,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)include\GL;$(SolutionDir)include\GLFW;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -257,6 +258,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)include\GL;$(SolutionDir)include\GLFW;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -264,7 +267,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(ProjectDir)../lib/glew32.lib;$(ProjectDir)../lib/glfw3dll.lib;$(ProjectDir)../lib/OpenGL32.lib;$(ProjectDir)../lib/bass.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)../lib/glew32.lib;$(ProjectDir)../lib/glfw3dll.lib;$(ProjectDir)../lib/OpenGL32.lib;$(ProjectDir)../lib/bass.lib;msvcrt.lib;vcruntime.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
