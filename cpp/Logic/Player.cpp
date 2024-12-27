@@ -800,12 +800,12 @@ void Player::create() {
 		}
 	}
 
-	gold = 10000;
-	oil = 10000;
-	electricity = 10000;
-	labor_limit = 1000;
+	gold = 10000000;
+	oil = 10000000;
+	electricity = 10000000;
+	labor_limit = 1000000;
 	ocupied_labor = 0;
-	steel = 10000;
+	steel = 10000000;
 
 	arm_level = { 1, 0, 0, 0 };
 	institution_level_limit = { 1, 1, 1, 1, 1 };

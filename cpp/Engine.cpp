@@ -24,10 +24,11 @@ static std::thread s_main_loop;
 void initial_game(int width, int height) {
 	isPause = false;
 	aiState = true;
+	aiState2 = true;
 	s_exit_game = false;
 	RegionManager::getInstance().set(width, height);
 	RegionManager::getInstance().get_player().create();
-	ai.create();
+	ai.create(1);
 	ai2.create(2);
 }
 
