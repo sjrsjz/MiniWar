@@ -229,7 +229,7 @@ void main_loop() {
 	s_wait_lock.lock();
 	GlobalTimer::getInstance().reset();
 	while (!s_exit_game) {
-		if ((aiState || aiState2) && RegionManager::getInstance().get_player().is_alive()) {
+		//if ((aiState || aiState2) && RegionManager::getInstance().get_player().is_alive()) {
 			//DEBUG::DebugOutput("New Loop\n");
 			GlobalTimer::getInstance().update();
 
@@ -252,13 +252,13 @@ void main_loop() {
 			update();
 			//DEBUG::DebugOutput("End Loop\n");
 
-		}
-		else {
-			g_game_stop = true;
+		//}
+		//else {
+			//g_game_stop = true;
 			//if (!RegionManager::getInstance().get_player().is_alive()) {
 			//	g_game_over = true;
 			//}
-		}
+		//}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	release_game();

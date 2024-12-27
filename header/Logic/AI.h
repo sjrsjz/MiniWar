@@ -81,7 +81,7 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 50000.0;
+	double A = 1000.0;
 	double k = 0.01;
 	double t0 = 150;
 	AITimer Timer;
@@ -318,7 +318,7 @@ public:
 					if (cnt >= 20) {
 						return;
 					}
-					break;
+					//break;
 				}
 			}
 		}

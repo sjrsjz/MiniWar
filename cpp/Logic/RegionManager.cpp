@@ -668,7 +668,7 @@ void RegionManager::update(GlobalTimer& timer) {
 		moving_missles.pop();
 		//update current postion
 		float mix = fmin(1, (1 + (current_time - missle.reach_time) / missle.time));
-		DEBUG::DebugOutput("mix: ", mix);
+		//DEBUG::DebugOutput("mix: ", mix);
 		auto start = missle.start_point;
 		auto end = missle.end_point;
 		std::tuple<int, int> middle = std::make_tuple((std::get<0>(start) + std::get<0>(end)) / 2, (std::get<1>(start) + std::get<1>(end)) / 2);
@@ -692,7 +692,7 @@ void RegionManager::update(GlobalTimer& timer) {
 		float x = (1 - mix) * (1 - mix) * (1 - mix) * startX + 3 * mix * (1 - mix) * (1 - mix) * P1X + 3 * mix * mix * (1 - mix) * P2X + mix * mix * mix * endX;
 		float y = (1 - mix) * (1 - mix) * (1 - mix) * startY + 3 * mix * (1 - mix) * (1 - mix) * P1Y + 3 * mix * mix * (1 - mix) * P2Y + mix * mix * mix * endY;
 		float z = (3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix) * 0.025;
-		DEBUG::DebugOutput("z: ", z);
+		//DEBUG::DebugOutput("z: ", z);
 		missle.current_pos = std::make_tuple(x, y, z);
 		
 
