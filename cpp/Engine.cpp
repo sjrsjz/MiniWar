@@ -30,6 +30,8 @@ void initial_game(int width, int height) {
 	RegionManager::getInstance().get_player().create();
 	ai.create(1);
 	ai2.create(2);
+	ai.setParameter(1);
+	ai2.setParameter(1);
 }
 
 static std::vector<std::string> s_error_messages;
@@ -230,8 +232,8 @@ void main_loop() {
 	s_wait_lock.lock();
 	GlobalTimer::getInstance().reset();
 	while (!s_exit_game) {
-		//if ((aiState || aiState2) && RegionManager::getInstance().get_player().is_alive()) {
-			//DEBUG::DebugOutput("New Loop\n");
+		if ((aiState || aiState2) && RegionManager::getInstance().get_player().is_alive()) {
+			DEBUG::DebugOutput("New Loop\n");
 			GlobalTimer::getInstance().update();
 
 			int idx = -1;
@@ -251,7 +253,7 @@ void main_loop() {
 			result_dict_mutex.unlock();
 
 			update();
-			//DEBUG::DebugOutput("End Loop\n");
+			DEBUG::DebugOutput("End Loop\n");
 
 		}
 		else {

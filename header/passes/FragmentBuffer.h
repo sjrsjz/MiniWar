@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <exception>
 #include "../../include/GL/glew.h"
 
 class FragmentBuffer
@@ -72,7 +73,7 @@ public:
     {
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            throw std::runtime_error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+            throw std::exception("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
         }
     }
 

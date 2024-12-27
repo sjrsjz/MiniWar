@@ -800,14 +800,22 @@ void Player::create() {
 		}
 	}
 
-	gold = 10000000;
-	oil = 10000000;
-	electricity = 10000000;
-	labor_limit = 1000000;
-	ocupied_labor = 0;
-	steel = 10000000;
+	//gold = 10000000;
+	//oil = 10000000;
+	//electricity = 10000000;
+	//labor_limit = 1000000;
+	//ocupied_labor = 0;
+	//steel = 10000000;
 
+	json playerSource = config.getConfig({ "PlayerOrigionSource" });
+	gold = playerSource["gold"].get<int>();
+	oil = playerSource["oil"].get<int>();
+	electricity = playerSource["electricity"].get<int>();
+	labor_limit = playerSource["laborLimit"].get<int>();
+	ocupied_labor = playerSource["ocupiedLabor"].get<int>();
+	steel = playerSource["steel"].get<int>();
 	arm_level = { 1, 0, 0, 0 };
+
 	institution_level_limit = { 1, 1, 1, 1, 1 };
 	have_research_institution = false;
 

@@ -1,4 +1,12 @@
 {
+	"PlayerOrigionSource" :{
+		"gold" : 10000,
+		"oil" : 2000,
+		"electricity" : 1000,
+		"steel" : 500,
+		"laborLimit" : 10000,
+		"ocupiedLabor": 0
+	},
 	"mapSize": {
 		"large": {
 			"width": 64,
@@ -108,9 +116,9 @@
     },
 	"AIParameter": {
 		"Easy": {
-			"A": 300.0,
+			"A": 300000.0,
 			"k": 0.01,
-			"t0": 250
+			"t0": 50
 		},
 		"Normal": {
 			"A": 350.0,

@@ -81,7 +81,7 @@ class AI {
 	float size;
 	int regionSize;
 	int playerRegionSize;
-	double A = 1000.0;
+	double A;
 	double k = 0.01;
 	double t0 = 150;
 	AITimer Timer;
@@ -296,9 +296,15 @@ public:
 		if (!canAttack) {
 			return;
 		}
+		int maxcnt = 20;
 		int cnt = 0;
+		int playerSize = playerRegions.size();
+		int aiSize = AIRegions.size();
+		int roundSize = std::ceil((float)maxcnt / playerSize);
+		//std::cout << "A:" << this->A << std::endl;
 		for (int i = 0; i < weapons.size(); i++) {
 			if (weapons[i] == 0) continue;
+			int roundCnt = 0;
 			for (auto playerRegion: playerRegions) {
 				for (auto aiRegion: AIRegions) {
 					Point start(std::get<0>(aiRegion), std::get<1>(aiRegion));
@@ -310,15 +316,20 @@ public:
 					double time = start.distance(end) / regionManager.get_weapon(i).getAttackSpeed(arm_level[i + 1]);
 					if (dist >= min && dist <= max) {
 						DEBUG::DebugOutput("WeaponAttack() called");
+						std::cout << "roundSize: " << roundSize << std::endl;
 						regionManager.attack_region_missle(i, arm_level[i + 1], start, end, time);
+						std::cout << "Weapon attack" << std::endl;
 						cnt++;
 						canAttack = false;
 						DEBUG::DebugOutput("WeaponAttack() finished");
 					}
-					if (cnt >= 20) {
+					if (cnt >= maxcnt) {
 						return;
 					}
-					//break;
+					roundCnt++;
+					if (roundCnt >= roundSize) {
+						break;
+					}
 				}
 			}
 		}
