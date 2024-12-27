@@ -1,11 +1,5 @@
 ﻿#pragma once
-#ifndef _gl_h
-#define  _gl_h
 #include "../include/GL/glew.h"
-#endif
-#ifndef _mash_h
-#define _mash_h
-
 #include <vector>
 #include <stdexcept>
 #include <memory>
@@ -148,5 +142,3 @@ public:
         }
     }
 };
-
-#endif // !_mash_h

@@ -606,6 +606,7 @@ void RegionManager::update(GlobalTimer& timer) {
 				std::uniform_int_distribution<> dis(200, 300);
 				region->setHp(dis(gen));
 				region->getWeapons().clear();
+				region->getArmy().setArmy(0);
 				clear_building(*region);
 			}
 			else {
@@ -672,13 +673,19 @@ void RegionManager::update(GlobalTimer& timer) {
 		auto start = missle.start_point;
 		auto end = missle.end_point;
 		std::tuple<int, int> middle = std::make_tuple((std::get<0>(start) + std::get<0>(end)) / 2, (std::get<1>(start) + std::get<1>(end)) / 2);
-		auto [middleX, middleY] = middle;
-		auto [tstartX, tstartY] = start;
-		auto [tendX, tendY] = end;
-		float startX = get_region(tstartX, tstartY).getPosition().getX();
-		float startY = get_region(tstartX, tstartY).getPosition().getY();
-		float endX = get_region(tendX, tendY).getPosition().getX();
-		float endY = get_region(tendX, tendY).getPosition().getY();
+		auto [middleX0, middleY0] = middle;
+		auto [startX0, startY0] = start;
+		auto [endX0, endY0] = end;
+
+		float startX = get_region(startX0, startY0).getPosition().getX();
+		float startY = get_region(startX0, startY0).getPosition().getY();
+
+		float endX = get_region(endX0, endY0).getPosition().getX();
+		float endY = get_region(endX0, endY0).getPosition().getY();
+
+		float middleX = get_region(middleX0, middleY0).getPosition().getX();
+		float middleY = get_region(middleX0, middleY0).getPosition().getY();
+		
 		
 		float M = missle.M / 10000.0;
 

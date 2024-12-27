@@ -1,10 +1,8 @@
 ﻿
 #include "../include/GL/glew.h"
-#define GLFW_EXPOSE_NATIVE_WIN32
 #include "../include/GLFW/glfw3.h"
 #include "../include/GLFW/glfw3native.h"
 #include "../include/linmath.h"
-#define _gl_h
 
 #include "../header/output.h"
 #include "../header/shader.h"
@@ -111,13 +109,11 @@ namespace GAMESOUND {
 		// 先确保BASS已关闭
 		BASS_Free();
 
-		HWND hwnd = glfwGetWin32Window(glfw_win);
-
 		// 初始化BASS，使用默认设备
 		if (!BASS_Init(-1,         // 默认设备
 			44100,      // 采样率
 			BASS_DEVICE_STEREO,  // 立体声
-			hwnd,          // 窗口句柄
+			0,          // 窗口句柄
 			NULL        // 不使用CLSID
 		)) {
 			int error = BASS_ErrorGetCode();
@@ -297,6 +293,7 @@ namespace TEXTURE {
 	static GLuint s_image_lightning;
 	static GLuint s_image_guard;
 	static GLuint s_image_forbid;
+	static GLuint s_image_building_icon;
 }
 
 static bool s_pause_rendering = false;
@@ -317,7 +314,7 @@ static enum SelectedWeapon {
 } s_selected_weapon;
 
 static int s_scatter_bomb_range = 1;
-static int s_nuclear_missile_level = 1;
+static int s_nuclear_missile_level = 0;
 
 namespace UIFonts {
 	static ImFont* default_font;
@@ -1018,6 +1015,10 @@ public:
 				push_input({ Point::toPoint(grid),Operator::SetMilitaryFactory });
 				open = false;
 			}
+			/*if (ImGui::Selectable(u8"升级建筑")) {
+				push_input({ Point::toPoint(grid),Operator::BuildingLevel });
+				open = false;
+			}*/
 			if (ImGui::Selectable(u8"移除建筑")) {
 				push_input({ Point::toPoint(grid),Operator::RemoveBuilding });
 				open = false;
@@ -1121,7 +1122,28 @@ void render_update_info() {
 			region.army_position_x = -1e6;
 			region.army_position_y = -1e6;
 			region.identity = region_info.getOwner();
-			region.is_capital = (i == RegionManager::getInstance().get_player().get_capital_x() && j == RegionManager::getInstance().get_player().get_capital_y()) && region_info.getHp() > 1e-3;
+			if ((i == RegionManager::getInstance().get_player().get_capital_x() && j == RegionManager::getInstance().get_player().get_capital_y()) && region_info.getOwner() == 0)
+				region.region_additional_info = 1;
+			else {
+				if (region_info.getBuilding().getName() == "PowerStation") {
+					region.region_additional_info = 2;
+				}
+				else if (region_info.getBuilding().getName() == "Refinery") {
+					region.region_additional_info = 3;
+				}
+				else if (region_info.getBuilding().getName() == "SteelFactory") {
+					region.region_additional_info = 4;
+				}
+				else if (region_info.getBuilding().getName() == "CivilFactory") {
+					region.region_additional_info = 5;
+				}
+				else if (region_info.getBuilding().getName() == "MilitaryFactory") {
+					region.region_additional_info = 6;
+				}
+				else {
+					region.region_additional_info = 0;
+				}
+			}
 			map_info.setRegion(i, j, region);
 		}
 	}
@@ -1170,7 +1192,7 @@ void load_new_game(const LevelConfig& level_config) {
 			region.army_position_x = -1e6;
 			region.army_position_y = -1e6;
 			region.identity = 0;
-			region.is_capital = 0;
+			region.region_additional_info = 0;
 			map_info.setRegion(i, j, region);
 		}
 	}
@@ -1180,11 +1202,6 @@ void load_new_game(const LevelConfig& level_config) {
 
 
 	std::vector<Vertex> vertices;
-	for (int i = 0; i < 1000; i++) {
-		Vertex tmp = { (float)(rand() % 100) / 50 - 1, -0.62, (float)(rand() % 100) / 50 - 1, 1, 1, 0 };
-		vertices.push_back(tmp);
-	}
-
 	point_renderer.update(vertices);
 
 	s_tech_tree_gui.init_tech_tree_gui();
@@ -1650,6 +1667,10 @@ void render_main_game_pass() {
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_forbid);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_forbid"), 3);
 
+	// 建筑标识
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_building_icon);
+	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_building_icon"), 4);
 
 
 	float attack_range = 0;
@@ -1658,7 +1679,7 @@ void render_main_game_pass() {
 	case NONE:
 		break;
 	case NUCLEAR_MISSILE:
-		attack_range = 30;
+		attack_range = std::get<1>(RegionManager::getInstance().get_weapon(s_nuclear_missile_level).getAttackRange()) * fmax(RegionManager::getInstance().get_map_width(), RegionManager::getInstance().get_map_height());
 		break;
 	case ARMY:
 		attack_range = 1e6;
@@ -2117,7 +2138,7 @@ void KeyRelease(int key) {
 	case GLFW_KEY_SPACE:
 		if (GAMESTATUS::s_enable_control) {
 			GAMESOUND::play_click_sound();
-			s_selected_weapon = (SelectedWeapon)((s_selected_weapon + 1) % 4);		
+			s_selected_weapon = (SelectedWeapon)((s_selected_weapon + 1) % 3);		
 		}
 		break;
 	case GLFW_KEY_T:
@@ -2165,8 +2186,6 @@ void KeyRelease(int key) {
 							s_selected_gui.shake_gui(timer);
 							s_shake_effect.push_shake(timer);
 						}
-						// do something
-						s_selected_gui.is_selected = false;
 						break;
 					case ARMY:
 						DEBUG::DebugOutput("Army");
@@ -2222,12 +2241,15 @@ void KeyRelease(int key) {
 							break;
 						}
 						if (result == "Success") {
-							DEBUG::DebugOutput("Nuclear Missile");
+							GAMESOUND::play_click_sound();
 						}
 						break;
 					case ARMY:
 						DEBUG::DebugOutput("Army");
-						push_input({ start_point, end_point, 100, Operator::ProductArmy });
+						result = push_input_wait_for_result({ start_point, end_point, 100, Operator::ProductArmy });
+						if (result == "Success") {
+							GAMESOUND::play_click_sound();
+						}
 						break;
 					case SCATTER_BOMB:
 						DEBUG::DebugOutput("Scatter Bomb");
@@ -2278,7 +2300,7 @@ void KeyRelease(int key) {
 		break;
 	case GLFW_KEY_4:
 		if (GAMESTATUS::s_enable_control) {
-			s_selected_weapon = SCATTER_BOMB;
+		//	s_selected_weapon = SCATTER_BOMB;
 		}
 		break;
 	default:
@@ -2301,6 +2323,7 @@ bool compileShaders() {
 	if (s_direct_tex_program == -1) return false;
 	s_points_program = CompileShader(point_renderer_vert, point_renderer_frag, nullptr, &points_vertex_shader, &points_fragment_shader, nullptr);
 	DEBUG::DebugOutput("Shaders Compiled");
+	return true;
 }
 
 void init() {
@@ -2349,6 +2372,7 @@ void init() {
 	TEXTURE::s_image_lightning = LoadPNG("resources/textures/lightning.png");
 	TEXTURE::s_image_guard = LoadPNG("resources/textures/guard.png");
 	TEXTURE::s_image_forbid = LoadPNG("resources/textures/forbid.png");
+	TEXTURE::s_image_building_icon = LoadPNG("resources/textures/buildings.png");
 	DEBUG::DebugOutput("Textures Loaded");
 	timer.setTime(glfwGetTime());
 	// 启动背景音乐
@@ -2403,6 +2427,9 @@ void destroy() {
 	if (TEXTURE::s_image_forbid != GLFW_INVALID_VALUE) {
 		glDeleteTextures(1, &TEXTURE::s_image_forbid);
 	}
+	if (TEXTURE::s_image_building_icon != GLFW_INVALID_VALUE) {
+		glDeleteTextures(1, &TEXTURE::s_image_building_icon);
+	}
 }
 
 int main() {
@@ -2448,9 +2475,9 @@ int main() {
 
 	
 
-	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();

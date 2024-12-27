@@ -171,9 +171,6 @@
     <ClInclude Include="..\include\GL\eglew.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\GL\gl.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\GL\glew.h">
       <Filter>include</Filter>
     </ClInclude>

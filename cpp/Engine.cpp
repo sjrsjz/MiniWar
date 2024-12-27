@@ -24,10 +24,11 @@ static std::thread s_main_loop;
 void initial_game(int width, int height) {
 	isPause = false;
 	aiState = true;
+	aiState2 = true;
 	s_exit_game = false;
 	RegionManager::getInstance().set(width, height);
 	RegionManager::getInstance().get_player().create();
-	ai.create();
+	ai.create(1);
 	ai2.create(2);
 }
 
@@ -252,13 +253,13 @@ void main_loop() {
 			update();
 			//DEBUG::DebugOutput("End Loop\n");
 
-		//}
-		//else {
-			//g_game_stop = true;
-			//if (!RegionManager::getInstance().get_player().is_alive()) {
-			//	g_game_over = true;
-			//}
-		//}
+		}
+		else {
+			g_game_stop = true;
+			if (!RegionManager::getInstance().get_player().is_alive()) {
+				g_game_over = true;
+			}
+		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	release_game();

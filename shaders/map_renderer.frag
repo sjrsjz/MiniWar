@@ -28,13 +28,14 @@ layout(binding = 0) uniform sampler2D g_tex_radioactive;
 layout(binding = 1) uniform sampler2D g_tex_attack_target;
 layout(binding = 2) uniform sampler2D g_tex_scatter_target;
 layout(binding = 3) uniform sampler2D g_tex_forbid;
+layout(binding = 4) uniform sampler2D g_tex_building_icon;
 
 
 struct RegionData{
 	vec2 cell_center;
     vec2 army_position; // 标记的军队位置，用于显示军队，当 x = -1e6 时表示没有军队
 	float identity;
-	float is_capital;
+	float region_additional_info;
 };
 RegionData empty_region(){
 	return RegionData(vec2(1000000), vec2(-1e6), -1, 0);	
@@ -268,8 +269,32 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     // color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
 
     float p_s = pow(0.65 + 0.35 * sin(g_time*5),3);
-    // 首都区块（金色高亮）
-    color = mix(color, vec3(7,10,0), float(region.is_capital > 0.5) * p_s);
+    // 首都区块（金色高亮
+
+
+    if(region.region_additional_info > 0.5){
+		vec2 region_uv = (vec2(cell_idx.real_idx) + region.cell_center) / g_map_size * 2 - 1;
+		vec2 d_uv = (uv - region_uv) * g_map_size / 1 * 2 * 0.25 + 0.5;
+        if(region.region_additional_info < 1.5){
+            color = mix(color, vec3(7,10,0), float(region.region_additional_info > 0.5) * p_s);
+        }
+        else if(d_uv.x>=0&&d_uv.x<=1){
+            const float ICON_OFFSETS[5] = float[5](
+                0.373,  // info = 2  
+                0.25,   // info = 3
+                0.118,  // info = 4 
+                0.0,    // info = 5
+                0.5     // info = 6
+            );
+            int idx = int(region.region_additional_info) - 2;
+            if(idx >= 0 && idx < 5) {
+                d_uv.x = d_uv.x * 0.125 + ICON_OFFSETS[idx];
+                vec4 icon = texture(g_tex_building_icon, d_uv);
+                color = mix(color, icon.rgb, icon.a * p_s);
+            }
+        }
+
+    }
 
 
     // 军队位置
