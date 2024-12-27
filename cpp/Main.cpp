@@ -1,10 +1,8 @@
 ﻿
 #include "../include/GL/glew.h"
-#define GLFW_EXPOSE_NATIVE_WIN32
 #include "../include/GLFW/glfw3.h"
 #include "../include/GLFW/glfw3native.h"
 #include "../include/linmath.h"
-#define _gl_h
 
 #include "../header/output.h"
 #include "../header/shader.h"
@@ -111,13 +109,11 @@ namespace GAMESOUND {
 		// 先确保BASS已关闭
 		BASS_Free();
 
-		HWND hwnd = glfwGetWin32Window(glfw_win);
-
 		// 初始化BASS，使用默认设备
 		if (!BASS_Init(-1,         // 默认设备
 			44100,      // 采样率
 			BASS_DEVICE_STEREO,  // 立体声
-			hwnd,          // 窗口句柄
+			0,          // 窗口句柄
 			NULL        // 不使用CLSID
 		)) {
 			int error = BASS_ErrorGetCode();
@@ -2327,6 +2323,7 @@ bool compileShaders() {
 	if (s_direct_tex_program == -1) return false;
 	s_points_program = CompileShader(point_renderer_vert, point_renderer_frag, nullptr, &points_vertex_shader, &points_fragment_shader, nullptr);
 	DEBUG::DebugOutput("Shaders Compiled");
+	return true;
 }
 
 void init() {
@@ -2478,9 +2475,9 @@ int main() {
 
 	
 
-	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
