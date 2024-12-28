@@ -15,3 +15,5 @@ MiniWar/x64
 /MiniWar src.zip
 /MiniWar/imgui.ini
 /linux/build
+.vscode/*
+Debug/
