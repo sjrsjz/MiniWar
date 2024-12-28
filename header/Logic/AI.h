@@ -1,4 +1,5 @@
 #include <queue>
+#include <mutex>
 #include <stdexcept>
 #include <vector>
 #include <exception>
@@ -87,6 +88,7 @@ class AI {
 	AITimer Timer;
 	double attackTime = 0;
 	double last_at = 0;
+	bool canRun = true;
 	bool canMove = true;
 	bool canDefend = true;
 	bool capitalAlive = true;
@@ -395,12 +397,16 @@ public:
 				capitalAlive = true;
 				break;
 			}
+			capitalAlive = false;
 		}
 
 		if (!capitalAlive) {
 			int SIZE = AIRegions.size();
 			int mid = SIZE / 2;
 			capital = AIRegions[mid];
+			capitalAlive = true;
+			auto [x, y] = capital;
+			std::cout << "capital position" << x << " " << y << std::endl;
 		}
 
 		averageForce /= regionSize;
@@ -436,7 +442,11 @@ public:
 		attackTime += Timer.elapsedSeconds() - last_at;	
 		last_t = Timer.elapsedSeconds();
 		last_at = Timer.elapsedSeconds();
-		if (delta_t < 1) return;
+		if (delta_t < 1) {
+			canRun = false;
+			return;
+		}
+		canRun = true;
 		if (attackTime >= 30) {
 			attackTime = 0;
 			canAttack = true;
@@ -540,10 +550,10 @@ public:
 	}
 
 	void sleep(double seconds) {
-		this->canMove = false;
 		auto start = std::chrono::steady_clock::now();
 		std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
 		auto end = std::chrono::steady_clock::now();
+		std::cout << "Elapsed time: " << std::chrono::duration<double>(end - start).count() << "s\n";
 		DEBUG::DebugOutput( "Elapsed time: ", std::chrono::duration<double>(end - start).count());
 		this->canMove = true;
 	}
@@ -649,6 +659,7 @@ public:
 			return;
 		}
 
+		this->canMove = false;
 		std::thread t([this, maxTime](){
 				this->sleep(std::ceil(maxTime));
 				});
@@ -769,10 +780,11 @@ public:
 					if (maxForce.getX() == 0 && maxForce.getY() == 0) {
 						continue;
 					}
+
+					this->canMove = false;
 					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
-					this->canMove = false;
 					t.detach();
 					break;
 				}
@@ -814,10 +826,10 @@ public:
 					if (maxForce.getX() == 0 && maxForce.getY() == 0) {
 						continue;
 					}
+					this->canMove = false;
 					std::thread t([this, maxForce, borderArmyForce, x, y](){
 							this->armyAttack(maxForce, borderArmyForce + 1, Point(x, y));
 							});
-					this->canMove = false;
 					t.detach();
 					break;
 				}
