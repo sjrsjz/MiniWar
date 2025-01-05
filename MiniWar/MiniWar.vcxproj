@@ -235,7 +235,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)include\GL;$(SolutionDir)include\GLFW;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

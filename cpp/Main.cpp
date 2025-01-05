@@ -1285,8 +1285,8 @@ public:
 		ImGui::SetWindowSize(io.DisplaySize);
 		// 调整字体大小(不使用缩放而是直接使用大号字体）
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25, 0.25, 0.25, 0.25 * x.getX()));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35, 0.35, 0.35, x.getX()));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15, 0.15, 0.15, x.getX()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35, 0.35, 0.35, 0.5 * x.getX()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15, 0.15, 0.15, 0.5 * x.getX()));
 		
 		// 列表框的
 		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.25f, 0.25f, 0.25f, 0.55f));        // 选中项背景
@@ -2438,7 +2438,9 @@ int main() {
 		println("Failed to initialize glfw"); return 0;
 	}
 	glfwSetErrorCallback((GLFWerrorfun)glfwErrorCallBack);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
 	GLFWmonitor* primary = glfwGetPrimaryMonitor();
@@ -2450,7 +2452,7 @@ int main() {
 	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
 	glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", primary, NULL);
-	//glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", 0, NULL);
+	//glfw_win = glfwCreateWindow(mode->width/4, mode->height/4, "MiniWar", 0, NULL);
 
 	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
 	glfwSetCursorPosCallback(glfw_win, (GLFWcursorposfun)glfwMouseCallback);
@@ -2473,20 +2475,15 @@ int main() {
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
 
-	
 
-	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
 
 	// Setup Platform/Renderer backends
-	ImGui_ImplGlfw_InitForOpenGL(glfw_win, true);
-	const char* glsl_version = "#version 330";
-	ImGui_ImplOpenGL3_Init(glsl_version);
 
+	const char* glsl_version = "#version 130";
 	int err = glewInit();
 
 	if (err) {
@@ -2514,7 +2511,24 @@ int main() {
 	glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
 	glEnable(GL_DEBUG_CALLBACK_FUNCTION);
 #endif // DEBUG
+	GLint maxTexSize;
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+	DEBUG::DebugOutput("Max Texture Size:", std::to_string(maxTexSize));
 
+	io.Fonts->TexDesiredWidth = maxTexSize;
+
+	io.Fonts->Clear();
+	//io.Fonts->AddFontDefault();
+	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	if (!io.Fonts->Build()) {
+		DEBUG::DebugOutput("Failed to build fonts");
+		goto destroy;
+	}
+	ImGui_ImplGlfw_InitForOpenGL(glfw_win, true);
+
+	ImGui_ImplOpenGL3_Init(glsl_version);
 	DEBUG::DebugOutput("OpenGL Version", (std::string)(char*)glGetString(GL_VERSION));
 	DEBUG::DebugOutput("GLSL Version", (std::string)(char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
@@ -2554,7 +2568,7 @@ int main() {
 		prepare_render();
 		KeyProcess();
 		render();
-
+		glUseProgram(0);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		ImGui_ImplOpenGL3_NewFrame();
@@ -2562,15 +2576,15 @@ int main() {
 		ImGui::NewFrame();
 		render_imgui(io);
 
+
 		// Rendering
 		glDebugMessageCallback(0, 0);
 		ImGui::Render();
 		glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
-
-
 		glDebugMessageCallback(0, 0);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
+		ImGui::EndFrame();
 
 		glfwSwapBuffers(glfw_win);
 	}
