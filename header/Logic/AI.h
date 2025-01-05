@@ -146,7 +146,7 @@ public:
 			int playerCapitalY = player.get_capital_y();
 			playerCapital = std::make_tuple(playerCapitalX, playerCapitalY);
 		} catch (std::exception& e) {
-			throw new std::runtime_error("Player Capital not found");
+			throw std::runtime_error("Player Capital not found");
 		}
 
 		std::tuple<float, float> originSize = config.getConfig({"Region", "OriginSize"}).template get<std::tuple<float, float>>();
@@ -218,7 +218,7 @@ public:
 			int playerCapitalY = player.get_capital_y();
 			playerCapital = std::make_tuple(playerCapitalX, playerCapitalY);
 		} catch (std::exception& e) {
-			throw new std::runtime_error("Player Capital not found");
+			throw std::runtime_error("Player Capital not found");
 		}
 
 		std::tuple<float, float> originSize = config.getConfig({"Region", "OriginSize"}).template get<std::tuple<float, float>>();

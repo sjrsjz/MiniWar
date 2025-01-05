@@ -2029,7 +2029,7 @@ void render() {
 	// HDR
 	//glEnable(GL_FRAMEBUFFER_SRGB);
 	//glEnable(GL_COLOR_LOGIC_OP);
-
+	glDisable(GL_BLEND);
 	if (!s_menu_gui.is_activitied() && GAMESTATUS::s_in_game) {
 		render_main_game_pass();
 		render_points();
@@ -2555,7 +2555,8 @@ int main() {
 		KeyProcess();
 		render();
 
-
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();

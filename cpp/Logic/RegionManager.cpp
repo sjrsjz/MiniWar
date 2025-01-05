@@ -49,7 +49,7 @@ static std::vector<Point> reconstruct_path(Node* end_node) {
     return path;
 }
 
-
+// TODO: 重写，什么构式算法
 std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point end) {
 	DEBUG::DebugOutput("RegionManager::astar() called");
     int rows = grid.size();

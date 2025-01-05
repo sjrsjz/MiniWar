@@ -1,9 +1,9 @@
 {
 	"PlayerOrigionSource" :{
-		"gold" : 10000,
-		"oil" : 2000,
-		"electricity" : 1000,
-		"steel" : 500,
+		"gold" : 30000,
+		"oil" : 5000,
+		"electricity" : 5000,
+		"steel" : 5000,
 		"laborLimit" : 10000,
 		"ocupiedLabor": 0
 	},
@@ -116,7 +116,7 @@
     },
 	"AIParameter": {
 		"Easy": {
-			"A": 300000.0,
+			"A": 300.0,
 			"k": 0.01,
 			"t0": 50
 		},

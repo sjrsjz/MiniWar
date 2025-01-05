@@ -73,7 +73,7 @@ public:
     {
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            throw std::exception("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+            //throw std::exception("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
         }
     }
 
