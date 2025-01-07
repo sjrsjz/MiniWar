@@ -1,4 +1,5 @@
 #include <cmath>
+static const double G_PI = 3.14159265358979323846;
 
 // �����㷨
 class SmoothMove {
@@ -54,9 +55,9 @@ public:
             return;
         }
         double t0 = t;
-        t = t / totalDuration * M_PI / 2;
+        t = t / totalDuration * G_PI / 2;
         t = std::sin(t) * totalDuration;
-        double dt0_dt = std::cos(t0 / totalDuration * M_PI / 2) * M_PI / 2;
+        double dt0_dt = std::cos(t0 / totalDuration * G_PI / 2) * G_PI / 2;
 
         const double _1_div_exp_2 = 1.0 / std::exp(2.0);
         x1 = x0 + t * (v0 + (v0 - dx / totalDuration) / (1 - _1_div_exp_2) * (std::exp(-2 * t / totalDuration) - 1));
