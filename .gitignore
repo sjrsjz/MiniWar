@@ -1,4 +1,4 @@
-.vs/*
+.vs
 x64/
 MiniWar/x64/*
 MiniWar/MiniWar.vcxproj
@@ -15,5 +15,17 @@ MiniWar/x64
 /MiniWar src.zip
 /MiniWar/imgui.ini
 /linux/build
-.vscode/*
-Debug/
+.vscode
+Debug
+Release
+
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+out
+MiniWar.dir
+MiniWar/CMakeFiles
+MiniWar/MiniWar.dir
+MiniWar/Debug
+MiniWar/cmake_install.cmake
+build

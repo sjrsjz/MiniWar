@@ -11,6 +11,7 @@
 #include <functional>
 #include <thread>
 #include <unordered_map>
+#include <list>
 #include "../../header/debug.h"
 #include "../../header/Logic/RegionManager.h"
 #include "../../header/utils/Config.h"

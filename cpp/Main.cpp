@@ -967,7 +967,7 @@ public:
 
 }s_status_gui;
 
-static struct LevelConfig {
+struct LevelConfig {
 	int map_width = 16;
 	int map_height = 16;
 
