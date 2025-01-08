@@ -2532,9 +2532,9 @@ int main() {
 
 	io.Fonts->Clear();
 	//io.Fonts->AddFontDefault();
-	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttf", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttf", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttf", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("./resources/fonts/msyh.ttf", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("./resources/fonts/msyh.ttf", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("./resources/fonts/msyh.ttf", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	if (!io.Fonts->Build()) {
 		DEBUG::DebugOutput("Failed to build fonts");
 		goto destroy;
