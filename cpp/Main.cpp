@@ -77,25 +77,38 @@ static int s_current_selected_grid[2] = { -1,-1 };
 static bool s_is_selected = false;
 
 namespace GAMESOUND {
-	static const wchar_t* s_sound_background[] = {
-		L"resources/sounds/background/background1.mp3",
-		L"resources/sounds/background/background2.mp3",
-		L"resources/sounds/background/background3.mp3",
+#ifdef _WIN32
+#define SOUND_STR(str) L##str
+#define SOUND_CHAR wchar_t
+#else
+#define SOUND_STR(str) str
+#define SOUND_CHAR char
+#endif
+
+	static const SOUND_CHAR* s_sound_background[] = {
+		SOUND_STR("./resources/sounds/background/background1.mp3"),
+		SOUND_STR("./resources/sounds/background/background2.mp3"),
+		SOUND_STR("./resources/sounds/background/background3.mp3"),
 	};
-	static const wchar_t* s_sound_click[] = {
-		L"resources/sounds/interact/click1.mp3"
+
+	static const SOUND_CHAR* s_sound_click[] = {
+		SOUND_STR("./resources/sounds/interact/click1.mp3")
 	};
-	static const wchar_t* s_sound_popup[] = {
-		L"resources/sounds/interact/popup1.mp3"
+
+	static const SOUND_CHAR* s_sound_popup[] = {
+		SOUND_STR("./resources/sounds/interact/popup1.mp3")
 	};
-	static const wchar_t* s_sound_nuclear_launch[] = {
-		L"resources/sounds/interact/nuclear_launch.mp3"
+
+	static const SOUND_CHAR* s_sound_nuclear_launch[] = {
+		SOUND_STR("./resources/sounds/interact/nuclear_launch.mp3")
 	};
-	static const wchar_t* s_sound_error[] = {
-		L"resources/sounds/interact/error.mp3"
+
+	static const SOUND_CHAR* s_sound_error[] = {
+		SOUND_STR("./resources/sounds/interact/error.mp3")
 	};
-	static const wchar_t* s_sound_bomb_explosion[] = {
-		L"resources/sounds/interact/bomb_explosion.mp3"
+
+	static const SOUND_CHAR* s_sound_bomb_explosion[] = {
+		SOUND_STR("./resources/sounds/interact/bomb_explosion.mp3")
 	};
 
 	static int s_sound_background_idx = 0;
@@ -2519,9 +2532,9 @@ int main() {
 
 	io.Fonts->Clear();
 	//io.Fonts->AddFontDefault();
-	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttc", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttf", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttf", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("resources\\fonts\\msyh.ttf", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	if (!io.Fonts->Build()) {
 		DEBUG::DebugOutput("Failed to build fonts");
 		goto destroy;

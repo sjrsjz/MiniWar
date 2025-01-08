@@ -2,7 +2,7 @@
 #include "../../include/GL/glew.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../include/stb/stb_image.h"
-#include "../Debug.h"
+#include "../debug.h"
 
 GLuint LoadPNG(const char* path, bool repeat = false) {
     int width, height, nrChannels;
