@@ -11,3 +11,14 @@
 # 编译
 
 Linux下请运行 `build.sh` 进行编译
+
+# 运行效果
+
+### Xiaomi 13 Chroot Ubuntu
+![XYG`W{WSXUG7DOYJ138S}WN](https://github.com/user-attachments/assets/2cff8168-c213-486c-b3b5-54435b1cca08)
+
+### PC
+![image](https://github.com/user-attachments/assets/0ecedfb1-fef1-459e-83a6-5060e94749a2)
+
+### 游戏内
+![image](https://github.com/user-attachments/assets/0d61de0a-8702-4b90-86e6-37a8ece0cfc0)
