@@ -2046,8 +2046,16 @@ void render() {
 	if (!s_menu_gui.is_activitied() && GAMESTATUS::s_in_game) {
 		render_main_game_pass();
 		render_points();
+		
+		// 检查是否为arm平台
+#if defined(__aarch64__) || defined(__arm__)
+		g_main_game_pass_fbo.bind_texture();
+		glGenerateMipmap(GL_TEXTURE_2D);
+#else
 		render_gaussian_blur();
+#endif
 	}
+	glUseProgram(0);
 	g_final_mix_pass_fbo.bind_frameBuffer();
 	int W, H;
 	float ratio;
@@ -2073,12 +2081,24 @@ void render() {
 
 	// 菜单模糊/泛光
 	if (s_menu_gui.is_activitied())
+#if defined(__aarch64__) || defined(__arm__)
+		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.0);
+#else
 		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_menu_gui.getX());
+#endif
 	else if (s_tech_tree_gui.is_active()) {
-		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_tech_tree_gui.getX());
+#if defined(__aarch64__) || defined(__arm__)
+		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.0);
+#else
+		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_menu_gui.getX());
+#endif
 	}
 	else {
+#if defined(__aarch64__) || defined(__arm__)
+		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.0);
+#else
 		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05);
+#endif
 	}
 	s_mash.render(s_main_game_pass_program, "vPos", nullptr, "vUV", nullptr);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -2464,7 +2484,11 @@ int main() {
 	glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
+#if defined(__aarch64__) || defined(__arm__)
+	glfw_win = glfwCreateWindow(mode->width / 2, mode->height / 2, "MiniWar", primary, NULL);
+#else
 	glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", primary, NULL);
+#endif
 	//glfw_win = glfwCreateWindow(mode->width/4, mode->height/4, "MiniWar", 0, NULL);
 
 	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
