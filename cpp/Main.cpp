@@ -2090,7 +2090,7 @@ void render() {
 #if defined(__aarch64__) || defined(__arm__)
 		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.0);
 #else
-		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_menu_gui.getX());
+		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_tech_tree_gui.getX());
 #endif
 	}
 	else {
