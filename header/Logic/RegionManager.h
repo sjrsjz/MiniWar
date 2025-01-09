@@ -13,7 +13,7 @@ struct MovingArmy {
 	double time{};
 	double reach_time{};
 	std::vector<std::tuple<int, int>> path{};
-	std::tuple<float, float> current_pos{};
+	std::tuple<double, double> current_pos{};
 	bool operator<(const MovingArmy& rhs) const {
 		return reach_time > rhs.reach_time;
 	}
@@ -27,7 +27,7 @@ struct MovingMissle {
 	double reach_time{};
 	std::tuple<int, int> start_point{};
 	std::tuple<int, int> end_point{};
-	std::tuple<float, float, float> current_pos{};
+	std::tuple<double, double, double> current_pos{};
 	int h;
 	int M;
 	bool operator<(const MovingMissle& rhs) const {
@@ -49,7 +49,7 @@ private:
 	
 	void clear_building(Region& region);
 	double calculate_Euclidean_distance(std::tuple<int, int> start, std::tuple<int, int> end);
-	std::vector<Region*> get_damaged_regions(Point position, float range);
+	std::vector<Region*> get_damaged_regions(Point position, double range);
 public:
 	RegionManager();
 	RegionManager(int width, int height);

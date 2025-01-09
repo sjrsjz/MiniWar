@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="Array&lt;*&gt;">
+<DisplayString>Array2D [width={width} height={height}]</DisplayString>
+    <Expand>
+      <ArrayItems Condition="data != 0">
+        <Direction>Forward</Direction>
+        <Rank>2</Rank>
+        <Size>height</Size>
+        <Size>width</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+      <Item Name="[Width]">width</Item>
+      <Item Name="[Height]">height</Item>
+    </Expand>
+  </Type>
+</AutoVisualizer>

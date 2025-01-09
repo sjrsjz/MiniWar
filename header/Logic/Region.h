@@ -8,9 +8,9 @@
 #include "../utils/Point.h"
 class Region {
 private:
-	Building building = Building("none");
-	float hp;
-	float maxHp; 
+	Building building = Building(BuildingType::None);
+	double hp;
+	double maxHp;
 	int owner;
 	Point position;
 	std::vector<int> weapons;
@@ -47,9 +47,9 @@ public:
 	~Region();
 	bool setOwner(int owner);//in manage to judge if exists this player
 	int getOwner();
-	bool increaseHp(float hp);
-	bool decreaseHp(float hp);
-	float getHp();
+	bool increaseHp(double hp);
+	bool decreaseHp(double hp);
+	double getHp();
 	bool setBuilding(Building& building);
 	Building& getBuilding();
 	Point getPosition();
@@ -60,8 +60,8 @@ public:
 	bool addArmy(int num);
 	Army& getArmy();
 	bool removeBuilding();
-	bool setHp(float hp);
-	bool setMaxHp(float hp);
+	bool setHp(double hp);
+	bool setMaxHp(double hp);
 	/* int getAvailableLabor(); */
 	/* int getAllLabor(); */
 	/* int getAvailableElectricity(); */

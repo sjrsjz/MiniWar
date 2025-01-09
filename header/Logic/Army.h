@@ -1,13 +1,13 @@
 ﻿#pragma once
 
 class Army {
-	float speed;
+	double speed;
 	int level;
 	int force;
 public:
 	Army(int force = 0, int level = 1);
 	~Army();
-	float getSpeed();
+	double getSpeed();
 	int getLevel();
 	int getForce();
 	bool addArmy(int num);

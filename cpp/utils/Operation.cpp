@@ -17,7 +17,7 @@ Operation::Operation(Point cur, Operator op) {
 	this->op = op;
 }
 
-Operation::Operation(Point cur, float radius, Operator op) {
+Operation::Operation(Point cur, double radius, Operator op) {
 	this->cur = cur;
 	this->radius = radius;
 	this->op = op;
@@ -56,7 +56,7 @@ int Operation::getSize() {
 	return size;
 }
 
-float Operation::getRadius() {
+double Operation::getRadius() {
 	return radius;
 }
 

@@ -582,11 +582,11 @@ public:
 			if (keys[GLFW_KEY_D]) {
 				tree_offset_X.newEndPosition(tree_offset_X.getX() - speed, timer.getTime());
 			}
-			int powerstation_level = RegionManager::getInstance().get_player().get_building_level_limit("PowerStation");
-			int refinery_level = RegionManager::getInstance().get_player().get_building_level_limit("Refinery");
-			int steelfactory_level = RegionManager::getInstance().get_player().get_building_level_limit("SteelFactory");
-			int civilian_factory_level = RegionManager::getInstance().get_player().get_building_level_limit("CivilFactory");
-			int military_factory_level = RegionManager::getInstance().get_player().get_building_level_limit("MilitaryFactory");
+			int powerstation_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::PowerStation);
+			int refinery_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::Refinery);
+			int steelfactory_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::SteelFactory);
+			int civilian_factory_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::CivilFactory);
+			int military_factory_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::MilitaryFactory);
 
 			int army_level = RegionManager::getInstance().get_player().get_army_level(0);
 			int cm_level = RegionManager::getInstance().get_player().get_army_level(1);
@@ -774,9 +774,9 @@ public:
 		ImGui::Text(u8"区块坐标: %d, %d", grid[0], grid[1]);
 		try {
 			Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
-			std::string building_name = region.getBuilding().getName();
-			if (building_name != "none")
-				ImGui::Text(u8"建筑: %s", building_name.c_str());
+			BuildingType building_type = region.getBuilding().getType();
+			if (building_type != BuildingType::None)
+				ImGui::Text(u8"建筑: %s", BuildingTypeToString(building_type));
 			if (region.getOwner() >= 0) {
 				if (region.getOwner() == 0) {
 					ImGui::Text(u8"所有者: 玩家");
@@ -1130,31 +1130,33 @@ void render_update_info() {
 		for (int j{}; j < rm.get_map_height(); j++) {
 			Region& region_info = rm.get_region(i, j);
 			RegionData region;
-			region.cell_center_x = region_info.getPosition().getX() - i;
-			region.cell_center_y = region_info.getPosition().getY() - j;
+			region.cell_center_x = region_info.getPosition().x - i;
+			region.cell_center_y = region_info.getPosition().y - j;
 			region.army_position_x = -1e6;
 			region.army_position_y = -1e6;
 			region.identity = region_info.getOwner();
 			if ((i == RegionManager::getInstance().get_player().get_capital_x() && j == RegionManager::getInstance().get_player().get_capital_y()) && region_info.getOwner() == 0)
 				region.region_additional_info = 1;
 			else {
-				if (region_info.getBuilding().getName() == "PowerStation") {
+				switch (region_info.getBuilding().getType()) {
+				case BuildingType::PowerStation:
 					region.region_additional_info = 2;
-				}
-				else if (region_info.getBuilding().getName() == "Refinery") {
+					break;
+				case BuildingType::Refinery:
 					region.region_additional_info = 3;
-				}
-				else if (region_info.getBuilding().getName() == "SteelFactory") {
+					break;
+				case BuildingType::SteelFactory:
 					region.region_additional_info = 4;
-				}
-				else if (region_info.getBuilding().getName() == "CivilFactory") {
+					break;
+				case BuildingType::CivilFactory:
 					region.region_additional_info = 5;
-				}
-				else if (region_info.getBuilding().getName() == "MilitaryFactory") {
+					break;
+				case BuildingType::MilitaryFactory:
 					region.region_additional_info = 6;
-				}
-				else {
+					break;
+				default:
 					region.region_additional_info = 0;
+					break;
 				}
 			}
 			map_info.setRegion(i, j, region);
@@ -2183,8 +2185,8 @@ void KeyRelease(int key) {
 				Point start_point = Point::toPoint(s_selected_gui.grid);
 				Point end_point = Point::toPoint(s_current_selected_grid);
 				try {
-					Region& from_region = RegionManager::getInstance().get_region(start_point.getX(), start_point.getY());
-					Region& to_region = RegionManager::getInstance().get_region(end_point.getX(), end_point.getY());
+					Region& from_region = RegionManager::getInstance().get_region(start_point.x, start_point.y);
+					Region& to_region = RegionManager::getInstance().get_region(end_point.x, end_point.y);
 					std::string result = "";
 					switch (s_selected_weapon)
 					{
@@ -2244,8 +2246,8 @@ void KeyRelease(int key) {
 				Point start_point = Point::toPoint(s_selected_gui.grid);
 				Point end_point = Point::toPoint(s_current_selected_grid);
 				try {
-					Region& from_region = RegionManager::getInstance().get_region(start_point.getX(), start_point.getY());
-					Region& to_region = RegionManager::getInstance().get_region(end_point.getX(), end_point.getY());
+					Region& from_region = RegionManager::getInstance().get_region(start_point.x, start_point.y);
+					Region& to_region = RegionManager::getInstance().get_region(end_point.x, end_point.y);
 					std::string result = "";
 					switch (s_selected_weapon)
 					{
@@ -2487,9 +2489,9 @@ int main() {
 #if defined(__aarch64__) || defined(__arm__)
 	glfw_win = glfwCreateWindow(mode->width / 2, mode->height / 2, "MiniWar", primary, NULL);
 #else
-	glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", primary, NULL);
+	//glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", primary, NULL);
+	glfw_win = glfwCreateWindow(mode->width/4, mode->height/4, "MiniWar", 0, NULL);
 #endif
-	//glfw_win = glfwCreateWindow(mode->width/4, mode->height/4, "MiniWar", 0, NULL);
 
 	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);
 	glfwSetCursorPosCallback(glfw_win, (GLFWcursorposfun)glfwMouseCallback);

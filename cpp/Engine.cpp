@@ -233,7 +233,7 @@ void main_loop() {
 	GlobalTimer::getInstance().reset();
 	while (!s_exit_game) {
 		if ((aiState || aiState2) && RegionManager::getInstance().get_player().is_alive()) {
-			DEBUG::DebugOutput("New Loop\n");
+			//DEBUG::DebugOutput("New Loop\n");
 			GlobalTimer::getInstance().update();
 
 			int idx = -1;
@@ -253,7 +253,7 @@ void main_loop() {
 			result_dict_mutex.unlock();
 
 			update();
-			DEBUG::DebugOutput("End Loop\n");
+			//DEBUG::DebugOutput("End Loop\n");
 
 		}
 		else {

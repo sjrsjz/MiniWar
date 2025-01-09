@@ -17,8 +17,8 @@ Region::Region() {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(0.0, 1.0);
-	float X = dis(gen);
-	float Y = dis(gen);
+	double X = dis(gen);
+	double Y = dis(gen);
 	this->owner = -1;
 	this->weapons = std::vector<int>(3, 0);
 	this->position = Point(X, Y);
@@ -42,8 +42,8 @@ Region::Region(int x, int y){
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(0.0, 1000);
-	float X = dis(gen)/1000.0;
-	float Y = dis(gen)/1000.0;
+	double X = dis(gen) / 1000.0;
+	double Y = dis(gen) / 1000.0;
 	this->owner = -1; 
 	this->weapons = std::vector<int>(3, 0);
 	this->position = Point(X + x, Y + y);
@@ -69,10 +69,10 @@ int Region::getOwner() {
 	return this->owner;
 } 
 
-bool Region::increaseHp(float hp) {
+bool Region::increaseHp(double hp) {
 	if (this->hp == this->maxHp) {
-		float x = position.getX();
-		float y = position.getY();
+		double x = position.x;
+		double y = position.y;
 		std::stringstream s;
 		
 		s << "Region at (" << x << ", " << y << ") is already at full hp";
@@ -83,24 +83,24 @@ bool Region::increaseHp(float hp) {
 	return true;
 }
 
-bool Region::decreaseHp(float hp) {
+bool Region::decreaseHp(double hp) {
 	if (this->hp == 0) {
-		float x = position.getX();
-		float y = position.getY();
+		double x = position.x;
+		double y = position.y;
 		std::stringstream s;
 		s << "Region at (" << x << ", " << y << ") is already at 0 hp";
 		DEBUG::DebugOutput("Region::decreaseHp() throws");
 		throw SurrenderNotAttackedException(s.str());
 	}
 	
-	this->hp = std::min(this->hp - hp, 0.0f);
+	this->hp = std::min(this->hp - hp, 0.0);
 	if (this->hp == 0) {
 		this->owner = -1;
 	}
 	return true;
 }
 
-float Region::getHp() {
+double Region::getHp() {
 	return this->hp;
 }
 
@@ -162,12 +162,12 @@ bool Region::removeBuilding() {
 	return this->building.remove();
 }
 
-bool Region::setHp(float hp) {
+bool Region::setHp(double hp) {
 	this->hp = hp;
 	return true;
 }
 
-bool Region::setMaxHp(float maxHp) {
+bool Region::setMaxHp(double maxHp) {
 	this->maxHp = maxHp;
 	return true;
 }

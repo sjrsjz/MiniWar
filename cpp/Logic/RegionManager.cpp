@@ -20,92 +20,72 @@ RegionManager::~RegionManager() {
 
 }
 
-struct Node {
-    Point pt;        // ��ǰ�ڵ�λ��
-    int g_cost;      // ����㵽��ǰ��Ĵ���
-    int h_cost;      // ���ʽ����ֵ�������پ��룩
-    int f_cost;      // �ܴ��� f = g + h
-    Node* parent;    // ���ڵ�ָ��
+std::vector<Point> astar(const Array<int>& grid, Point start, Point end) {
+	int width = grid.get_width();
+	int height = grid.get_height();
+	Array<bool> closed(width, height);
+	// 使用最小堆而不是最大堆，修改比较函数
+	auto cmp = [](const std::pair<Point, double>& a, const std::pair<Point, double>& b) {
+		return a.second > b.second;
+		};
+	std::priority_queue<std::pair<Point, double>, std::vector<std::pair<Point, double>>, decltype(cmp)> open(cmp);
 
-    Node(Point pt_, int g, int h, Node* parent_ = nullptr)
-        : pt(pt_), g_cost(g), h_cost(h), f_cost(g + h), parent(parent_) {}
+	// 记录每个节点的g值
+	Array<double> g_scores(width, height);
+	g_scores.fill(std::numeric_limits<double>::infinity());
+	g_scores(std::floor(start.x), std::floor(start.y)) = 0;
 
-    // �Ƚ����ȶ��е�˳��f_cost С������
-    bool operator>(const Node& other) const {
-        return f_cost > other.f_cost;
-    }
-};
+	enum direction { E, W, S, N }; // 修改顺序以匹配dx,dy数组
+	Array<direction> directions(width, height);
 
-int manhattan_distance(Point a,Point b) {
-    return std::abs(a.getX() - b.getX()) + std::abs(a.getY() - b.getY());
+	open.push({ start, 0.0 });
+
+	const int dx[4] = { 1, -1, 0, 0 };
+	const int dy[4] = { 0, 0, 1, -1 };
+
+	while (!open.empty()) {
+		Point current = open.top().first;
+		open.pop();
+
+		int x = std::floor(current.x);
+		int y = std::floor(current.y);
+
+		if (current == end) {
+			std::vector<Point> path;
+			Point position = end;
+			while (position != start) {
+				path.push_back(position);
+				direction dir = directions(std::floor(position.x), std::floor(position.y));
+				position.x -= dx[dir]; // 反向回溯
+				position.y -= dy[dir];
+			}
+			path.push_back(start);
+			std::reverse(path.begin(), path.end());
+			return path;
+		}
+
+		if (closed(x, y)) continue;
+		closed(x, y) = true;
+
+		for (int i = 0; i < 4; i++) {
+			int nx = x + dx[i];
+			int ny = y + dy[i];
+			if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+			if (closed(nx, ny) || grid(nx, ny) == 0) continue;
+
+			Point next(nx, ny);
+			double tentative_g = g_scores(x, y) + current.distance(next);
+
+			if (tentative_g < g_scores(nx, ny)) {
+				g_scores(nx, ny) = tentative_g;
+				directions(nx, ny) = static_cast<direction>(i);
+				double h = next.distance(end);
+				open.push({ next, tentative_g + h });
+			}
+		}
+	}
+	return {};
 }
-
-static std::vector<Point> reconstruct_path(Node* end_node) {
-    std::vector<Point> path;
-    for (Node* current = end_node; current != nullptr; current = current->parent) {
-        path.push_back(current->pt);
-    }
-    std::reverse(path.begin(), path.end());
-    return path;
-}
-
-// TODO: 重写，什么构式算法
-std::vector<Point> astar(std::vector<std::vector<int>>& grid, Point start, Point end) {
-	DEBUG::DebugOutput("RegionManager::astar() called");
-    int rows = grid.size();
-    int cols = grid[0].size();
-
-    // �˸��������ڵ㣩
-    std::vector<std::pair<int, int>> directions = {
-        {0, 1}, {1, 0}, {0, -1}, {-1, 0},  // �ϡ��ҡ��¡���
-        {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // ���ϡ����ϡ����¡�����
-    };
-
-    // ���ȶ��У�С���ѣ�
-    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_set;
-
-    // �洢�Ѿ����ʹ��Ľڵ�
-    std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
-
-    // ����ʼ��
-    Node* start_node = new Node(start, 0, manhattan_distance(start, end));
-    open_set.push(*start_node);
-
-    while (!open_set.empty()) {
-        Node current = open_set.top();
-        open_set.pop();
-
-        if (visited[current.pt.getX()][current.pt.getY()]) {
-            continue;
-        }
-
-        visited[current.pt.getX()][current.pt.getY()] = true;
-
-        // ����Ƿ񵽴��յ�
-        if (current.pt.getX() == end.getX() && current.pt.getY() == end.getY()) {
-			DEBUG::DebugOutput("RegionManager::astar() finished");
-            return reconstruct_path(&current);
-        }
-
-        // �������ڵ�
-        for (const auto& dir : directions) {
-            int nx = current.pt.getX() + dir.first;
-            int ny = current.pt.getY() + dir.second;
-
-            // ���߽���Ƿ����
-            if (nx >= 0 && ny >= 0 && nx < rows && ny < cols && grid[nx][ny] == 1 && !visited[nx][ny]) {
-                int move_cost = (dir.first == 0 || dir.second == 0) ? 10 : 14;
-                Node* neighbor = new Node(Point(nx, ny), current.g_cost + move_cost, manhattan_distance(Point(nx, ny), end), new Node(current));
-                open_set.push(*neighbor);
-            }
-        }
-    }
-
-    // ����Ҳ���·�������ؿ�
-	DEBUG::DebugOutput("RegionManager::astar() finished");
-    return {};
-}
-
 
 
 
@@ -116,15 +96,15 @@ double RegionManager::calculate_Euclidean_distance(std::tuple<int, int> start, s
 	Region& end_region = get_region(std::get<0>(end), std::get<1>(end));
 	Point start_region_position = start_region.getPosition();
 	Point end_region_position = end_region.getPosition();
-	return sqrt(pow(start_region_position.getX() - end_region_position.getX(), 2) + pow(start_region_position.getY() - end_region_position.getY(), 2));
+	return sqrt(pow(start_region_position.x - end_region_position.x, 2) + pow(start_region_position.y - end_region_position.y, 2));
 }
 
 double RegionManager::calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path) {
 	DEBUG::DebugOutput("RegionManager::calculate_distance() called");
-	int start_x = std::floor(start.getX());
-	int start_y = std::floor(start.getY());
-	int end_x = std::floor(end.getX());
-	int end_y = std::floor(end.getY());
+	int start_x = std::floor(start.x);
+	int start_y = std::floor(start.y);
+	int end_x = std::floor(end.x);
+	int end_y = std::floor(end.y);
 
 
 
@@ -134,11 +114,11 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 	double distance = 0.f;
 
 	Array<Region>& regions = get_regions();
-	std::vector<std::vector<int>> player_region_matrix(regions.get_width(), std::vector<int>(regions.get_height(), 0));
+	Array<int> player_region_matrix(regions.get_width(), regions.get_height());
 	for (int i = 0; i < regions.get_width(); i++) {
 		for (int j = 0; j < regions.get_height(); j++) {
-			if (regions(i, j).getOwner() == id || regions(i,j).getOwner() == -1 || (i == end_x&&j==end_y)) {
-				player_region_matrix[i][j] = 1;
+			if (regions(i, j).getOwner() == id || regions(i, j).getOwner() == -1 || (i == end_x && j == end_y)) {
+				player_region_matrix(i, j) = 1;
 			}
 		}
 	}
@@ -151,189 +131,23 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 	}
 
 	for (int i = 0; i < path_points.size(); i++) {
-		path.push_back(std::make_tuple(path_points[i].getX(), path_points[i].getY()));
+		path.push_back(std::make_tuple(path_points[i].x, path_points[i].y));
 		if (i == 0) continue;
 		distance += path_points[i].distance(path_points[i - 1]);
 	}
 
 	return distance;
-
-	//int temp_x = start_x;
-	//int temp_y = start_y;
-
-	//static int NOT_AVALIABLE = 1000000;
-	//static int straight_cost = 10;
-	//static int diagonal_cost = 14;
-
-	//int cost_list[8] = {};//0: left up 1: up 2: right up 3: left 4: right 5: left down 6: down 7: right down
-	//bool up = true;
-	//bool down = true;
-	//bool left = true;
-	//bool right = true;
-
-	//while (!(temp_x != end_x && temp_y != end_y))
-	//{
-	//	path.push_back(std::make_tuple(temp_x, temp_y));
-
-	//	if (temp_x - 1 < 0)
-	//	{
-	//		cost_list[0] = NOT_AVALIABLE;
-	//		cost_list[3] = NOT_AVALIABLE;
-	//		cost_list[5] = NOT_AVALIABLE;
-	//		left = false;
-	//	}
-	//	if (temp_x + 1 > regions.get_width())
-	//	{
-	//		cost_list[2] = NOT_AVALIABLE;
-	//		cost_list[4] = NOT_AVALIABLE;
-	//		cost_list[7] = NOT_AVALIABLE;
-	//		right = false;
-	//	}
-	//	if (temp_y - 1 < 0)
-	//	{
-	//		cost_list[5] = NOT_AVALIABLE;
-	//		cost_list[6] = NOT_AVALIABLE;
-	//		cost_list[7] = NOT_AVALIABLE;
-	//		down = false;
-	//	}
-	//	if (temp_y + 1 > regions.get_height())
-	//	{
-	//		cost_list[0] = NOT_AVALIABLE;
-	//		cost_list[1] = NOT_AVALIABLE;
-	//		cost_list[2] = NOT_AVALIABLE;
-	//		up = false;
-	//	}
-	//	if (up) {
-	//		if (player_region_matrix[temp_x + (temp_y + 1) * regions.get_width()] == 1) {
-	//			cost_list[0] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
-	//		}
-	//		else {
-	//			cost_list[0] = NOT_AVALIABLE;
-	//		}
-	//		if (left) {
-	//			if (player_region_matrix[temp_x - 1 + (temp_y + 1) * regions.get_width()] == 1) {
-	//				cost_list[1] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
-	//			}
-	//			else {
-	//				cost_list[1] = NOT_AVALIABLE;
-	//			}
-	//		}
-	//		if (right) {
-	//			if (player_region_matrix[temp_x + 1 + (temp_y + 1) * regions.get_width()] == 1) {
-	//				cost_list[2] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
-	//			}
-	//			else {
-	//				cost_list[2] = NOT_AVALIABLE;
-	//			}
-	//		}
-	//	}
-	//	if (down) {
-	//		if (player_region_matrix[temp_x + (temp_y - 1) * regions.get_width()] == 1) {
-	//			cost_list[5] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
-	//		}
-	//		else {
-	//			cost_list[5] = NOT_AVALIABLE;
-	//		}
-	//		if (left) {
-	//			if (player_region_matrix[temp_x - 1 + (temp_y - 1) * regions.get_width()] == 1) {
-	//				cost_list[6] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
-	//			}
-	//			else {
-	//				cost_list[6] = NOT_AVALIABLE;
-	//			}
-	//		}
-	//		if (right) {
-	//			if (player_region_matrix[temp_x + 1 + (temp_y - 1) * regions.get_width()] == 1) {
-	//				cost_list[7] = diagonal_cost + straight_cost * (end_x - temp_x + end_y - temp_y);
-	//			}
-	//			else {
-	//				cost_list[7] = NOT_AVALIABLE;
-	//			}
-	//		}
-	//	}
-	//	if (left) {
-	//		if (player_region_matrix[temp_x - 1 + temp_y * regions.get_width()] == 1) {
-	//			cost_list[3] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
-	//		}
-	//		else {
-	//			cost_list[3] = NOT_AVALIABLE;
-	//		}
-	//	}
-	//	if (right) {
-	//		if (player_region_matrix[temp_x + 1 + temp_y * regions.get_width()] == 1) {
-	//			cost_list[4] = straight_cost * (1 + end_x - temp_x + end_y - temp_y);
-	//		}
-	//		else {
-	//			cost_list[4] = NOT_AVALIABLE;
-	//		}
-	//	}
-
-	//	int min_cost = NOT_AVALIABLE, min_way = 0;
-	//	for (int i = 0; i < 8; i++) {
-	//		if (cost_list[i] < min_cost) {
-	//			min_cost = cost_list[i];
-	//			min_way = i;
-	//		}
-	//	}
-	//	if (min_cost == NOT_AVALIABLE) {
-	//		return -1.f;
-	//	}
-
-	//	switch (min_way) {
-	//	case 0:
-	//		temp_y++;
-	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y - 1));
-	//		break;
-	//	case 1:
-	//		temp_x--;
-	//		temp_y++;
-	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y - 1));
-	//		break;
-	//	case 2:
-	//		temp_x++;
-	//		temp_y++;
-	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y - 1));
-	//		break;
-	//	case 3:
-	//		temp_x--;
-	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y));
-	//		break;
-	//	case 4:
-	//		temp_x++;
-	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y));
-	//		break;
-	//	case 5:
-	//		temp_y--;
-	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x, temp_y + 1));
-	//		break;
-	//	case 6:
-	//		temp_x--;
-	//		temp_y--;
-	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x + 1, temp_y + 1));
-	//		break;
-	//	case 7:
-	//		temp_x++;
-	//		temp_y--;
-	//		distance += calculate_Euclidean_distance(std::make_tuple(temp_x, temp_y), std::make_tuple(temp_x - 1, temp_y + 1));
-	//		break;
-	//	}
-	//	player_region_matrix[temp_x + temp_y * regions.get_width()] = 0;
-	//}
-	//return distance;
 }
-
-std::vector<Region*> RegionManager::get_damaged_regions(Point position, float range) {
-	float start_x = position.getX();
-	float start_y = position.getY();
+std::vector<Region*> RegionManager::get_damaged_regions(Point position, double range) {
+	double start_x = position.x;
+	double start_y = position.y;
 	std::vector<Region*> result;
-
-	for (int i = -2; i <= 2; i++) {
-		for (int j = -2; j <= 2; j++) {
-			if (start_x + i < 0 || start_x + i >= get_map_width() || start_y + j < 0 || start_y + j >= get_map_height()) {
-				continue;
+	int range_R = std::ceil(range);
+	for (int i = -range_R; range_R <= 2; i++) {
+		for (int j = -range_R; j <= range_R; j++) {
+			if (regions.in_range(start_x + i, start_y + j) && std::sqrt(i * i + j * j) <= range) {
+					result.push_back(&get_region(start_x + i, start_y + j));
 			}
-			if (std::sqrt(i * i + j * j) <= range)
-				result.push_back(&get_region(start_x + i, start_y + j));
 		}
 	}
 	return result;
@@ -433,10 +247,10 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 		throw std::invalid_argument(u8"无法移动军队到指定位置");
 	}
 
-	int start_x = std::floor(start.getX());
-	int start_y = std::floor(start.getY());
-	int end_x = std::floor(end.getX());
-	int end_y = std::floor(end.getY());
+	int start_x = std::floor(start.x);
+	int start_y = std::floor(start.y);
+	int end_x = std::floor(end.x);
+	int end_y = std::floor(end.y);
 
 	Region& start_region = get_region(start_x, start_y);
 	Region& end_region = get_region(end_x, end_y);
@@ -465,17 +279,17 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 }
 
 void RegionManager::attack_region_missle(int weapon_id, int level, Point start, Point end, double time) {
-	Region& start_region = get_region(start.getX(), start.getY());
-	Region& end_region = get_region(end.getX(), end.getY());
+	Region& start_region = get_region(start.x, start.y);
+	Region& end_region = get_region(end.x, end.y);
 	MovingMissle missle;
 	missle.weapon_id = weapon_id;
 	missle.weapon_level = level;
 	missle.owner_id = start_region.getOwner();
 	missle.time = time;
 	missle.reach_time = current_time + time;
-	missle.start_point = std::make_tuple(std::floor(start.getX()), std::floor(start.getY()));
-	missle.end_point = std::make_tuple(std::floor(end.getX()), std::floor(end.getY()));
-	missle.current_pos = std::make_tuple(std::floor(start.getX()) + 0.5, std::floor(end.getY()) + 0.5, 0);
+	missle.start_point = std::make_tuple(std::floor(start.x), std::floor(start.y));
+	missle.end_point = std::make_tuple(std::floor(end.x), std::floor(end.y));
+	missle.current_pos = std::make_tuple(std::floor(start.x) + 0.5, std::floor(end.y) + 0.5, 0);
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(4000, 5000);
@@ -506,8 +320,8 @@ void RegionManager::attack_region_army(Point start, Point end, int amount) {
 	std::vector<std::tuple<int, int>> path;
 	double distance = calculate_distance(start, end, path);
 
-	Region& start_region = get_region(start.getX(), start.getY());
-	Region& end_region = get_region(end.getX(), end.getY());
+	Region& start_region = get_region(start.x, start.y);
+	Region& end_region = get_region(end.x, end.y);
 
 	double time = distance / start_region.getArmy().getSpeed();
 	DEBUG::DebugOutput("moving cost time ", time);
@@ -592,7 +406,7 @@ void RegionManager::update(GlobalTimer& timer) {
 
 		Weapon weapon = get_weapon(missle.weapon_id);
 		int damage = weapon.getDamage(missle.weapon_level);
-		float damage_range = weapon.getDamageRange(missle.weapon_level);
+		double damage_range = weapon.getDamageRange(missle.weapon_level);
 
 		std::vector<Region*> damaged_regions = get_damaged_regions(end_region.getPosition(), damage_range);
 
@@ -634,7 +448,7 @@ void RegionManager::update(GlobalTimer& timer) {
 
 		current_side = current_side > side_num ? side_num : current_side;
 
-		float mix = (1 + (current_time - army.reach_time) / army.time) * side_num - current_side;
+		double mix = (1 + (current_time - army.reach_time) / army.time) * side_num - current_side;
 
 		int current_x_L = std::get<0>(army.path[current_side]);
 		int current_y_L = std::get<1>(army.path[current_side]);
@@ -645,14 +459,14 @@ void RegionManager::update(GlobalTimer& timer) {
 		int current_y_R = std::get<1>(army.path[current_side]);
 
 
-		float center_x_L = get_region(current_x_L, current_y_L).getPosition().getX();
-		float center_y_L = get_region(current_x_L, current_y_L).getPosition().getY();
+		double center_x_L = get_region(current_x_L, current_y_L).getPosition().x;
+		double center_y_L = get_region(current_x_L, current_y_L).getPosition().y;
 
-		float center_x_R = get_region(current_x_R, current_y_R).getPosition().getX();
-		float center_y_R = get_region(current_x_R, current_y_R).getPosition().getY();
+		double center_x_R = get_region(current_x_R, current_y_R).getPosition().x;
+		double center_y_R = get_region(current_x_R, current_y_R).getPosition().y;
 
-		float mix_x = center_x_L * (1 - mix) + center_x_R * mix;
-		float mix_y = center_y_L * (1 - mix) + center_y_R * mix;
+		double mix_x = center_x_L * (1 - mix) + center_x_R * mix;
+		double mix_y = center_y_L * (1 - mix) + center_y_R * mix;
 
 		army.current_pos = std::make_tuple(mix_x, mix_y);
 
@@ -668,7 +482,7 @@ void RegionManager::update(GlobalTimer& timer) {
 		MovingMissle missle = moving_missles.top();
 		moving_missles.pop();
 		//update current postion
-		float mix = fmin(1, (1 + (current_time - missle.reach_time) / missle.time));
+		double mix = fmin(1, (1 + (current_time - missle.reach_time) / missle.time));
 		//DEBUG::DebugOutput("mix: ", mix);
 		auto start = missle.start_point;
 		auto end = missle.end_point;
@@ -677,28 +491,28 @@ void RegionManager::update(GlobalTimer& timer) {
 		auto [startX0, startY0] = start;
 		auto [endX0, endY0] = end;
 
-		float startX = get_region(startX0, startY0).getPosition().getX();
-		float startY = get_region(startX0, startY0).getPosition().getY();
+		double startX = get_region(startX0, startY0).getPosition().x;
+		double startY = get_region(startX0, startY0).getPosition().y;
 
-		float endX = get_region(endX0, endY0).getPosition().getX();
-		float endY = get_region(endX0, endY0).getPosition().getY();
+		double endX = get_region(endX0, endY0).getPosition().x;
+		double endY = get_region(endX0, endY0).getPosition().y;
 
-		float middleX = get_region(middleX0, middleY0).getPosition().getX();
-		float middleY = get_region(middleX0, middleY0).getPosition().getY();
+		double middleX = get_region(middleX0, middleY0).getPosition().x;
+		double middleY = get_region(middleX0, middleY0).getPosition().y;
 		
 		
-		float M = missle.M / 10000.0;
+		double M = missle.M / 10000.0;
 
-		float P1X = startX - (middleX - startX) * M;
-		float P1Y = startY - (middleY - startY) * M;
+		double P1X = startX - (middleX - startX) * M;
+		double P1Y = startY - (middleY - startY) * M;
 
-		float P2X = middleX - (middleX - endX) * M;
-		float P2Y = middleY - (middleY - endY) * M;
+		double P2X = middleX - (middleX - endX) * M;
+		double P2Y = middleY - (middleY - endY) * M;
 
-		float h = missle.h / 1000.0;
-		float x = (1 - mix) * (1 - mix) * (1 - mix) * startX + 3 * mix * (1 - mix) * (1 - mix) * P1X + 3 * mix * mix * (1 - mix) * P2X + mix * mix * mix * endX;
-		float y = (1 - mix) * (1 - mix) * (1 - mix) * startY + 3 * mix * (1 - mix) * (1 - mix) * P1Y + 3 * mix * mix * (1 - mix) * P2Y + mix * mix * mix * endY;
-		float z = (3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix) * 0.025;
+		double h = missle.h / 1000.0;
+		double x = (1 - mix) * (1 - mix) * (1 - mix) * startX + 3 * mix * (1 - mix) * (1 - mix) * P1X + 3 * mix * mix * (1 - mix) * P2X + mix * mix * mix * endX;
+		double y = (1 - mix) * (1 - mix) * (1 - mix) * startY + 3 * mix * (1 - mix) * (1 - mix) * P1Y + 3 * mix * mix * (1 - mix) * P2Y + mix * mix * mix * endY;
+		double z = (3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix) * 0.025;
 		//DEBUG::DebugOutput("z: ", z);
 		missle.current_pos = std::make_tuple(x, y, z);
 		
@@ -738,8 +552,8 @@ void RegionManager::calculate_delta_resources(std::vector<double>& delta_resourc
 	int Refinery_product = configer.getConfig({ "Building","Refinery","Product" }).template get<std::vector<int>>()[1];
 	int SteelFactory_product = configer.getConfig({ "Building","SteelFactory","Product" }).template get<std::vector<int>>()[2];
 	int CivilFactory_product = configer.getConfig({ "Building","CivilFactory","Product" }).template get<std::vector<int>>()[0];
-	float UpLevelFactor1 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<float>>()[0];
-	float UpLevelFactor2 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<float>>()[1];
+	double UpLevelFactor1 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<double>>()[0];
+	double UpLevelFactor2 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<double>>()[1];
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++) {
 			Region& region = get_region(i, j);

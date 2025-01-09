@@ -4,6 +4,17 @@ project(MiniWar)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC)
+    # è®¾ç½®è¾“å‡ºç›®å½•ä¸ºbuildç›®å½•
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR})
+    
+    string(REPLACE "/INCREMENTAL" "" CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /Od /Ob0 /RTC1")
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /DEBUG /INCREMENTAL:NO")
+    set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /DEBUG")
+endif()
 
 file(GLOB_RECURSE CPP_SOURCES 
     "cpp/*.cpp"
@@ -80,9 +91,9 @@ if(WIN32)
     file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR})
 # linux
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    # Ö¸¶¨bass.soµÄÂ·¾¶
+    # Ö¸ï¿½ï¿½bass.soï¿½ï¿½Â·ï¿½ï¿½
     # x86Æ½Ì¨
-    # ¼ì²é´¦ÀíÆ÷¼Ü¹¹²¢¸´ÖÆÏàÓ¦µÄ BASS ¿â
+    # ï¿½ï¿½é´¦ï¿½ï¿½ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ BASS ï¿½ï¿½
     if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         # 32Î»Æ½Ì¨ (x86)
         file(COPY "lib/linux/bass/x86/libbass.so" DESTINATION ${CMAKE_BINARY_DIR})
@@ -91,7 +102,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             # 64Î» x86 Æ½Ì¨ (x86_64)
             file(COPY "lib/linux/bass/x86_64/libbass.so" DESTINATION ${CMAKE_BINARY_DIR})
         elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
-            # 64Î» ARM Æ½Ì¨ (aarch64 »ò arm64)
+            # 64Î» ARM Æ½Ì¨ (aarch64 ï¿½ï¿½ arm64)
             file(COPY "lib/linux/bass/aarch64/libbass.so" DESTINATION ${CMAKE_BINARY_DIR})
         else()
             message(FATAL_ERROR "Unsupported 64-bit architecture: ${CMAKE_SYSTEM_PROCESSOR}")
@@ -100,17 +111,17 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         message(FATAL_ERROR "Unsupported platform: ${CMAKE_SIZEOF_VOID_P}-bit")
     endif()
 
-    # ÉèÖÃÁ´½ÓÆ÷Â·¾¶
+    # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½
     link_directories(${CMAKE_BINARY_DIR})
 
-    # ²éÕÒ BASS ¿â
+    # ï¿½ï¿½ï¿½ï¿½ BASS ï¿½ï¿½
     find_library(BASS_LIBRARY bass PATHS ${CMAKE_BINARY_DIR} NO_DEFAULT_PATH)
 
     if(NOT BASS_LIBRARY)
         message(FATAL_ERROR "BASS library not found in ${CMAKE_BINARY_DIR}")
     endif()
 
-    # ½«ÕÒµ½µÄ BASS ¿âÁ´½Óµ½ÄãµÄÄ¿±ê
+    # ï¿½ï¿½ï¿½Òµï¿½ï¿½ï¿½ BASS ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½
     target_link_libraries(MiniWar PRIVATE ${BASS_LIBRARY})
 
 

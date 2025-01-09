@@ -41,14 +41,14 @@ class Operation{
 	Operator op;
 	int id{};
 	int size{};
-	float radius{};
+	double radius{};
 public:
 	int idx{};
 	Operation();
 	Operation(Operator op);
 	Operation(int id, Operator op);
 	Operation(Point cur, Operator op);
-	Operation(Point cur, float radius, Operator op);
+	Operation(Point cur, double radius, Operator op);
 	Operation(Point start, Point end, Operator op);
 	Operation(Point start, Point end, int size, Operator op);
 	Point getStart();	
@@ -56,6 +56,6 @@ public:
 	Point getCur();
 	Operator getOp();
 	int getSize();
-	float getRadius();
+	double getRadius();
 	int getId();
 };

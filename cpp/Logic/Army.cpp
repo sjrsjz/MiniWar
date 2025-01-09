@@ -9,7 +9,7 @@ Army::Army(int force, int level) {
 Army::~Army() {
 }
 
-float Army::getSpeed(){
+double Army::getSpeed() {
 	return this->speed;
 }
 

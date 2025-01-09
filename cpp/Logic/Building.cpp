@@ -1,9 +1,7 @@
 ﻿#include "../../header/Logic/Building.h"
 
-Building::Building(std::string name) {
-	this->name = name;
-	//TODO
-	//this->production = ?
+Building::Building(BuildingType type) {
+	this->type = type;
 	this->level = 1;
 }
 
@@ -18,8 +16,8 @@ bool Building::upLevel(int MaxLevel) {
 	return false;
 }
 
-std::string Building::getName() {
-	return this->name;
+BuildingType Building::getType() {
+	return this->type;
 }
 
 int Building::getLevel() {
@@ -27,11 +25,11 @@ int Building::getLevel() {
 }
 
 bool Building::remove() {
-	if (this->name == "none"){
+	if (this->type == BuildingType::None) {
 		return false;
 	} else {
 		this->level = 0;
-		this->name = "none";
+		this->type = BuildingType::None;
 	}
 	return true;
 }

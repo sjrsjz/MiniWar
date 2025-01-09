@@ -18,10 +18,7 @@
 #include "../../header/Logic/Player.h"
 #include "../../header/utils/Point.h"
 
-template<typename Key, typename Value>
-using umap = std::unordered_map<Key, Value>;
-using json = nlohmann::json;
-#define INF 1 << 30
+#define INF std::numeric_limits<int>::infinity()
 
 class AITimer {
 	private:
@@ -80,7 +77,7 @@ class AI {
 	int id;
 	json increaseParameter;
 	std::tuple<int, int> playerCapital;
-	float size;
+	double size;
 	int regionSize;
 	int playerRegionSize;
 	double A;
@@ -150,7 +147,7 @@ public:
 			throw std::runtime_error("Player Capital not found");
 		}
 
-		std::tuple<float, float> originSize = config.getConfig({"Region", "OriginSize"}).template get<std::tuple<float, float>>();
+		std::tuple<double, double> originSize = config.getConfig({ "Region", "OriginSize" }).template get<std::tuple<double, double>>();
 
 
 		int mapWidth = regionManager.get_map_width();
@@ -222,7 +219,7 @@ public:
 			throw std::runtime_error("Player Capital not found");
 		}
 
-		std::tuple<float, float> originSize = config.getConfig({"Region", "OriginSize"}).template get<std::tuple<float, float>>();
+		std::tuple<double, double> originSize = config.getConfig({ "Region", "OriginSize" }).template get<std::tuple<double, double>>();
 
 
 		int mapWidth = regionManager.get_map_width();
@@ -303,7 +300,7 @@ public:
 		int cnt = 0;
 		int playerSize = playerRegions.size();
 		int aiSize = AIRegions.size();
-		int roundSize = std::ceil((float)maxcnt / playerSize);
+		int roundSize = std::ceil((double)maxcnt / playerSize);
 		//std::cout << "A:" << this->A << std::endl;
 		for (int i = 0; i < weapons.size(); i++) {
 			if (weapons[i] == 0) continue;
@@ -589,7 +586,7 @@ public:
 			weights[i] = 1.0 / this->distance[i].second;
 		}
 
-		float sumWeight = 0;
+		double sumWeight = 0;
 		for (auto i : weights) {
 			sumWeight += i;
 		}
@@ -653,7 +650,7 @@ public:
 			Point end = Point(std::get<0>(to), std::get<1>(to));
 			int armyLevel = this->arm_level[0];
 			DEBUG::DebugOutput("moveArmy() calls move_Army");
-			DEBUG::DebugOutput("from (", start.getX(), ",", start.getY(), ")", "to", "(", end.getX(), ",", end.getY(), ")");
+			DEBUG::DebugOutput("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
 			maxTime = std::max(maxTime, regionManager.move_army(end, start, force, armyLevel));
 		}
 		if (maxTime == -1) {
@@ -670,20 +667,20 @@ public:
 
 	void armyAttack(Point start, int amount, Point end) {
 		for (auto item : isAttacked) {
-			if (std::get<0>(item) == end.getX() && std::get<1>(item) == end.getY()) {
+			if (std::get<0>(item) == end.x && std::get<1>(item) == end.y) {
 				return;
 			}
 		}
 		this->canMove = false;
 		this->canDefend = true;
 		DEBUG::DebugOutput("armyAttack() called");
-		DEBUG::DebugOutput("from (", start.getX(), ",", start.getY(), ")", "to", "(", end.getX(), ",", end.getY(), ")");
-		Army& army = regionManager.get_region(start.getX(), start.getY()).getArmy();
+		DEBUG::DebugOutput("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
+		Army& army = regionManager.get_region(start.x, start.y).getArmy();
 		int curForce = army.getForce() * 0.7;
 		if (army.getForce() * 0.7 >= amount) {
 			DEBUG::DebugOutput("armyAttack only one region attack");
 			double time = regionManager.move_army(start, end, curForce, this->arm_level[0]);
-			this->isAttacked.emplace_back(std::make_tuple(end.getX(), end.getY()));
+			this->isAttacked.emplace_back(std::make_tuple(end.x, end.y));
 			this->canMove = true;
 			DEBUG::DebugOutput("armyAttack only one region attack need time", time);
 			return;
@@ -692,20 +689,20 @@ public:
 		for (int i = -1; i <= 1 ;i++) {
 			for (int j = -1; j <= 1; j++) {
 				try {
-					if (regionManager.get_region(start.getX() + i, start.getY() + j).getOwner() != id) continue;
-					Army& tmp = regionManager.get_region(start.getX() + i, start.getY() + j).getArmy();
+					if (regionManager.get_region(start.x + i, start.y + j).getOwner() != id) continue;
+					Army& tmp = regionManager.get_region(start.x + i, start.y + j).getArmy();
 					curForce +=	tmp.getForce() * 0.7;
-					regionlist.push_back(Point(start.getX() + i, start.getY() + j));
+					regionlist.push_back(Point(start.x + i, start.y + j));
 					double maxTime = 0;
 					int armyLevel = this->arm_level[0];
 					if (curForce >= amount) {
 						for (auto region : regionlist) {
 							DEBUG::DebugOutput("armyAttack() calls move_army()");
-							Army& t = regionManager.get_region(region.getX(), region.getY()).getArmy();
+							Army& t = regionManager.get_region(region.x, region.y).getArmy();
 							maxTime = std::max(maxTime, regionManager.move_army(region, start, t.getForce() * 0.7, armyLevel));
 							DEBUG::DebugOutput("move_army() finished");
 						}
-						this->isAttacked.emplace_back(std::make_tuple(end.getX(), end.getY()));
+						this->isAttacked.emplace_back(std::make_tuple(end.x, end.y));
 						DEBUG::DebugOutput("ArmyAttack time: ", maxTime);
 						this->canMove = false;
 						std::this_thread::sleep_for(std::chrono::milliseconds((int)(maxTime * 1100)));
@@ -778,7 +775,7 @@ public:
 					if (flag) {
 						continue;
 					}
-					if (maxForce.getX() == 0 && maxForce.getY() == 0) {
+					if (maxForce.x == 0 && maxForce.y == 0) {
 						continue;
 					}
 
@@ -824,7 +821,7 @@ public:
 					if (flag) {
 						continue;
 					}
-					if (maxForce.getX() == 0 && maxForce.getY() == 0) {
+					if (maxForce.x == 0 && maxForce.y == 0) {
 						continue;
 					}
 					this->canMove = false;

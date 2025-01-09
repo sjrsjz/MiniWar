@@ -5,7 +5,7 @@ Point::Point() {
 	this->y = 0;
 }
 
-Point::Point(float x, float y) {
+Point::Point(double x, double y) {
 	this->x = x;
 	this->y = y;
 }
@@ -13,26 +13,15 @@ Point::Point(float x, float y) {
 Point::~Point() {
 }
 
-float Point::distance(Point& p) {
+double Point::distance(Point& p) {
 	return sqrt(pow(this->x - p.x, 2) + pow(this->y - p.y, 2));
 }
-
-float Point::getX() {
-	return this->x;
-}
-
-float Point::getY() {
-	return this->y;
-}
-
-void Point::setX(float x) {
-	this->x = x;
-}
-
-void Point::setY(float y) {
-	this->y = y;
-}
-
 bool Point::operator==(const Point& p) {
 	return this->x == p.x && this->y == p.y;
+}
+bool Point::operator!=(const Point& p) {
+	return this->x != p.x || this->y != p.y;
+}
+Point Point::operator+(const Point& p) {
+	return Point(this->x + p.x, this->y + p.y);
 }
