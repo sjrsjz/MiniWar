@@ -54,6 +54,7 @@ public:
 	};
 	struct ResearchInstitutionSetting {
 		double cost{};
+		std::map<int, std::vector<double>> BuildingUpgradeCost{};
 	};
 	struct AIParameter {
 		double A{};
@@ -72,7 +73,7 @@ public:
 		std::map<std::string, BuildingSetting> buildingSetting{};
 		ResearchInstitutionSetting researchInstitutionSetting{};
 		std::map<std::string, AIParameter> aiParameter{};
-	} data;
+	} data{};
 
 public:
 	Config(const std::string& path);

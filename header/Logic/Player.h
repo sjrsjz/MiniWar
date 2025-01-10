@@ -16,6 +16,7 @@
 
 
 class RegionManager;
+class Region;
 
 class Player {
 private:
@@ -81,6 +82,7 @@ public:
 	void set_research(Operation operation);
 	void research(Operation operation);
 	void remove_building(Operation operation);
+	void product_weapon(int weapon_type, Region& region);
 	void product(Operation operation);
 	void rangeAttack(Operation operation);
 	void create();

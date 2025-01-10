@@ -5,7 +5,7 @@
 
 using json = nlohmann::json;
 
-Config::Config(const std::string& path) {
+void Config::load(const std::string& path) {
 	DEBUG::DebugOutput("Loading config from ", path);
 	std::ifstream file(path);
 	nlohmann::json config;
@@ -24,14 +24,15 @@ Config::Config(const std::string& path) {
 	data.playerOrigionSource.oil = config["PlayerOrigionSource"]["oil"].get<double>();
 	data.playerOrigionSource.steel = config["PlayerOrigionSource"]["steel"].get<double>();
 
+	data.mapSetting.clear();
+
 	for (auto& mapSetting : config["MapSetting"]) {
 		data.mapSetting[mapSetting["name"].get<std::string>()] =
 			MapSetting{
 				mapSetting["width"].get<int>(),
 				mapSetting["height"].get<int>(),
 				mapSetting["aiCount"].get<int>()
-			}
-		;
+			};
 	}
 
 	for (auto& weapon : config["Weapon"]) {
@@ -48,6 +49,16 @@ Config::Config(const std::string& path) {
 			}
 		);
 	}
+
+	data.army.cost = config["Army"]["cost"].get<double>();
+	data.army.speed = config["Army"]["speed"].get<std::vector<double>>();
+
+	data.defaultRegionSetting.HP = std::make_pair(config["Region"]["HP"][0].get<double>(), config["Region"]["HP"][1].get<double>());
+	data.defaultRegionSetting.ArmyCount = std::make_pair(config["Region"]["ArmyCount"][0].get<int>(), config["Region"]["ArmyCount"][1].get<int>());
+	data.defaultRegionSetting.OriginSize = std::make_pair(config["Region"]["OriginSize"][0].get<double>(), config["Region"]["OriginSize"][1].get<double>());
+	data.defaultRegionSetting.CapitalHP = config["Region"]["CapitalHP"].get<double>();
+	data.defaultRegionSetting.CapitalArmyCount = config["Region"]["CapitalArmyCount"].get<int>();
+
 
 	for (auto& item: config["Building"].items()){
 		data.buildingSetting[item.key()] =
@@ -72,13 +83,18 @@ Config::Config(const std::string& path) {
 
 
 	DEBUG::DebugOutput("Config loaded");
+	isLoaded = true;
+
 }
 
+Config::Config(const std::string& path) {
+	load(path);
+}
 Config::~Config() {}
 
-static Config instance{};
 Config& Config::getInstance() {
-	if (instance.is_loaded()) {
+	static Config instance;
+	if (!instance.is_loaded()) {
 		instance.load("./config.json");
 	}
 	return instance;

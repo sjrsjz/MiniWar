@@ -274,30 +274,23 @@ void Player::remove_building(Operation operation) {
 	Building& building = region.getBuilding();
 	Config& configer = Config::getInstance();
 
-    switch (building.getLevel())
-    {
-    case 1:
-		gold += std::floor(0.6 * Level1Cost[0]);
-		oil += std::floor(0.6 * Level1Cost[1]);
-		steel += std::floor(0.6 * Level1Cost[2]);
-		electricity += std::floor(0.6 * Level1Cost[3]);
-		ocupied_labor -= Level1Cost[4];
-		break;
-    case 2:
-        gold += std::floor(0.6 * (Level1Cost[0] + Level2Cost[0]));
-        oil += std::floor(0.6 * (Level1Cost[1] + Level2Cost[1]));
-        steel += std::floor(0.6 * (Level1Cost[2] + Level2Cost[2]));
-        electricity += std::floor(0.6 * (Level1Cost[3] + Level2Cost[3]));
-        ocupied_labor -= Level1Cost[4] + Level2Cost[4];
-        break;
-    case 3:
-		gold += std::floor(0.6 * (Level1Cost[0] + Level2Cost[0] + Level3Cost[0]));
-		oil += std::floor(0.6 * (Level1Cost[1] + Level2Cost[1] + Level3Cost[1]));
-		steel += std::floor(0.6 * (Level1Cost[2] + Level2Cost[2] + Level3Cost[2]));
-		electricity += std::floor(0.6 * (Level1Cost[3] + Level2Cost[3] + Level3Cost[3]));
-		ocupied_labor -= Level1Cost[4] + Level2Cost[4] + Level3Cost[4];
-		break;
-    }
+	std::string building_name = BuildingTypeToString(building.getType());
+
+	double return_gold = configer.getBuildingSetting(building_name).BuildCost[ResourceType::GOLD];
+	double return_oil = configer.getBuildingSetting(building_name).BuildCost[ResourceType::OIL];
+	double return_steel = configer.getBuildingSetting(building_name).BuildCost[ResourceType::STEEL];
+
+	int level = building.getLevel();
+	for (int i = 0; i < level - 1; i++) {
+		return_gold += configer.getBuildingSetting(building_name).UpLevelCost[i][ResourceType::GOLD];
+		return_oil += configer.getBuildingSetting(building_name).UpLevelCost[i][ResourceType::OIL];
+		return_steel += configer.getBuildingSetting(building_name).UpLevelCost[i][ResourceType::STEEL];
+	}
+
+	double return_factor = 0.6;
+	gold += return_gold * return_factor;
+	oil += return_oil * return_factor;
+	steel += return_steel * return_factor;
 	region.removeBuilding();
 }
 
@@ -396,6 +389,35 @@ void Player::research(Operation operation) {
 	}
 }
 
+void Player::product_weapon(int weapon_type, Region& region) {
+	if(army_level[weapon_type + 1] == 0){
+		throw std::invalid_argument(u8"未解锁该武器");
+	}
+	Config& configer = Config::getInstance();
+	std::vector<int> cost = configer.getWeapon(weapon_type).cost;
+	if (gold < cost[ResourceType::GOLD]) {
+		throw std::invalid_argument(u8"金钱不足");
+	}
+	if (oil < cost[ResourceType::OIL]) {
+		throw std::invalid_argument(u8"石油不足");
+	}
+	if (electricity < cost[ResourceType::ELECTRICITY]) {
+		throw std::invalid_argument(u8"电力不足");
+	}
+	if (steel < cost[ResourceType::STEEL]) {
+		throw std::invalid_argument(u8"钢铁不足");
+	}
+	if (labor_limit - ocupied_labor < cost[ResourceType::LABOR]) {
+		throw std::invalid_argument(u8"劳动力不足");
+	}
+	gold -= cost[ResourceType::GOLD];
+	oil -= cost[ResourceType::OIL];
+	steel -= cost[ResourceType::STEEL];
+
+	
+	region.addWeapon(weapon_type);
+}
+
 void Player::product(Operation operation) {
 	Point start = operation.getStart();
 	Point end = operation.getEnd();
@@ -405,7 +427,7 @@ void Player::product(Operation operation) {
 	if (start_region.getOwner() != id || end_region.getOwner() != id) {
 		throw std::invalid_argument(u8"区块未被占有");
 	}
-	if (start_region.getBuilding().getName() != "MilitaryFactory") {
+	if (start_region.getBuilding().getType() != BuildingType::MilitaryFactory) {
 		throw std::invalid_argument(u8"没有军事工厂");
 	}
 	Config& configer = Config::getInstance();
@@ -414,7 +436,7 @@ void Player::product(Operation operation) {
 	switch (operation.getOp())
 	{
 	case Operator::ProductArmy:
-		cost = configer.getConfig({ "Army","cost" }).get<int>() * operation.getSize();
+		cost = configer.getArmy().cost * operation.getSize();
 		if (gold < cost) {
 			throw std::invalid_argument(u8"金钱不足");
 		}
@@ -422,46 +444,13 @@ void Player::product(Operation operation) {
 		end_region.addArmy(operation.getSize());
 		break;
 	case Operator::ProductWeapon0:
-		if (army_level[1] == 0) {
-			throw std::invalid_argument(u8"未解锁短程核导弹");
-		}
-		cost0 = configer.getConfig({ "Weapon", "0", "cost" }).template get<std::vector<int>>();
-		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
-			throw std::invalid_argument(u8"资源不足");
-		}
-		gold -= cost0[0];
-		oil -= cost0[1];
-		electricity -= cost0[2];
-		steel -= cost0[3];	
-		end_region.addWeapon(0);
+		product_weapon(0, end_region);
 		break;
 	case Operator::ProductWeapon1:
-		if (army_level[2] == 0) {
-			throw std::invalid_argument(u8"未解锁中程核导弹");
-		}
-		cost0 = configer.getConfig({ "Weapon", "1", "cost" }).template get<std::vector<int>>();
-		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
-			throw std::invalid_argument(u8"资源不足");
-		}
-		gold -= cost0[0];
-		oil -= cost0[1];
-		electricity -= cost0[2];
-		steel -= cost0[3];
-		end_region.addWeapon(1);
+		product_weapon(1, end_region);
 		break;
 	case Operator::ProductWeapon2:
-		if (army_level[3] == 0) {
-			throw std::invalid_argument(u8"未解锁远程核导弹");
-		}
-		cost0 = configer.getConfig({ "Weapon", "2", "cost" }).template get<std::vector<int>>();
-		if (gold < cost0[0] || oil < cost0[1] || electricity < cost0[2] || steel < cost0[3] || labor_limit - ocupied_labor < cost0[4]) {
-			throw std::invalid_argument(u8"资源不足");
-		}
-		gold -= cost0[0];
-		oil -= cost0[1];
-		electricity -= cost0[2];
-		steel -= cost0[3];
-		end_region.addWeapon(2);
+		product_weapon(2, end_region);
 		break;
 	}
 }
@@ -544,8 +533,8 @@ void Player::rangeAttack(Operation operation) {
 }
 
 void Player::create() {
-	Config config = Config::getInstance();
-	std::tuple<double, double> originSize = config.getConfig({ "Region", "OriginSize" }).template get<std::tuple<double, double>>();
+	Config& config = Config::getInstance();
+	std::tuple<double, double> originSize = config.getDefaultRegionSetting().OriginSize;
 
 
 	int mapWidth = regionmanager.get_map_width();
@@ -559,8 +548,8 @@ void Player::create() {
 	int x = disX(gen);
 	int y = disY(gen);
 	capital = std::make_tuple(x, y);
-	double Hp = config.getConfig({ "Region", "CapitalHp" }).get<double>();
-	int Force = config.getConfig({"Region", "CapitalArmy"}).get<int>();
+	double Hp = config.getDefaultRegionSetting().CapitalHP;
+	int Force = config.getDefaultRegionSetting().CapitalArmyCount;
 	regionmanager.get_region(x, y).setHp(Hp);
 	regionmanager.get_region(x, y).getArmy().addArmy(Force);
 	regionmanager.get_region(x, y).setOwner(0);
@@ -573,26 +562,13 @@ void Player::create() {
 		}
 	}
 
-	//gold = 10000000;
-	//oil = 10000000;
-	//electricity = 10000000;
-	//labor_limit = 1000000;
-	//ocupied_labor = 0;
-	//steel = 10000000;
-
-	json playerSource = config.getConfig({ "PlayerOrigionSource" });
-	gold = playerSource["gold"].get<int>();
-	oil = playerSource["oil"].get<int>();
-	electricity = playerSource["electricity"].get<int>();
-	labor_limit = playerSource["laborLimit"].get<int>();
-	ocupied_labor = playerSource["ocupiedLabor"].get<int>();
-	steel = playerSource["steel"].get<int>();
+	gold = config.getPlayerOrigionSource().gold;
+	oil = config.getPlayerOrigionSource().oil;
+	electricity = config.getPlayerOrigionSource().electricity;
+	steel = config.getPlayerOrigionSource().steel;
 	army_level = { 1, 0, 0, 0 };
-
 	institution_level_limit = { 1, 1, 1, 1, 1 };
 	have_research_institution = false;
-
-
 
 	return;
 }

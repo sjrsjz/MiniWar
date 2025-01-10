@@ -75,7 +75,6 @@ class AI {
 	RegionManager& regionManager = RegionManager::getInstance();
 	Config& config = Config::getInstance();
 	int id;
-	json increaseParameter;
 	std::tuple<int, int> playerCapital;
 	double size;
 	int regionSize;
@@ -99,7 +98,6 @@ class AI {
 	std::vector<std::pair<std::tuple<int, int>, int>> distance;
 	double averageForce;
 	double playerAverageForce;
-	json weaponCost{};
 	std::list<std::tuple<int, int>> isAttacked;
 
 	const double formula(double t) {
@@ -124,7 +122,6 @@ public:
 		size = 0;
 		regionSize = 0;
 		playerRegionSize = 0;
-		weaponCost.clear();
 		isAttacked.clear();
 	}
 
@@ -133,7 +130,6 @@ public:
 		// temp
 		// TODO
 		clear();
-		weaponCost = config.getConfig({"ResearchInstitution", "OUpLevelCost"});
 		gold = 1000;
 		weapons = { 0, 0, 0 };
 		arm_level = { 1, 0, 0, 0 };
@@ -147,7 +143,7 @@ public:
 			throw std::runtime_error("Player Capital not found");
 		}
 
-		std::tuple<double, double> originSize = config.getConfig({ "Region", "OriginSize" }).template get<std::tuple<double, double>>();
+		std::tuple<double, double> originSize = config.getDefaultRegionSetting().OriginSize;
 
 
 		int mapWidth = regionManager.get_map_width();
@@ -205,7 +201,6 @@ public:
 
 	void create(int id) {
 		clear();
-		weaponCost = config.getConfig({"ResearchInstitution", "OUpLevelCost"});
 		gold = 1000;
 		weapons = { 0, 0, 0 };
 		arm_level = { 1, 0, 0, 0 };
@@ -219,7 +214,7 @@ public:
 			throw std::runtime_error("Player Capital not found");
 		}
 
-		std::tuple<double, double> originSize = config.getConfig({ "Region", "OriginSize" }).template get<std::tuple<double, double>>();
+		std::tuple<double, double> originSize = config.getDefaultRegionSetting().OriginSize;
 
 
 		int mapWidth = regionManager.get_map_width();
@@ -285,10 +280,9 @@ public:
 		} else if (id == 3) {
 			difficulty = "Hard";
 		}
-		const json parameter = config.getConfig({"AIParameter", difficulty});
-		this->A = parameter["A"].template get<double>();
-		this->k = parameter["k"].template get<double>();
-		this->t0 = parameter["t0"].template get<double>();
+		this->A = config.getAIParameter(difficulty).A;
+		this->k = config.getAIParameter(difficulty).k;
+		this->t0 = config.getAIParameter(difficulty).t0;
 	}
 
 	void attack() {
@@ -315,13 +309,11 @@ public:
 					int damage = regionManager.get_weapon(i).getDamage(arm_level[i + 1]);
 					double time = start.distance(end) / regionManager.get_weapon(i).getAttackSpeed(arm_level[i + 1]);
 					if (dist >= min && dist <= max) {
-						DEBUG::DebugOutput("WeaponAttack() called");
-						std::cout << "roundSize: " << roundSize << std::endl;
+						//DEBUG::DebugOutput("WeaponAttack() called");
 						regionManager.attack_region_missle(i, arm_level[i + 1], start, end, time);
-						std::cout << "Weapon attack" << std::endl;
 						cnt++;
 						canAttack = false;
-						DEBUG::DebugOutput("WeaponAttack() finished");
+						//DEBUG::DebugOutput("WeaponAttack() finished");
 					}
 					if (cnt >= maxcnt) {
 						return;
@@ -404,7 +396,6 @@ public:
 			capital = AIRegions[mid];
 			capitalAlive = true;
 			auto [x, y] = capital;
-			std::cout << "capital position" << x << " " << y << std::endl;
 		}
 
 		averageForce /= regionSize;
@@ -450,17 +441,16 @@ public:
 			canAttack = true;
 		}
 
-		DEBUG::DebugOutput("gold: ", this->gold);
-		DEBUG::DebugOutput("army: ", this->averageForce);
-		DEBUG::DebugOutput("canMove: ", this->canMove);
-		DEBUG::DebugOutput("canDefend: ", this->canDefend);
+		//DEBUG::DebugOutput("gold: ", this->gold);
+		//DEBUG::DebugOutput("army: ", this->averageForce);
+		//DEBUG::DebugOutput("canMove: ", this->canMove);
+		//DEBUG::DebugOutput("canDefend: ", this->canDefend);
 		this->gold += formula(Timer.elapsedSeconds());	
 		delta_t -= 1;
 		if (capitalAlive) {
 			int buildArmy = std::min((int)(this->gold * 0.2), 2000);
-			json ArmyInfo = config.getConfig({"Army"});
 			//int cost = 1000;// ArmyInfo["cost"].template get<int>();
-			int cost = ArmyInfo["cost"].template get<int>();
+			int cost = config.getArmy().cost;
 			Army& army = regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).getArmy();
 			army.addArmy(buildArmy / cost);
 			this->gold -= buildArmy;
@@ -501,7 +491,7 @@ public:
 		int buildLevel = (int)this->gold * 1;
 		int armycost = INF;
 		if (arm_level[0] < maxLevel + 1)
-			armycost = weaponCost["Army"].template get<std::vector<int>>()[arm_level[0] - 1];
+			//armycost = config.getArmy;
 		if (buildLevel >= armycost && arm_level[0] < maxLevel) {
 			arm_level[0]++;
 			this->gold -= armycost;
@@ -510,11 +500,11 @@ public:
 		int weapon2cost = INF;
 		int weapon3cost = INF;
 		if (arm_level[1] <= maxLevel)
-			weapon1cost = weaponCost["0"].template get<std::vector<int>>()[arm_level[1]];
+			//weapon1cost = weaponCost["0"].template get<std::vector<int>>()[arm_level[1]];
 		if (arm_level[2] <= maxLevel)
-			weapon2cost = weaponCost["1"].template get<std::vector<int>>()[arm_level[2]];
+			//weapon2cost = weaponCost["1"].template get<std::vector<int>>()[arm_level[2]];
 		if (arm_level[3] <= maxLevel)
-			weapon3cost = weaponCost["2"].template get<std::vector<int>>()[arm_level[3]];
+			//weapon3cost = weaponCost["2"].template get<std::vector<int>>()[arm_level[3]];
 		if (dist <= 0.25) {
 			if (buildLevel >= weapon1cost && arm_level[1] < maxLevel) {
 				arm_level[1]++;
@@ -550,9 +540,8 @@ public:
 	void sleep(double seconds) {
 		auto start = std::chrono::steady_clock::now();
 		std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
-		auto end = std::chrono::steady_clock::now();
-		std::cout << "Elapsed time: " << std::chrono::duration<double>(end - start).count() << "s\n";
-		DEBUG::DebugOutput( "Elapsed time: ", std::chrono::duration<double>(end - start).count());
+		auto end = std::chrono::steady_clock::now();		
+		//DEBUG::DebugOutput( "Elapsed time: ", std::chrono::duration<double>(end - start).count());
 		this->canMove = true;
 	}
 
@@ -649,8 +638,8 @@ public:
 			Point start = Point(std::get<0>(from), std::get<1>(from));
 			Point end = Point(std::get<0>(to), std::get<1>(to));
 			int armyLevel = this->arm_level[0];
-			DEBUG::DebugOutput("moveArmy() calls move_Army");
-			DEBUG::DebugOutput("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
+			//DEBUG::DebugOutput("moveArmy() calls move_Army");
+			//DEBUG::DebugOutput("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
 			maxTime = std::max(maxTime, regionManager.move_army(end, start, force, armyLevel));
 		}
 		if (maxTime == -1) {
@@ -662,7 +651,7 @@ public:
 				this->sleep(std::ceil(maxTime));
 				});
 		t.detach();
-		DEBUG::DebugOutput("maxTime: ", maxTime);
+		//DEBUG::DebugOutput("maxTime: ", maxTime);
 	}
 
 	void armyAttack(Point start, int amount, Point end) {
@@ -673,16 +662,16 @@ public:
 		}
 		this->canMove = false;
 		this->canDefend = true;
-		DEBUG::DebugOutput("armyAttack() called");
-		DEBUG::DebugOutput("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
+		//DEBUG::DebugOutput("armyAttack() called");
+		//DEBUG::DebugOutput("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
 		Army& army = regionManager.get_region(start.x, start.y).getArmy();
 		int curForce = army.getForce() * 0.7;
 		if (army.getForce() * 0.7 >= amount) {
-			DEBUG::DebugOutput("armyAttack only one region attack");
+			//DEBUG::DebugOutput("armyAttack only one region attack");
 			double time = regionManager.move_army(start, end, curForce, this->arm_level[0]);
 			this->isAttacked.emplace_back(std::make_tuple(end.x, end.y));
 			this->canMove = true;
-			DEBUG::DebugOutput("armyAttack only one region attack need time", time);
+			//DEBUG::DebugOutput("armyAttack only one region attack need time", time);
 			return;
 		}
 		std::vector<Point> regionlist;
@@ -697,16 +686,16 @@ public:
 					int armyLevel = this->arm_level[0];
 					if (curForce >= amount) {
 						for (auto region : regionlist) {
-							DEBUG::DebugOutput("armyAttack() calls move_army()");
+							//DEBUG::DebugOutput("armyAttack() calls move_army()");
 							Army& t = regionManager.get_region(region.x, region.y).getArmy();
 							maxTime = std::max(maxTime, regionManager.move_army(region, start, t.getForce() * 0.7, armyLevel));
-							DEBUG::DebugOutput("move_army() finished");
+							//DEBUG::DebugOutput("move_army() finished");
 						}
 						this->isAttacked.emplace_back(std::make_tuple(end.x, end.y));
-						DEBUG::DebugOutput("ArmyAttack time: ", maxTime);
+						//DEBUG::DebugOutput("ArmyAttack time: ", maxTime);
 						this->canMove = false;
 						std::this_thread::sleep_for(std::chrono::milliseconds((int)(maxTime * 1100)));
-						DEBUG::DebugOutput("ArmyAttack finished: ");
+						//DEBUG::DebugOutput("ArmyAttack finished: ");
 						this->canMove = true;
 						regionManager.move_army(start, end, curForce, armyLevel);
 						return;

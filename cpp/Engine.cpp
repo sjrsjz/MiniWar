@@ -70,12 +70,12 @@ std::vector<int> get_game_effects() {
 int result_dict_counter = 0;
 std::map<int, std::string> result_dict{};
 std::mutex result_dict_mutex;
-
+std::mutex g_main_operation_mutex;
 
 void read_input(int& idx) {
-
+	std::lock_guard<std::mutex> lock(g_main_operation_mutex);
 	if (g_main_operation.empty()) return;
-	Operation& op = g_main_operation.front();
+	Operation op = g_main_operation.front();
 	g_main_operation.pop();
 	idx = op.idx;
 	int id = op.getSize();
@@ -173,17 +173,19 @@ void read_input(int& idx) {
 			RegionManager::getInstance().get_player().product(op);
 			break;
 		default:
+			throw std::invalid_argument("Invalid Operator");
 			break;
 	}
 }
 
 int __push_input(const Operation& op) {
-	result_dict_mutex.lock();
+	std::lock_guard<std::mutex> lock(result_dict_mutex);
+	std::lock_guard<std::mutex> queue_lock(g_main_operation_mutex);
 	result_dict_counter++;
 	Operation tmp = op;
 	tmp.idx = result_dict_counter;
-	g_main_operation.push(tmp);
-	result_dict_mutex.unlock();
+	g_main_operation.push(std::move(tmp));
+	DEBUG::DebugOutput("Pushed: ", g_main_operation.back().idx);
 	return tmp.idx;
 }
 std::string wait_for_result(int idx) {
@@ -199,6 +201,7 @@ std::string wait_for_result(int idx) {
 				DEBUG::DebugOutput("Got Result: ", result, "Idx", idx);
 				break;
 			}
+			//DEBUG::DebugOutput("Waiting for Result: ", idx);
 		}
 		result_dict_mutex.unlock();
 		// 1ms
@@ -236,8 +239,8 @@ void main_loop() {
 			//DEBUG::DebugOutput("New Loop\n");
 			GlobalTimer::getInstance().update();
 
-			int idx = -1;
 			result_dict_mutex.lock();
+			int idx = -1;
 			std::string result = "";
 			try {
 				read_input(idx);

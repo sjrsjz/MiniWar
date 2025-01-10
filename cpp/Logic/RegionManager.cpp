@@ -1,6 +1,7 @@
 ﻿#include "../../header/Logic/RegionManager.h"
 #include "../../header/debug.h"
 #include "../../header/Logic/Player.h"
+#include "../../header/Logic/Resource.h"
 #include <cmath>
 #include <vector>
 #include <random>
@@ -256,7 +257,7 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	Region& end_region = get_region(end_x, end_y);
 
 	Config& configer = Config::getInstance();
-	double speed = configer.getConfig({ "Army","speed" }).template get<std::vector<double>>()[army_level-1];
+	double speed = configer.getArmy().speed[army_level - 1];
 
 	double time = distance / speed;
 
@@ -548,70 +549,32 @@ void RegionManager::update(GlobalTimer& timer) {
 void RegionManager::calculate_delta_resources(std::vector<double>& delta_resource, double delta_t, int player_id) {
 	int owned_regions = 0;
 	Config& configer = Config::getInstance();
-	int PowerStation_product = configer.getConfig({ "Building","PowerStation","Product" }).template get<std::vector<int>>()[3];
-	int Refinery_product = configer.getConfig({ "Building","Refinery","Product" }).template get<std::vector<int>>()[1];
-	int SteelFactory_product = configer.getConfig({ "Building","SteelFactory","Product" }).template get<std::vector<int>>()[2];
-	int CivilFactory_product = configer.getConfig({ "Building","CivilFactory","Product" }).template get<std::vector<int>>()[0];
-	double UpLevelFactor1 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<double>>()[0];
-	double UpLevelFactor2 = configer.getConfig({ "Building","PowerStation","UpLevelFactor" }).template get<std::vector<double>>()[1];
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++) {
 			Region& region = get_region(i, j);
-
+			std::string building_name = BuildingTypeToString(region.getBuilding().getType());
 			if (region.getOwner() == player_id) {
 				owned_regions++;
-				if (region.getBuilding().getName() != "none") {
-					if (region.getBuilding().getName() == "PowerStation") {
-						double delta = PowerStation_product * delta_t;
-						if (region.getBuilding().getLevel() == 1) {
-							delta_resource[3] += delta;
-						}
-						else if (region.getBuilding().getLevel() == 2) {
-							delta_resource[3] += delta * UpLevelFactor1;
-						}
-						else if (region.getBuilding().getLevel() == 3) {
-							delta_resource[3] += delta * UpLevelFactor1 * UpLevelFactor2;
-						}
-					}
-					else if (region.getBuilding().getName() == "Refinery") {
-						double delta = Refinery_product * delta_t;
-						if (region.getBuilding().getLevel() == 1) {
-							delta_resource[1] += delta;
-						}
-						else if (region.getBuilding().getLevel() == 2) {
-							delta_resource[1] += delta * UpLevelFactor1;
-						}
-						else if (region.getBuilding().getLevel() == 3) {
-							delta_resource[1] += delta * UpLevelFactor1 * UpLevelFactor2;
-						}
-					}
-					else if (region.getBuilding().getName() == "SteelFactory") {
-						double delta = SteelFactory_product * delta_t;
-						if (region.getBuilding().getLevel() == 1) {
-							delta_resource[2] += delta;
-						}
-						else if (region.getBuilding().getLevel() == 2) {
-							delta_resource[2] += delta * UpLevelFactor1;
-						}
-						else if (region.getBuilding().getLevel() == 3) {
-							delta_resource[2] += delta * UpLevelFactor1 * UpLevelFactor2;
-						}
-					}
-					else if (region.getBuilding().getName() == "CivilFactory") {
-						double delta = CivilFactory_product * delta_t;
-						if (region.getBuilding().getLevel() == 1) {
-							delta_resource[0] += delta;
-						}
-						else if (region.getBuilding().getLevel() == 2) {
-							delta_resource[0] += delta * UpLevelFactor1;
-						}
-						else if (region.getBuilding().getLevel() == 3) {
-							delta_resource[0] += delta * UpLevelFactor1 * UpLevelFactor2;
-						}
-					}
+				switch (region.getBuilding().getType())
+				{
+				case BuildingType::PowerStation:
+					delta_resource[ResourceType::ELECTRICITY] += configer.getBuildingSetting(building_name).Product[ResourceType::ELECTRICITY] * delta_t;
+					break;
+				case BuildingType::Refinery:
+					delta_resource[ResourceType::OIL] += configer.getBuildingSetting(building_name).Product[ResourceType::OIL] * delta_t;
+					break;
+				case BuildingType::SteelFactory:
+					delta_resource[ResourceType::STEEL] += configer.getBuildingSetting(building_name).Product[ResourceType::STEEL] * delta_t;
+					break;
+				case BuildingType::CivilFactory:
+					delta_resource[ResourceType::GOLD] += configer.getBuildingSetting(building_name).Product[ResourceType::GOLD] * delta_t;
+					break;
+				default:
+					break;
 				}
+
 			}
 		}
 	}
-	delta_resource[4] = owned_regions * 30;
+	delta_resource[ResourceType::LABOR] = owned_regions * 30; // 计算可用劳动力
 }

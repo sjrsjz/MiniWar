@@ -7,15 +7,13 @@ using json = nlohmann::json;
 Weapon::Weapon(int id) {
 	//		
 	Config& config = Config::getInstance();
-	std::string ID = std::to_string(id);
-	const json j = config.getConfig({ "Weapon", ID});
-	this->damage = j["damage"].get<double>();
-	this->damageRange = j["damageRange"].get<double>();
-	this->attackSpeed = j["attackSpeed"].get<double>();
-	this->attackRange = std::make_tuple(j["AttackRange"][0].get<double>(), j["AttackRange"][1].get<double>());
-	this->cost = j["cost"].get<std::vector<int>>();
+	this->damage = config.getWeapon(id).damage;
+	this->damageRange = config.getWeapon(id).damageRange;
+	this->attackSpeed = config.getWeapon(id).attackSpeed;
+	this->attackRange = config.getWeapon(id).attackRange;
+	this->cost = config.getWeapon(id).cost;
 	this->id = id;
-	this->AICost = j["AICost"].get<int>();
+	this->AICost = config.getWeapon(id).AICost;
 }
 
 Weapon::~Weapon() {

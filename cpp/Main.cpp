@@ -776,7 +776,7 @@ public:
 			Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
 			BuildingType building_type = region.getBuilding().getType();
 			if (building_type != BuildingType::None)
-				ImGui::Text(u8"建筑: %s", BuildingTypeToString(building_type));
+				ImGui::Text(u8"建筑: %s", BuildingTypeToString(building_type).c_str());
 			if (region.getOwner() >= 0) {
 				if (region.getOwner() == 0) {
 					ImGui::Text(u8"所有者: 玩家");
@@ -2490,7 +2490,7 @@ int main() {
 	glfw_win = glfwCreateWindow(mode->width / 2, mode->height / 2, "MiniWar", primary, NULL);
 #else
 	//glfw_win = glfwCreateWindow(mode->width, mode->height, "MiniWar", primary, NULL);
-	glfw_win = glfwCreateWindow(mode->width/4, mode->height/4, "MiniWar", 0, NULL);
+	glfw_win = glfwCreateWindow(mode->width/2, mode->height/2, "MiniWar", 0, NULL);
 #endif
 
 	glfwSetKeyCallback(glfw_win, (GLFWkeyfun)glfwKeyCallBack);

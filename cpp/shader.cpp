@@ -48,15 +48,6 @@ int CompileShader(const char* vertex_shader_text, const char* fragment_shader_te
 	if (fragment_shader_text != nullptr) glAttachShader(program, *fragment_shader);
 	if (geometry_shader_text != nullptr) glAttachShader(program, *geometry_shader);
 	glLinkProgram(program);
-	GLint a = false;
-	glGetShaderiv(program, GL_COMPILE_STATUS, &a);
-	//if (!a)
-	//{
-	//	char buf[2048]; int err_size;
-	//	glGetShaderInfoLog(program, 2047, &err_size, (char*)buf);
-	//	println(buf); err |= true;
-	//}
-
 	return err ? -1 : program;
 
 }

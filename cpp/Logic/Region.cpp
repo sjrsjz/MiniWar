@@ -11,8 +11,8 @@
 
 Region::Region() {
 	Config& config = Config::getInstance();
-	std::tuple<int, int> hpRange = config.getConfig({ "Region", "hp" }).template get<std::tuple<int ,int>>();
-	std::tuple<int, int> armyRange = config.getConfig({ "Region", "Army" }).template get<std::tuple<int ,int>>();
+	std::tuple<double, double> hpRange = config.getDefaultRegionSetting().HP;
+	std::tuple<double, double> armyRange = config.getDefaultRegionSetting().ArmyCount;
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -31,13 +31,9 @@ Region::Region() {
 }
 
 Region::Region(int x, int y){
-	//TODO
-	//this->hp = maxHp
-	//this->maxHp = ?;
 	Config& config = Config::getInstance();
-	std::tuple<int, int> hpRange = config.getConfig({ "Region", "hp" }).template get<std::tuple<int ,int>>();
-
-	std::tuple<int, int> armyRange = config.getConfig({ "Region", "Army" }).template get<std::tuple<int ,int>>();
+	std::tuple<double, double> hpRange = config.getDefaultRegionSetting().HP;
+	std::tuple<double, double> armyRange = config.getDefaultRegionSetting().ArmyCount;
 	
 	std::random_device rd;
 	std::mt19937 gen(rd());
