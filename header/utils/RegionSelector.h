@@ -155,7 +155,7 @@ public:
 
     inline std::tuple<bool, int, int> operator()(float mouseX, float mouseY) {
 		return selectRegion(mouseX, mouseY);
-	}
+    }
     inline RegionSelector(float fov, float width, float height, mat4x4 viewMat, mat4x4 modelMat, int mapWidth, int mapHeight, void* regions) {
 		this->fov = fov;
 		this->width = width;

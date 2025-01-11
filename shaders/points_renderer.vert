@@ -5,7 +5,6 @@ static const char* point_renderer_vert = R"(
 uniform mat4 MVP;
 uniform mat4 g_trans_mat;
 uniform mat4 g_model_trans_mat_inv;
-uniform mat4 g_model_trans_mat;
 layout(location = 0) in vec3 vPos;
 layout(location = 1) in vec4 vColor;
 out vec4 color;

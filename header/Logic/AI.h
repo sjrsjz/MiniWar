@@ -668,11 +668,18 @@ public:
 		int curForce = army.getForce() * 0.7;
 		if (army.getForce() * 0.7 >= amount) {
 			//DEBUG::DebugOutput("armyAttack only one region attack");
-			double time = regionManager.move_army(start, end, curForce, this->arm_level[0]);
-			this->isAttacked.emplace_back(std::make_tuple(end.x, end.y));
-			this->canMove = true;
+			try {
+				double time = regionManager.move_army(start, end, curForce, this->arm_level[0]);
+				this->isAttacked.emplace_back(std::make_tuple(end.x, end.y));
+				this->canMove = true;
+				return;
+			}
+			catch (std::exception& e) {
+				DEBUG::DebugOutput("armyAttack error: " + std::string(e.what()));
+				this->canMove = true;
+				return;
+			}
 			//DEBUG::DebugOutput("armyAttack only one region attack need time", time);
-			return;
 		}
 		std::vector<Point> regionlist;
 		for (int i = -1; i <= 1 ;i++) {

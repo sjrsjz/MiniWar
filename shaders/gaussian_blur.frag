@@ -19,6 +19,9 @@ layout (location = 0) out vec4 fragColor;
 
 vec4 sampleData(sampler2D tex,vec2 uv){
 	uv = 0.5 * uv + 0.5;
+	if(uv.x < 0 || uv.x > 1 || uv.y < 0 || uv.y > 1){
+		return vec4(0);
+	}
 	return texture(tex,uv);
 }
 
@@ -37,6 +40,9 @@ vec4 sampleLod(sampler2D tex, vec2 uv, float lod, float scale){
 
 vec4 sampleData_mipmap(sampler2D tex,vec2 uv){
 	uv = 0.5 * uv + 0.5;
+	if(uv.x < 0 || uv.x > 1 || uv.y < 0 || uv.y > 1){
+		return vec4(0);
+	}
 	return texture(tex, uv, 5);
 }
 
@@ -62,7 +68,7 @@ void main(){
 		if(g_vertical){
 			float w = 0;
 			for(int i = -g_blur_radius; i <= g_blur_radius; i++){
-;				float weight = exp(- 0.05 * float(i * i));
+				float weight = exp(- 0.05 * float(i * i));
 				color += weight * sampleData(g_last_blur_pass, uv + vec2(0, i * g_w_div_h * g_step));
 				w += weight;
 			}
@@ -86,7 +92,9 @@ void main(){
 			color += sampleLod(g_last_blur_pass, uv, 0.01 * g_step, 0.25);
 			color += sampleLod(g_last_blur_pass, uv, 0.005 * g_step, 0.75);
 		}
-	}	
+	}
+	if(any(isnan(color)))
+		color = vec4(0);
 	fragColor = color;
 }
 )";

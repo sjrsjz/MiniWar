@@ -17,6 +17,7 @@
 
 #include "../header/utils/FloatBuffer.h"
 #include "../header/utils/RegionSelector.h"
+#include "../header/utils/CoordTranslate.h"
 
 #include "../include/imgui/imgui.h"
 #include "../include/imgui/imgui_impl_glfw.h"
@@ -75,6 +76,8 @@ static vec3 s_mouse_position;
 
 static int s_current_selected_grid[2] = { -1,-1 };
 static bool s_is_selected = false;
+
+static const float map_plane_y = -0.62f;
 
 namespace GAMESOUND {
 #ifdef _WIN32
@@ -318,6 +321,7 @@ void glfwWindowSizeCallback(GLFWwindow* window, int width, int height);
 void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void KeyProcess();
 void KeyRelease(int key);
+void get_screen_position(float x, float y, float z, float& screen_x, float& screen_y);
 
 static enum SelectedWeapon {
 	NONE, // 空
@@ -743,9 +747,25 @@ public:
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
 		// 移动到最低端
+		Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
+		float grid_center_x = region.getPosition().x / RegionManager::getInstance().get_map_width() * 2.0 - 1.0;
+		float grid_center_z = region.getPosition().y / RegionManager::getInstance().get_map_height() * 2.0 - 1.0;
+		float grid_center_y = map_plane_y;
 
-		ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, io.DisplaySize.y - 200));
-		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 200));
+		float screen_pos_x, screen_pos_y;
+		get_screen_position(grid_center_x, grid_center_y, grid_center_z, screen_pos_x, screen_pos_y);
+
+		screen_pos_x *= io.DisplaySize.x;
+		screen_pos_y *= io.DisplaySize.y;
+
+		//DEBUG::DebugOutput(grid_center_x, grid_center_y, grid_center_z, screen_pos_x, screen_pos_y);
+		//ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, io.DisplaySize.y - 200));
+		float W = 400;
+		float H = 150;
+
+		ImGui::SetWindowPos(ImVec2(screen_pos_x - W / 2, screen_pos_y - H));
+
+		ImGui::SetWindowSize(ImVec2(W, H));
 
 		switch (s_selected_weapon) {
 		case NUCLEAR_MISSILE:
@@ -763,7 +783,7 @@ public:
 			ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1, 1, 1, 0.5));
 			ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(1, 1, 1, 1));
 			ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 10.0f);  // 设置滑块大小
-			ImGui::SetNextItemWidth(io.DisplaySize.x / 4 - 20);  // 设置滑块条宽度
+			ImGui::SetNextItemWidth(W - 20);  // 设置滑块条宽度
 			ImGui::SetCursorPosX(10);
 			ImGui::SliderInt("##ScatterBombRange", &s_scatter_bomb_range, 1, map_info.getWidth() / 2);
 			ImGui::PopStyleVar();
@@ -771,9 +791,8 @@ public:
 			break;
 		}
 
-		ImGui::Text(u8"区块坐标: %d, %d", grid[0], grid[1]);
+		//ImGui::Text(u8"区块坐标: %d, %d", grid[0], grid[1]);
 		try {
-			Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
 			BuildingType building_type = region.getBuilding().getType();
 			if (building_type != BuildingType::None)
 				ImGui::Text(u8"建筑: %s", BuildingTypeToString(building_type).c_str());
@@ -1167,7 +1186,7 @@ void render_update_info() {
 	std::vector<Vertex> vertices;
 	auto army = rm.get_moving_army_position();
 	for (auto& a : army) {
-		Vertex tmp = { std::get<0>(a.current_pos) / map_info.getWidth() * 2 - 1, -0.62, std::get<1>(a.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 1 };
+		Vertex tmp = { std::get<0>(a.current_pos) / map_info.getWidth() * 2 - 1, map_plane_y, std::get<1>(a.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 1 };
 		if (a.owner_id == 0)
 		{
 			tmp.r = 0; tmp.g = 1; tmp.b = 0;
@@ -1179,7 +1198,7 @@ void render_update_info() {
 	}
 	auto missile = rm.get_moving_missle_position();
 	for (auto& m : missile) {
-		Vertex tmp = { std::get<0>(m.current_pos) / map_info.getWidth() * 2 - 1, -0.62 + std::get<2>(m.current_pos), std::get<1>(m.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 0 };
+		Vertex tmp = { std::get<0>(m.current_pos) / map_info.getWidth() * 2 - 1, map_plane_y + std::get<2>(m.current_pos), std::get<1>(m.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 0 };
 		vertices.push_back(tmp);
 	}
 	//DEBUG::DebugOutput("Army size", army.size());
@@ -1721,7 +1740,7 @@ void prepare_render() {
 
 
 	scale_map_camera.update(timer.getTime());
-	scale_map_camera.clampZ(-6, 0,timer.getTime());
+	scale_map_camera.clampZ(-8, 0,timer.getTime());
 
 	camera.update(timer.getTime());
 	camera.clampX(-5, 5, timer.getTime());
@@ -1774,18 +1793,9 @@ void render_points() {
 
 	glfwGetFramebufferSize(glfw_win, &W, &H);
 
-	ratio = W / (float)H;
 	int mvp_location = glGetUniformLocation(s_points_program, "MVP");
 
-	mat4x4_identity(mvp);
-	
-	// 极其申必的透视投影，满足 M_camera * P_(x, y, fov, 1) = MVP * P_world
-	float fov = 2;
-	mvp[0][0] = 1/ratio * fov;
-	mvp[1][1] = fov;
-	mvp[2][2] = -1;
-	mvp[3][3] = 0;
-	mvp[2][3] = -1;
+	CoordTranslate::project(mvp, W, H, 2);
 
 	//mat4x4_mul(mvp, p, m);
 	glUseProgram(s_points_program);
@@ -1801,13 +1811,6 @@ void render_points() {
 
 
 	Camera model_camera;
-	model_camera.setPos(0, 0.5, 0);
-	model_camera.setRot(0, -map_rotation.getX(), 0);
-	mat4x4 model_mat;
-	model_camera.getMat4(model_mat);
-	mat4x4_scale_aniso(model_mat, model_mat, 0.25, 0.25, 0.25);
-	glUniformMatrix4fv(glGetUniformLocation(s_points_program, "g_model_trans_mat"), 1, GL_FALSE, (const GLfloat*)model_mat);
-
 	mat4x4 model_mat_inv_rot;
 	model_camera.setPos(0, 0.5, 0);
 	model_camera.setRot(0, map_rotation.getX(), 0);
@@ -1833,6 +1836,42 @@ void render_points() {
 	point_renderer.render(s_points_program);
 	glUseProgram(0);
 	g_main_game_pass_fbo.unbind_frameBuffer();
+}
+
+void get_screen_position(float x, float y, float z, float& screen_x, float& screen_y) {
+
+	int W, H;
+	float ratio;
+	mat4x4 mvp;
+	float fov = 2;
+	glfwGetFramebufferSize(glfw_win, &W, &H);
+
+	CoordTranslate::project(mvp, W, H, fov);
+
+	Camera model_camera;
+	mat4x4 model_mat_inv_rot;
+	model_camera.setPos(0, 0.5, 0);
+	model_camera.setRot(0, map_rotation.getX(), 0);
+	model_camera.getMat4(model_mat_inv_rot);
+	mat4x4_scale_aniso(model_mat_inv_rot, model_mat_inv_rot, 0.25, 0.25, 0.25);
+	
+	mat4x4 g_trans_mat;
+	camera.getCamera().getMat4(g_trans_mat);
+	mat4x4 g_scale_mat;
+	scale_map_camera.getCamera().getMat4(g_scale_mat);
+	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
+
+	mat4x4 shake_camera;
+	s_shake_effect.get_shake_matrix(shake_camera);
+	mat4x4_mul(g_trans_mat, g_trans_mat, shake_camera);
+
+
+	vec3 world_pos = { x,y,z };
+
+	vec2 screen_pos = { 0,0 };
+	CoordTranslate::world_to_screen(screen_pos, world_pos, mvp, model_mat_inv_rot, g_trans_mat);
+	screen_x = screen_pos[0];
+	screen_y = screen_pos[1];
 }
 
 
@@ -2118,11 +2157,11 @@ void render() {
 }
 
 void reset_camera() {
-	camera.move_to(0, 0, -2, timer.getTime());
-	camera.rotate_to(0, 0, -1.5, timer.getTime());
-	scale_map_camera.move_to(0, 0, -6, timer.getTime());
-	camera.rotate_to(0, 0, -1.5 / (1 + 2 * exp(-0.05 * -6 * -6)), timer.getTime());
-	map_rotation.newEndPosition(-(exp(-0.01 * pow(-6 * -6, 2))), timer.getTime());
+	camera.move_to(0, 0, -1.75, timer.getTime());
+	camera.rotate_to(0, 0, -1.2, timer.getTime());
+	scale_map_camera.move_to(0, 0, -8, timer.getTime());
+	camera.rotate_to(0, 0, -1.2 / (1 + 2 * exp(-0.05 * -8 * -8)), timer.getTime());
+	map_rotation.newEndPosition(-(exp(-0.01 * pow(-8 * -8, 2))), timer.getTime());
 }
 
 void KeyProcess() {
@@ -2677,7 +2716,7 @@ void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 		return;
 	}
 	scale_map_camera.move(0, 0, yoffset, timer.getTime());
-	camera.rotate_to(0, 0, -1.5 /(1 + 2 * exp(-0.05 * scale_map_camera.getZ() * scale_map_camera.getZ())), timer.getTime());
+	camera.rotate_to(0, 0, -1.2 /(1 + 2 * exp(-0.05 * scale_map_camera.getZ() * scale_map_camera.getZ())), timer.getTime());
 	map_rotation.newEndPosition(-(exp(-0.01 * pow(scale_map_camera.getZ() * scale_map_camera.getZ(),2))),timer.getTime());
 }
 
