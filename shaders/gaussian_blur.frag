@@ -30,7 +30,7 @@ vec4 sampleLod(sampler2D tex, vec2 uv, float lod, float scale){
 	float weight = 0;
 	for(int i = -1; i <= 1; i++){
 		for(int j = -1; j <= 1; j++){
-			float w = exp(-float(i * i + j * j) );
+			float w = exp(- float(i * i + j * j) );
 			color += w * sampleData(tex, uv + vec2(i, j * g_w_div_h) * lod);
 			weight += w;
 		}
@@ -62,7 +62,7 @@ vec4 sampleLod_mipmap(sampler2D tex, vec2 uv, float lod, float scale){
 void main(){
 	
 	vec2 uv = texCoord;
-	vec4 color;
+	vec4 color = vec4(0);
 
 	if(g_gaussian){
 		if(g_vertical){

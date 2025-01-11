@@ -743,9 +743,10 @@ public:
 
 
 		if (!is_selected) return;
-		ImGui::SetNextWindowBgAlpha(0.5);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f)); // RGBA 格式
 		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
+
 		// 移动到最低端
 		Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
 		float grid_center_x = region.getPosition().x / RegionManager::getInstance().get_map_width() * 2.0 - 1.0;
@@ -763,10 +764,12 @@ public:
 		float W = 400;
 		float H = 150;
 
-		ImGui::SetWindowPos(ImVec2(screen_pos_x - W / 2, screen_pos_y - H));
+		float W_target = 25;
+		float H_target = 25;
+
+		ImGui::SetWindowPos(ImVec2(screen_pos_x - W / 2, screen_pos_y - H - H_target));
 
 		ImGui::SetWindowSize(ImVec2(W, H));
-
 		switch (s_selected_weapon) {
 		case NUCLEAR_MISSILE:
 			ImGui::Text(u8"选中: 核导弹");
@@ -820,6 +823,32 @@ public:
 			// nothing
 		}
 		ImGui::End();
+		ImGui::PopStyleColor();
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); // RGBA 格式
+
+		ImGui::Begin("Selected Grid Target", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
+
+
+		ImGui::SetWindowPos(ImVec2(screen_pos_x - W_target / 2, screen_pos_y - H_target));
+
+		ImGui::SetWindowSize(ImVec2(W_target, H_target));
+
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+		// 获取窗口位置作为偏移
+		ImVec2 pos = ImGui::GetWindowPos();
+
+
+		// 相对于窗口绘制三角形
+		ImVec2 p1 = ImVec2(pos.x, pos.y);
+		ImVec2 p2 = ImVec2(pos.x + W_target, pos.y);
+		ImVec2 p3 = ImVec2(pos.x + W_target / 2, pos.y + H_target);
+
+		draw_list->AddTriangleFilled(p1, p2, p3, IM_COL32(0, 0, 0, 255 * 0.5));
+
+
+		ImGui::End();
+		ImGui::PopStyleColor();
 		ImGui::PopStyleVar();
 	}
 

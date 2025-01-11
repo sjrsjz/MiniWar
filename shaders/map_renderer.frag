@@ -267,7 +267,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     //color *= sky_color * max(dot(region_normal,sun_light_dir),0.1);
     
     // 区块中心
-    // color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
+     color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
 
     float p_s = pow(0.65 + 0.35 * sin(g_time*5),3);
     // 首都区块（金色高亮
@@ -386,7 +386,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
         color = mix(color, vec3(0.5,0.5,0.5) * color_forbid.a, color_forbid.a);
 	}
     // 边界线
-    color = mix(mix(vec3(0,0,0),vec3(0,500,0),cell_idx.diff_identity) * float(cell_idx.sdf<0.025), 
+    color = mix(mix(vec3(0,0,0),vec3(0,100,0),cell_idx.diff_identity) * float(cell_idx.sdf<0.025), 
                 color, 
                 0.5 + 0.95 * float(cell_idx.sdf>=0.0125));
     return vec4(color, 1);
@@ -456,7 +456,7 @@ vec4 render(out float depth){
     // 计算depth
     depth = dist;
 
-	color.xyz = getFogColor(vec3(10),vec3(0.1),rayOrigin,rayDir,sun_light_dir,min(dist,5)*50000,color.xyz);
+	color.xyz = clamp(getFogColor(vec3(10),vec3(0.1),rayOrigin,rayDir,sun_light_dir,min(dist,5)*50000,color.xyz),0.,100.);
 
 	return color;
 }
