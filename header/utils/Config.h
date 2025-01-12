@@ -46,10 +46,10 @@ public:
 	};
 
 	struct BuildingSetting {
-		std::vector<double> BuildCost{};
-		std::vector<double> Product{};
-		std::vector<double> LevelUpscaleFactor{};
-		std::vector<std::vector<double>> UpLevelCost{};
+		std::vector<std::vector<double>> BuildCost{}; // 建筑消耗
+		std::vector<std::vector<double>> ReturnCost{}; // 拆除返还
+		std::vector<std::vector<double>> ResourceGeneration{}; // 产出资源
+		std::vector<std::vector<double>> SteadyCost{}; // 固定消耗
 		std::vector<double> ProductCD{}; // 生产间隔，秒为单位
 	};
 	struct ResearchInstitutionSetting {

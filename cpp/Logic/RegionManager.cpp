@@ -25,7 +25,6 @@ std::vector<Point> astar(const Array<int>& grid, Point start, Point end) {
 	int width = grid.get_width();
 	int height = grid.get_height();
 	Array<bool> closed(width, height);
-	// 使用最小堆而不是最大堆，修改比较函数
 	auto cmp = [](const std::pair<Point, double>& a, const std::pair<Point, double>& b) {
 		return a.second > b.second;
 		};
@@ -36,7 +35,7 @@ std::vector<Point> astar(const Array<int>& grid, Point start, Point end) {
 	g_scores.fill(std::numeric_limits<double>::infinity());
 	g_scores(std::floor(start.x), std::floor(start.y)) = 0;
 
-	enum direction { E, W, S, N }; // 修改顺序以匹配dx,dy数组
+	enum direction { E, W, S, N };
 	Array<direction> directions(width, height);
 
 	open.push({ start, 0.0 });
@@ -223,19 +222,6 @@ void RegionManager::set(int width, int height) {
 	}
 
 }
-
-//void RegionManager::move_army(int amount, double time, std::vector<std::tuple<int, int>>& path) {
-//	MovingArmy army;
-//	army.amount = amount;
-//	army.time = time;
-//	Region end_region = get_region(std::get<0>(path.back()), std::get<1>(path.back()));
-//
-//	army.path = path;
-//	moving_armies.push(army);
-//	//count time
-//	//if time is up, move
-//	end_region.addArmy(amount);
-//}
 
 double RegionManager::move_army(Point start, Point end, int amount, int army_level) {
 	DEBUG::DebugOutput("RegionManager::move_army() called");
@@ -547,34 +533,53 @@ void RegionManager::update(GlobalTimer& timer) {
 }
 
 void RegionManager::calculate_delta_resources(std::vector<double>& delta_resource, double delta_t, int player_id) {
-	int owned_regions = 0;
 	Config& configer = Config::getInstance();
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++) {
 			Region& region = get_region(i, j);
 			std::string building_name = BuildingTypeToString(region.getBuilding().getType());
-			if (region.getOwner() == player_id) {
-				owned_regions++;
-				switch (region.getBuilding().getType())
-				{
-				case BuildingType::PowerStation:
-					delta_resource[ResourceType::ELECTRICITY] += configer.getBuildingSetting(building_name).Product[ResourceType::ELECTRICITY] * delta_t;
-					break;
-				case BuildingType::Refinery:
-					delta_resource[ResourceType::OIL] += configer.getBuildingSetting(building_name).Product[ResourceType::OIL] * delta_t;
-					break;
-				case BuildingType::SteelFactory:
-					delta_resource[ResourceType::STEEL] += configer.getBuildingSetting(building_name).Product[ResourceType::STEEL] * delta_t;
-					break;
-				case BuildingType::CivilFactory:
-					delta_resource[ResourceType::GOLD] += configer.getBuildingSetting(building_name).Product[ResourceType::GOLD] * delta_t;
-					break;
-				default:
-					break;
-				}
+			if (region.getOwner() == player_id && region.getBuilding().getType() != BuildingType::None) {
+				int level = region.getBuilding().getLevel() - 1;
+				delta_resource[ResourceType::ELECTRICITY] += configer.getBuildingSetting(building_name).ResourceGeneration[level][ResourceType::ELECTRICITY] * delta_t;
+				delta_resource[ResourceType::OIL] += configer.getBuildingSetting(building_name).ResourceGeneration[level][ResourceType::OIL] * delta_t;
+				delta_resource[ResourceType::STEEL] += configer.getBuildingSetting(building_name).ResourceGeneration[level][ResourceType::STEEL] * delta_t;
+				delta_resource[ResourceType::GOLD] += configer.getBuildingSetting(building_name).ResourceGeneration[level][ResourceType::GOLD] * delta_t;
+				delta_resource[ResourceType::LABOR] += configer.getBuildingSetting(building_name).ResourceGeneration[level][ResourceType::LABOR] * delta_t;
 
 			}
 		}
 	}
-	delta_resource[ResourceType::LABOR] = owned_regions * 30; // 计算可用劳动力
+}
+
+void RegionManager::calculate_steady_cost_resources(std::vector<double>& steady_cost_resource, int player_id) {
+	Config& configer = Config::getInstance();
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < height; j++) {
+			Region& region = get_region(i, j);
+			std::string building_name = BuildingTypeToString(region.getBuilding().getType());
+			if (region.getOwner() == player_id && region.getBuilding().getType() != BuildingType::None) {
+				int level = region.getBuilding().getLevel() - 1;
+
+				steady_cost_resource[ResourceType::ELECTRICITY] += configer.getBuildingSetting(building_name).SteadyCost[level][ResourceType::ELECTRICITY];
+				steady_cost_resource[ResourceType::OIL] += configer.getBuildingSetting(building_name).SteadyCost[level][ResourceType::OIL];
+				steady_cost_resource[ResourceType::STEEL] += configer.getBuildingSetting(building_name).SteadyCost[level][ResourceType::STEEL];
+				steady_cost_resource[ResourceType::GOLD] += configer.getBuildingSetting(building_name).SteadyCost[level][ResourceType::GOLD];
+				steady_cost_resource[ResourceType::LABOR] += configer.getBuildingSetting(building_name).SteadyCost[level][ResourceType::LABOR];
+
+			}
+		}
+	}
+}
+
+int RegionManager::calculate_region_amount(int player_id) {
+	int count = 0;
+	Config& configer = Config::getInstance();
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < height; j++) {
+			if (get_region(i, j).getOwner() == player_id) {
+				count++;
+			}
+		}
+	}
+	return count;
 }

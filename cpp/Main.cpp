@@ -948,10 +948,10 @@ public:
 
 		// 资源条
 		render_bar(io, gold_amount, gold_amount_back, u8"金钱:%d", TEXTURE::s_image_lightning, gold_amount_max, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
-		render_bar(io, electricity_amount, electricity_amount_back, u8"电力:%d", TEXTURE::s_image_lightning, electricity_amount_max, ImVec4(0, 1, 1, 1), ImVec4(0, 0, 1, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
-		render_bar(io, labor_amount, labor_amount_back, u8"可用劳动力:%d", TEXTURE::s_image_lightning, labor_amount_max, ImVec4(0.5, 1, 0.5, 0.5), ImVec4(0, 1, 0, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
 		render_bar(io, oil_amount, oil_amount_back, u8"石油:%d", TEXTURE::s_image_lightning, oil_amount_max, ImVec4(0.1, 0.1, 0.1, 1), ImVec4(1, 0.5, 0, 0.5), ImVec4(0.75, 0.75, 0.75, 0.5));
 		render_bar(io, steel_amount, steel_amount_back, u8"钢铁:%d", TEXTURE::s_image_lightning, steel_amount_max, ImVec4(1, 1, 1, 1), ImVec4(0.5, 0.5, 0.5, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
+		render_bar(io, electricity_amount, electricity_amount_back, u8"电力:%d", TEXTURE::s_image_lightning, electricity_amount_max, ImVec4(0, 1, 1, 1), ImVec4(0, 0, 1, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
+		render_bar(io, labor_amount, labor_amount_back, u8"可用劳动力:%d", TEXTURE::s_image_lightning, labor_amount_max, ImVec4(0.5, 1, 0.5, 0.5), ImVec4(0, 1, 0, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
 		render_bar(io, army_amount, army_amount_back, u8"军队:%d", TEXTURE::s_image_guard, army_amount_max, ImVec4(0.5, 0.5, 1, 1), ImVec4(0.5, 0.5, 1, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
 		render_bar(io, occupation_amount, occupation_amount_back, u8"已占有:%d", TEXTURE::s_image_guard, occupation_amount_max, ImVec4(0.6, 0.5, 1, 1), ImVec4(1, 0.25, 0.25, 0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
 
@@ -983,23 +983,26 @@ public:
 		occupation_amount.update_sin(timer.getTime());
 		occupation_amount_back.update_sin(timer.getTime());
 
-		double gold = RegionManager::getInstance().get_player().get_gold();
+		std::vector<double> resources = RegionManager::getInstance().get_player().get_remain_resources();
+		std::vector<double> max_resources = RegionManager::getInstance().get_player().get_resources();
+		
+		double gold = resources[ResourceType::GOLD];
 		gold_amount.newEndPosition(gold, timer.getTime());
 		gold_amount_back.newEndPosition(gold, timer.getTime());
 		gold_amount_max = _10_n_max_than(gold);
-		double electricity = RegionManager::getInstance().get_player().get_electricity();
+		double electricity = resources[ResourceType::ELECTRICITY];
 		electricity_amount.newEndPosition(electricity, timer.getTime());
 		electricity_amount_back.newEndPosition(electricity, timer.getTime());
 		electricity_amount_max = _10_n_max_than(electricity);
-		double labor = RegionManager::getInstance().get_player().get_ocupied_labor();
-		labor_amount_max = RegionManager::getInstance().get_player().get_labor_limit();
-		labor_amount.newEndPosition(fmax(0, labor_amount_max - labor), timer.getTime());
-		labor_amount_back.newEndPosition(fmax(0, labor_amount_max - labor), timer.getTime());
-		double oil = RegionManager::getInstance().get_player().get_oil();
+		double labor = resources[ResourceType::LABOR];
+		labor_amount_max = max_resources[ResourceType::LABOR];
+		labor_amount.newEndPosition(fmax(0, labor), timer.getTime());
+		labor_amount_back.newEndPosition(fmax(0, labor), timer.getTime());
+		double oil = resources[ResourceType::OIL];
 		oil_amount.newEndPosition(oil, timer.getTime());
 		oil_amount_back.newEndPosition(oil, timer.getTime());
 		oil_amount_max = _10_n_max_than(oil);
-		double steel = RegionManager::getInstance().get_player().get_steel();
+		double steel = resources[ResourceType::STEEL];
 		steel_amount.newEndPosition(steel, timer.getTime());
 		steel_amount_back.newEndPosition(steel, timer.getTime());
 		steel_amount_max = _10_n_max_than(steel);

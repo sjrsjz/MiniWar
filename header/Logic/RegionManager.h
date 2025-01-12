@@ -65,6 +65,8 @@ public:
 	void set(int width, int height);
 
 	void calculate_delta_resources(std::vector<double>& delta_resource, double delta_t, int player_id);
+	void calculate_steady_cost_resources(std::vector<double>& steady_cost_resource, int player_id);
+	int calculate_region_amount(int player_id);
 	void update(GlobalTimer& timer);
 
 	//void move_army(int amount, double time, std::vector<std::tuple<int, int>>& path);

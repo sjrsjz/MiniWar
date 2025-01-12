@@ -20,13 +20,23 @@ class Region;
 
 class Player {
 private:
-	double gold{};
-	double oil{};
-	double electricity{};
-	double ocupied_labor{};
-	double steel{};
+	struct {
+		double gold{};
+		double oil{};
+		double electricity{};
+		double steel{};
+		double labor{};
+	}m_resources; // 累计资源
+	struct {
+		double gold{};
+		double oil{};
+		double electricity{};
+		double steel{};
+		double labor{};
+	}m_steady_cost_resources; // 固定的资源消耗
+
+	bool power_off = false;
 	int id{};
-	int labor_limit{};
 	bool have_research_institution = false;
 	std::tuple<int, int> capital = std::make_tuple(-1,-1);
 	const std::vector<int> max_army_level = { 3, 3, 3, 3 };
@@ -38,24 +48,28 @@ private:
 public:
 	Player();
 	~Player();
-	int get_gold();
-	int get_electricity();
-	int get_labor_limit();
-	int get_ocupied_labor();
-	int get_steel();
-	int get_oil();
+	std::vector<double> get_resources() {
+		std::vector<double> resources = { m_resources.gold, m_resources.oil, m_resources.steel, m_resources.electricity, m_resources.labor };
+		return resources;
+	}
+	std::vector<double> get_steady_cost_resources() {
+		std::vector<double> resources = { m_steady_cost_resources.gold, m_steady_cost_resources.oil, m_steady_cost_resources.steel, m_steady_cost_resources.electricity, m_steady_cost_resources.labor };
+		return resources;
+	}
+
+	std::vector<double> get_remain_resources() {
+		std::vector<double> remain_resources = {
+			std::fmax(0, m_resources.gold - m_steady_cost_resources.gold),
+			std::fmax(0, m_resources.oil - m_steady_cost_resources.oil),
+			std::fmax(0, m_resources.steel - m_steady_cost_resources.steel),
+			std::fmax(0, m_resources.electricity - m_steady_cost_resources.electricity),
+			std::fmax(0, m_resources.labor - m_steady_cost_resources.labor)
+		};
+		return remain_resources;
+	}
+
 	int get_capital_x();
 	int get_capital_y();
-	void gold_cost(int cost);
-	void oil_cost(int cost);
-	void electricity_cost(int cost);
-	void labor_cost(int cost);
-	void steel_cost(int cost);
-	void add_gold(int amount);
-	void add_oil(int amount);
-	void add_electricity(int amount);
-	void add_labor(int amount);
-	void add_steel(int amount);
 	void upgrade_building_level_limit(BuildingType building_type);
 	void upgrade_army_level_limit();
 	void upgrade_weapon_level_limit(int weapon_type);

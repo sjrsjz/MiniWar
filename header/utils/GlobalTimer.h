@@ -7,28 +7,26 @@ class GlobalTimer
 {
 public:
 	static GlobalTimer& getInstance();
-	/*void start();
-	void stop();
-	void pause();
-	void resume();
-	double get_elapsed_time() const;
-	GlobalTimer() : is_running_(false), is_paused_(false), paused_duration_(std::chrono::steady_clock::duration::zero()) {};
-	~GlobalTimer() = default;*/
 
+	// 获得累计时间
 	double get_acc_time() const {
 		return acc_time;
 	}
 
+	// 获得计时间隔
 	double get_dt() const {
 		return dt;
 	}
 
+	// 获得运行时间（比累计时间更精确）
 	double get_running_time() const {
 		if (paused)
 			return acc_time;
 		auto curr = std::chrono::steady_clock::now();
 		return std::chrono::duration_cast<std::chrono::duration<double>>(curr - last_update_time).count() + acc_time;
 	}
+
+	// 更新时间
 	void update() {
 		auto curr = std::chrono::steady_clock::now();
 		if (!paused) {
@@ -38,16 +36,18 @@ public:
 		last_update_time = curr;
 	}
 
-
+	// 暂停计时
 	void pause() {
 		paused = true;
 	}
 
+	// 恢复计时
 	void resume() {
 		paused = false;
 		last_update_time = std::chrono::steady_clock::now();
 	}
 
+	// 重置计时器
 	void reset() {
 		acc_time = 0;
 		dt = 0;
@@ -56,16 +56,6 @@ public:
 	}
 
 private:
-	//std::chrono::steady_clock::time_point start_time_;
-	//std::chrono::steady_clock::time_point end_time_;
-	//std::chrono::steady_clock::time_point pause_time_;
-	//std::chrono::steady_clock::duration paused_duration_;
-	//bool is_running_;
-	//bool is_paused_;
-
-	//GlobalTimer(const GlobalTimer&) = delete;
-	//GlobalTimer& operator=(const GlobalTimer&) = delete;
-	
 	std::chrono::steady_clock::time_point last_update_time;
 	double acc_time = 0;
 	bool paused = false;

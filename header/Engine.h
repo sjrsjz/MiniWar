@@ -2,6 +2,7 @@
 
 #include "../header/utils/GlobalTimer.h"
 #include "../header/Logic/RegionManager.h"
+#include "../header/Logic/Resource.h"
 
 void initial_game(int width, int height);
 void main_loop();

@@ -52,6 +52,7 @@ void Config::load(const std::string& path) {
 
 	data.army.cost = config["Army"]["cost"].get<double>();
 	data.army.speed = config["Army"]["speed"].get<std::vector<double>>();
+	data.army.UpLevelCost = config["Army"]["UpLevelCost"].get<std::vector<std::vector<double>>>();
 
 	data.defaultRegionSetting.HP = std::make_pair(config["Region"]["HP"][0].get<double>(), config["Region"]["HP"][1].get<double>());
 	data.defaultRegionSetting.ArmyCount = std::make_pair(config["Region"]["ArmyCount"][0].get<int>(), config["Region"]["ArmyCount"][1].get<int>());
@@ -63,11 +64,11 @@ void Config::load(const std::string& path) {
 	for (auto& item: config["Building"].items()){
 		data.buildingSetting[item.key()] =
 			BuildingSetting{
-				item.value()["BuildCost"].get <std::vector<double>>(),
-				item.value()["Product"].get <std::vector<double>>(),
-				item.value()["UpLevelFactor"].get<std::vector<double>>(),
-				item.value()["UpLevelCost"].get<std::vector<std::vector<double>>>(),
-				item.value()["CD"].get<std::vector<double>>(),
+				item.value()["BuildCost"].get<std::vector<std::vector<double>>>(),
+				item.value()["ReturnCost"].get<std::vector<std::vector<double>>>(),
+				item.value()["ResourceGeneration"].get<std::vector<std::vector<double>>>(),
+				item.value()["SteadyCost"].get<std::vector<std::vector<double>>>(),
+				item.value()["CD"].get<std::vector<double>>()
 		};
 	}
 
