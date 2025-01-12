@@ -17,6 +17,7 @@
 #include "../../header/utils/Config.h"
 #include "../../header/Logic/Player.h"
 #include "../../header/utils/Point.h"
+void push_game_effects(GameEffect effect);
 
 #define INF std::numeric_limits<int>::infinity()
 
@@ -311,6 +312,7 @@ public:
 					if (dist >= min && dist <= max) {
 						//DEBUG::DebugOutput("WeaponAttack() called");
 						regionManager.attack_region_missle(i, arm_level[i + 1], start, end, time);
+						push_game_effects(GameEffect::GAME_EFFECT_PLAY_NUCLEAR_WARNING);
 						cnt++;
 						canAttack = false;
 						//DEBUG::DebugOutput("WeaponAttack() finished");

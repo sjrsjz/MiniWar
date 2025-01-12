@@ -44,7 +44,7 @@ private:
 	Player player;
 	std::vector<Weapon> weapons;// 0: CM, 1: MRBM, 2: ICBM
 	std::priority_queue<MovingArmy> moving_armies;
-	std::priority_queue<MovingMissle> moving_missles;
+	std::vector<MovingMissle> moving_missles;
 	double current_time{};
 	
 	void clear_building(Region& region);

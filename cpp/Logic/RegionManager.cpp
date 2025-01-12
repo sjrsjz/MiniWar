@@ -2,6 +2,8 @@
 #include "../../header/debug.h"
 #include "../../header/Logic/Player.h"
 #include "../../header/Logic/Resource.h"
+#include "../../header/Logic/GameEffect.h"
+
 #include <cmath>
 #include <vector>
 #include <random>
@@ -143,7 +145,7 @@ std::vector<Region*> RegionManager::get_damaged_regions(Point position, double r
 	double start_y = position.y;
 	std::vector<Region*> result;
 	int range_R = std::ceil(range);
-	for (int i = -range_R; range_R <= 2; i++) {
+	for (int i = -range_R; i <= range_R; i++) {
 		for (int j = -range_R; j <= range_R; j++) {
 			if (regions.in_range(start_x + i, start_y + j) && std::sqrt(i * i + j * j) <= range) {
 					result.push_back(&get_region(start_x + i, start_y + j));
@@ -186,18 +188,12 @@ std::vector<MovingArmy> RegionManager::get_moving_army_position() {
 }
 
 std::vector<MovingMissle> RegionManager::get_moving_missle_position() {
-	std::vector<MovingMissle> copied_missles;
-	missle_mutex.lock();
-	std::priority_queue<MovingMissle> copy = moving_missles;
-	missle_mutex.unlock();
-
-	while (!copy.empty())
+	std::vector<MovingMissle> copy;
 	{
-		MovingMissle missle = copy.top();
-		copied_missles.push_back(missle);
-		copy.pop();
+		std::lock_guard<std::mutex> lock(missle_mutex);
+		copy = moving_missles;
 	}
-	return copied_missles;
+	return copy;
 }
 
 void RegionManager::set(int width, int height) {
@@ -284,23 +280,11 @@ void RegionManager::attack_region_missle(int weapon_id, int level, Point start, 
 	missle.h = dis(gen);
 	missle.M = dis2(gen);
 
+	DEBUG::DebugOutput("RegionManager::attack_region_missle() Lock missle mutex");
 	missle_mutex.lock();
-	moving_missles.push(missle);
+	moving_missles.push_back(missle);
 	missle_mutex.unlock();
-	//count time
-	//if time is up, attack
-	//if time is up, remove missle
-
-	//int rest_hp = end_region.getHp() - damage;
-	//if (rest_hp <= 0) {
-	//	end_region.setOwner(-1);
-	//	end_region.setHp(0);
-	//	end_region.getWeapons().clear();
-	//	clear_building(end_region);
-	//}
-	//else {
-	//	end_region.setHp(rest_hp);
-	//}
+	DEBUG::DebugOutput("RegionManager::attack_region_missle() Unlock missle mutex");
 }
 
 void RegionManager::attack_region_army(Point start, Point end, int amount) {
@@ -352,7 +336,7 @@ void RegionManager::clear_building(Region& region) {
 	region.getBuilding().remove();
 }
 
-void push_game_effects(int effect);
+void push_game_effects(GameEffect effect);
 
 void RegionManager::update(GlobalTimer& timer) {
 	current_time = timer.get_running_time();
@@ -384,39 +368,46 @@ void RegionManager::update(GlobalTimer& timer) {
 		}
 	}
 	army_mutex.unlock();
-	missle_mutex.lock();
-	while (!moving_missles.empty() && moving_missles.top().reach_time <= current_time) {
-		//DEBUG::DebugOutput("Moving missle: ", moving_missles.top().weapon_id);
-		MovingMissle missle = moving_missles.top();
-		moving_missles.pop();
-		Region& end_region = get_region(std::get<0>(missle.end_point), std::get<1>(missle.end_point));
+	//DEBUG::DebugOutput("RegionManager::update() Lock missle mutex", "1st");
 
-		Weapon weapon = get_weapon(missle.weapon_id);
-		int damage = weapon.getDamage(missle.weapon_level);
-		double damage_range = weapon.getDamageRange(missle.weapon_level);
-
-		std::vector<Region*> damaged_regions = get_damaged_regions(end_region.getPosition(), damage_range);
-
-		for(auto& region:damaged_regions)
-		{
-			int rest_hp = region->getHp() - damage;
-			if (rest_hp <= 0) {
-				region->setOwner(-1);
-				std::random_device rd;
-				std::mt19937 gen(rd());
-				std::uniform_int_distribution<> dis(200, 300);
-				region->setHp(dis(gen));
-				region->getWeapons().clear();
-				region->getArmy().setArmy(0);
-				clear_building(*region);
+	{
+		std::lock_guard<std::mutex> lock(missle_mutex);
+		std::vector<MovingMissle> swap_missles;
+		for (auto& missle : moving_missles) {
+			if (missle.reach_time > current_time) {
+				swap_missles.push_back(missle);
+				continue;
 			}
-			else {
-				region->setHp(rest_hp);
+			Region& end_region = get_region(std::get<0>(missle.end_point), std::get<1>(missle.end_point));
+			
+			Weapon weapon = get_weapon(missle.weapon_id);
+			int damage = weapon.getDamage(missle.weapon_level);
+			double damage_range = weapon.getDamageRange(missle.weapon_level);
+			
+			std::vector<Region*> damaged_regions = get_damaged_regions(end_region.getPosition(), damage_range);
+			
+			for (auto& region : damaged_regions)
+			{
+				int rest_hp = region->getHp() - damage;
+				if (rest_hp <= 0) {
+					region->setOwner(-1);
+					std::random_device rd;
+					std::mt19937 gen(rd());
+					std::uniform_int_distribution<> dis(200, 300);
+					region->setHp(dis(gen));
+					region->getWeapons().clear();
+					region->getArmy().setArmy(0);
+					clear_building(*region);
+				}
+				else {
+					region->setHp(rest_hp);
+				}
 			}
+			push_game_effects(GameEffect::GAME_EFFECT_PLAY_NUCLEAR_EXPLOSION);
 		}
-		push_game_effects(0);
+		moving_missles.swap(swap_missles);
 	}
-	missle_mutex.unlock();
+	//DEBUG::DebugOutput("RegionManager::update() Unlock missle mutex", "1st");
 
 	std::vector<MovingArmy> temp_armies;
 	std::vector<MovingMissle> temp_missles;
@@ -460,76 +451,49 @@ void RegionManager::update(GlobalTimer& timer) {
 		moving_armies.push(army);
 		temp_armies.pop_back();
 	}
-
 	army_mutex.unlock();
-	missle_mutex.lock();
+
+	//DEBUG::DebugOutput("RegionManager::update() Lock missle mutex", "2nd");
+	{
+		std::lock_guard<std::mutex> lock(missle_mutex);
+		for (auto& missle : moving_missles) {
+			//update current postion
+			double mix = fmin(1, (1 + (current_time - missle.reach_time) / missle.time));
+			//DEBUG::DebugOutput("mix: ", mix);
+			auto start = missle.start_point;
+			auto end = missle.end_point;
+			std::tuple<int, int> middle = std::make_tuple((std::get<0>(start) + std::get<0>(end)) / 2, (std::get<1>(start) + std::get<1>(end)) / 2);
+			auto [middleX0, middleY0] = middle;
+			auto [startX0, startY0] = start;
+			auto [endX0, endY0] = end;
+
+			double startX = get_region(startX0, startY0).getPosition().x;
+			double startY = get_region(startX0, startY0).getPosition().y;
+
+			double endX = get_region(endX0, endY0).getPosition().x;
+			double endY = get_region(endX0, endY0).getPosition().y;
+
+			double middleX = get_region(middleX0, middleY0).getPosition().x;
+			double middleY = get_region(middleX0, middleY0).getPosition().y;
 
 
-	while (!moving_missles.empty()) {
-		MovingMissle missle = moving_missles.top();
-		moving_missles.pop();
-		//update current postion
-		double mix = fmin(1, (1 + (current_time - missle.reach_time) / missle.time));
-		//DEBUG::DebugOutput("mix: ", mix);
-		auto start = missle.start_point;
-		auto end = missle.end_point;
-		std::tuple<int, int> middle = std::make_tuple((std::get<0>(start) + std::get<0>(end)) / 2, (std::get<1>(start) + std::get<1>(end)) / 2);
-		auto [middleX0, middleY0] = middle;
-		auto [startX0, startY0] = start;
-		auto [endX0, endY0] = end;
+			double M = missle.M / 10000.0;
 
-		double startX = get_region(startX0, startY0).getPosition().x;
-		double startY = get_region(startX0, startY0).getPosition().y;
+			double P1X = startX - (middleX - startX) * M;
+			double P1Y = startY - (middleY - startY) * M;
 
-		double endX = get_region(endX0, endY0).getPosition().x;
-		double endY = get_region(endX0, endY0).getPosition().y;
+			double P2X = middleX - (middleX - endX) * M;
+			double P2Y = middleY - (middleY - endY) * M;
 
-		double middleX = get_region(middleX0, middleY0).getPosition().x;
-		double middleY = get_region(middleX0, middleY0).getPosition().y;
-		
-		
-		double M = missle.M / 10000.0;
+			double h = missle.h / 1000.0;
+			double x = (1 - mix) * (1 - mix) * (1 - mix) * startX + 3 * mix * (1 - mix) * (1 - mix) * P1X + 3 * mix * mix * (1 - mix) * P2X + mix * mix * mix * endX;
+			double y = (1 - mix) * (1 - mix) * (1 - mix) * startY + 3 * mix * (1 - mix) * (1 - mix) * P1Y + 3 * mix * mix * (1 - mix) * P2Y + mix * mix * mix * endY;
+			double z = (3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix) * 0.025;
+			missle.current_pos = std::make_tuple(x, y, z);
+		}
 
-		double P1X = startX - (middleX - startX) * M;
-		double P1Y = startY - (middleY - startY) * M;
-
-		double P2X = middleX - (middleX - endX) * M;
-		double P2Y = middleY - (middleY - endY) * M;
-
-		double h = missle.h / 1000.0;
-		double x = (1 - mix) * (1 - mix) * (1 - mix) * startX + 3 * mix * (1 - mix) * (1 - mix) * P1X + 3 * mix * mix * (1 - mix) * P2X + mix * mix * mix * endX;
-		double y = (1 - mix) * (1 - mix) * (1 - mix) * startY + 3 * mix * (1 - mix) * (1 - mix) * P1Y + 3 * mix * mix * (1 - mix) * P2Y + mix * mix * mix * endY;
-		double z = (3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix) * 0.025;
-		//DEBUG::DebugOutput("z: ", z);
-		missle.current_pos = std::make_tuple(x, y, z);
-		
-
-
-		/* int x_L = std::get<0>(missle.start_point); */
-		/* int y_L = std::get<1>(missle.start_point); */
-
-		/* int x_R = std::get<0>(missle.end_point); */
-		/* int y_R = std::get<1>(missle.end_point); */
-
-		/* float center_x_L = get_region(x_L, y_L).getPosition().getX(); */
-		/* float center_y_L = get_region(x_L, y_L).getPosition().getY(); */
-
-		/* float center_x_R = get_region(x_R, y_R).getPosition().getX(); */
-		/* float center_y_R = get_region(x_R, y_R).getPosition().getY(); */
-
-		/* float mix_x = center_x_L * (1 - mix) + center_x_R * mix; */
-		/* float mix_y = center_y_L * (1 - mix) + center_y_R * mix; */
-		
-		/* missle.current_pos = std::make_tuple(mix_x, mix_y); */
-
-		temp_missles.push_back(missle);
 	}
-	while (!temp_missles.empty()) {
-		MovingMissle missle = temp_missles.back();
-		moving_missles.push(missle);
-		temp_missles.pop_back();
-	}
-	missle_mutex.unlock();
+	//DEBUG::DebugOutput("RegionManager::update() Unlock missle mutex", "2nd");
 }
 
 void RegionManager::calculate_delta_resources(std::vector<double>& delta_resource, double delta_t, int player_id) {

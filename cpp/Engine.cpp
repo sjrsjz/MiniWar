@@ -50,17 +50,17 @@ std::vector<std::string> get_error_messages() {
 	return result;
 }
 
-static std::vector<int> s_game_effects;
+static std::vector<GameEffect> s_game_effects;
 static std::mutex s_game_effects_mutex;
 
-void push_game_effects(int effect) {
+void push_game_effects(GameEffect effect) {
 	std::lock_guard<std::mutex> lock(s_game_effects_mutex);
 	s_game_effects.push_back(effect);
 }
 
-std::vector<int> get_game_effects() {
+std::vector<GameEffect> get_game_effects() {
 	std::lock_guard<std::mutex> lock(s_game_effects_mutex);
-	std::vector<int> result = s_game_effects;
+	std::vector<GameEffect> result = s_game_effects;
 	s_game_effects.clear();
 	return result;
 }

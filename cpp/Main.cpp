@@ -13,6 +13,7 @@
 #include "../header/debug.h"
 #include "../header/utils/RegionSSBOBuffer.h"
 #include "../header/utils/RegionData.h"
+#include "../header/Logic/GameEffect.h"
 #include "../header/globals.h"
 
 #include "../header/utils/FloatBuffer.h"
@@ -45,6 +46,7 @@
 #include "../header/points.h"
 
 #include <cmath>
+#include <mutex>
 
 static mash s_mash;
 static SmoothCamera camera;
@@ -117,7 +119,7 @@ namespace GAMESOUND {
 	static int s_sound_background_idx = 0;
 	static HSTREAM s_background_stream;
 
-	static const int MAX_SOUND_CHANNELS = 16;  // 最大同时播放数
+	static const int MAX_SOUND_CHANNELS = 64;  // 最大同时播放数
 	static HSTREAM s_sound_streams[MAX_SOUND_CHANNELS];
 	static int s_current_sound_idx = 0;
 
@@ -1805,10 +1807,23 @@ void prepare_render() {
 		GAMESOUND::play_error_sound();
 	}
 
-	std::vector<int> effects = get_game_effects();
+	std::vector<GameEffect> effects = get_game_effects();
 	if (effects.size() > 0) {
-		s_shake_effect.push_shake(timer);
-		GAMESOUND::play_bomb_explosion_sound();
+
+		for(auto& e: effects){
+			switch (e)
+			{
+			case GameEffect::GAME_EFFECT_PLAY_NUCLEAR_EXPLOSION:
+				s_shake_effect.push_shake(timer);
+				GAMESOUND::play_bomb_explosion_sound();
+				break;
+			case GameEffect::GAME_EFFECT_PLAY_NUCLEAR_WARNING:
+				GAMESOUND::play_nuclear_launch_sound();
+				break;
+			default:
+				break;
+			}
+		}
 	}
 
 	s_game_over_gui.open_gui(g_game_stop);
