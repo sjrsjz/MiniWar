@@ -73,23 +73,23 @@ public:
 		std::map<std::string, BuildingSetting> buildingSetting{};
 		ResearchInstitutionSetting researchInstitutionSetting{};
 		std::map<std::string, AIParameter> aiParameter{};
-	} data{};
+	} m_data{};
 
 public:
 	Config(const std::string& path);
 	Config() {};
 	~Config();
 
-	const PlayerOrigionSource& getPlayerOrigionSource() const;
-	const MapSetting& getMapSetting(const std::string& name) const;
-	const Weapon& getWeapon(const std::string& name) const;
-	const Weapon& getWeapon(int index) const;
-	const Army& getArmy() const;
-	const DefaultRegionSetting& getDefaultRegionSetting() const;
-	const BuildingSetting& getBuildingSetting(const std::string& name) const;
-	const ResearchInstitutionSetting& getResearchInstitutionSetting() const;
-	const AIParameter& getAIParameter(const std::string& level) const;
+	const PlayerOrigionSource& get_player_origion_source() const;
+	const MapSetting& get_map_setting(const std::string& name) const;
+	const Weapon& get_weapon_parameter(const std::string& name) const;
+	const Weapon& get_weapon_parameter(int index) const;
+	const Army& get_army_parameter() const;
+	const DefaultRegionSetting& get_default_region_setting() const;
+	const BuildingSetting& get_building_setting(const std::string& name) const;
+	const ResearchInstitutionSetting& get_research_institution_setting() const;
+	const AIParameter& get_AI_parameter(const std::string& level) const;
 	bool is_loaded() const;
 	void load(const std::string& path);
-	static Config& getInstance();
+	static Config& instance_of();
 };

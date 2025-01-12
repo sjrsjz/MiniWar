@@ -10,160 +10,160 @@
 #include <tuple>
 
 Region::Region() {
-	Config& config = Config::getInstance();
-	std::tuple<double, double> hpRange = config.getDefaultRegionSetting().HP;
-	std::tuple<double, double> armyRange = config.getDefaultRegionSetting().ArmyCount;
+	Config& config = Config::instance_of();
+	std::tuple<double, double> hpRange = config.get_default_region_setting().HP;
+	std::tuple<double, double> armyRange = config.get_default_region_setting().ArmyCount;
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(0.0, 1.0);
 	double X = dis(gen);
 	double Y = dis(gen);
-	this->owner = -1;
-	this->weapons = std::vector<int>(3, 0);
-	this->position = Point(X, Y);
+	this->m_owner = -1;
+	this->m_weapons = std::vector<int>(3, 0);
+	this->m_position = Point(X, Y);
 	std::uniform_int_distribution<> disHp(std::get<0>(hpRange), std::get<1>(hpRange));
 	std::uniform_int_distribution<> disArmy(std::get<0>(armyRange), std::get<1>(armyRange));
 	int armyForce = disArmy(gen);
-	this->army = Army(armyForce);
-	this->hp = disHp(gen);
-	this->maxHp = this->hp;
+	this->m_army = Army(armyForce);
+	this->m_HP = disHp(gen);
+	this->m_max_HP = this->m_HP;
 }
 
 Region::Region(int x, int y){
-	Config& config = Config::getInstance();
-	std::tuple<double, double> hpRange = config.getDefaultRegionSetting().HP;
-	std::tuple<double, double> armyRange = config.getDefaultRegionSetting().ArmyCount;
+	Config& config = Config::instance_of();
+	std::tuple<double, double> hpRange = config.get_default_region_setting().HP;
+	std::tuple<double, double> armyRange = config.get_default_region_setting().ArmyCount;
 	
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(0.0, 1000);
 	double X = dis(gen) / 1000.0;
 	double Y = dis(gen) / 1000.0;
-	this->owner = -1; 
-	this->weapons = std::vector<int>(3, 0);
-	this->position = Point(X + x, Y + y);
-	DEBUG::DebugOutput("X", X + x, "Y", Y + y);
+	this->m_owner = -1; 
+	this->m_weapons = std::vector<int>(3, 0);
+	this->m_position = Point(X + x, Y + y);
+	DEBUGOUTPUT("X", X + x, "Y", Y + y);
 	std::uniform_int_distribution<> disHp(std::get<0>(hpRange), std::get<1>(hpRange));
 	std::uniform_int_distribution<> disArmy(std::get<0>(armyRange), std::get<1>(armyRange));
 	int armyForce = disArmy(gen);
-	this->army = Army(armyForce);
+	this->m_army = Army(armyForce);
 
-	this->hp = disHp(gen);
-	this->maxHp = this->hp;
+	this->m_HP = disHp(gen);
+	this->m_max_HP = this->m_HP;
 }
 
 Region::~Region() {
 }
 
-bool Region::setOwner(int owner) {
-	this->owner = owner;
+bool Region::set_owner(int owner) {
+	this->m_owner = owner;
 	return true;
 }
 
-int Region::getOwner() {
-	return this->owner;
+int Region::get_owner() {
+	return this->m_owner;
 } 
 
-bool Region::increaseHp(double hp) {
-	if (this->hp == this->maxHp) {
-		double x = position.x;
-		double y = position.y;
+bool Region::increase_HP(double hp) {
+	if (this->m_HP == this->m_max_HP) {
+		double x = m_position.x;
+		double y = m_position.y;
 		std::stringstream s;
 		
 		s << "Region at (" << x << ", " << y << ") is already at full hp";
-		DEBUG::DebugOutput("Region::increaseHp() throws");
+		DEBUGOUTPUT("Region::increaseHp() throws");
 		throw FullHpException(s.str());
 	}
-	this->hp = std::max(this->hp + hp, this->maxHp);
+	this->m_HP = std::max(this->m_HP + hp, this->m_max_HP);
 	return true;
 }
 
-bool Region::decreaseHp(double hp) {
-	if (this->hp == 0) {
-		double x = position.x;
-		double y = position.y;
+bool Region::decrease_HP(double hp) {
+	if (this->m_HP == 0) {
+		double x = m_position.x;
+		double y = m_position.y;
 		std::stringstream s;
 		s << "Region at (" << x << ", " << y << ") is already at 0 hp";
-		DEBUG::DebugOutput("Region::decreaseHp() throws");
+		DEBUGOUTPUT("Region::decreaseHp() throws");
 		throw SurrenderNotAttackedException(s.str());
 	}
 	
-	this->hp = std::min(this->hp - hp, 0.0);
-	if (this->hp == 0) {
-		this->owner = -1;
+	this->m_HP = std::min(this->m_HP - hp, 0.0);
+	if (this->m_HP == 0) {
+		this->m_owner = -1;
 	}
 	return true;
 }
 
-double Region::getHp() {
-	return this->hp;
+double Region::get_HP() {
+	return this->m_HP;
 }
 
-bool Region::setBuilding(Building& building) {
-	this->building = building;
+bool Region::set_building(Building& building) {
+	this->m_building = building;
 	return true;
 }
 
-Building& Region::getBuilding() {
-	return this->building;
+Building& Region::get_building() {
+	return this->m_building;
 }
 
-Point Region::getPosition() {
-	return this->position;
+Point Region::get_center_position() {
+	return this->m_position;
 }
 
-bool Region::addWeapon(int weapon, int num) {
+bool Region::add_weapon_amount(int weapon, int num) {
 	try {
-		this->weapons.at(weapon) += num;
+		this->m_weapons.at(weapon) += num;
 	} catch (std::out_of_range& e) {
-		DEBUG::DebugOutput("Region::addWeapon() throws");
+		DEBUGOUTPUT("Region::addWeapon() throws");
 		throw e;
 	}
 	return true;
 }
 
-bool Region::removeWeapon(int weapon) {
+bool Region::remove_weapon(int weapon) {
 
 	try {
-		if (this->weapons.at(weapon) == 0) {
+		if (this->m_weapons.at(weapon) == 0) {
 			return false;
 		}
-		this->weapons.at(weapon)--;
+		this->m_weapons.at(weapon)--;
 	} catch (std::out_of_range& e) {
-		DEBUG::DebugOutput("Region::addWeapon() throws");
+		DEBUGOUTPUT("Region::addWeapon() throws");
 		throw e;
 	}
 	return true;
 }
 
-std::vector<int> Region::getWeapons() {
-	return this->weapons;
+std::vector<int> Region::get_weapons() {
+	return this->m_weapons;
 }
 
-bool Region::removeArmy(int num) {
-	return this->army.removeArmy(num);
+bool Region::reduce_army_amount(int num) {
+	return this->m_army.reduce_amount(num);
 }
 
-bool Region::addArmy(int num) {
-	return this->army.addArmy(num);
+bool Region::add_army_amount(int num) {
+	return this->m_army.add_amount(num);
 }
 
-Army& Region::getArmy() {
-	return this->army;
+Army& Region::get_army() {
+	return this->m_army;
 }
 
-bool Region::removeBuilding() {
+bool Region::remove_building() {
 	//TODO
-	return this->building.remove();
+	return this->m_building.remove();
 }
 
-bool Region::setHp(double hp) {
-	this->hp = hp;
+bool Region::set_HP(double hp) {
+	this->m_HP = hp;
 	return true;
 }
 
-bool Region::setMaxHp(double maxHp) {
-	this->maxHp = maxHp;
+bool Region::set_max_HP(double maxHp) {
+	this->m_max_HP = maxHp;
 	return true;
 }

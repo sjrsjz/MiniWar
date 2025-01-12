@@ -71,7 +71,7 @@ public:
 		glUseProgram(m_program);
 		glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
-		glUniform1f(glGetUniformLocation(m_program, "iTime"), timer.getTime());
+		glUniform1f(glGetUniformLocation(m_program, "iTime"), timer.time());
 		glUniform1i(glGetUniformLocation(m_program, "iChannel0"), 0);
 		glUniform2f(glGetUniformLocation(m_program, "iResolution"), m_fbo.width(), m_fbo.height());
 		glUniform1f(glGetUniformLocation(m_program, "mix_strength"), mix_strength);

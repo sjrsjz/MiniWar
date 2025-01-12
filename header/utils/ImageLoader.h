@@ -11,7 +11,7 @@ GLuint LoadPNG(const char* path, bool repeat = false) {
     unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
 
     if (!data) {
-        DEBUG::DebugOutput("Failed to load texture", path);
+        DEBUGOUTPUT("Failed to load texture", path);
         return 0;
     }
 
@@ -32,7 +32,7 @@ GLuint LoadPNG(const char* path, bool repeat = false) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     }
     else {
-        DEBUG::DebugOutput("Unsupported number of channels", std::to_string(nrChannels).c_str());
+        DEBUGOUTPUT("Unsupported number of channels", std::to_string(nrChannels).c_str());
         stbi_image_free(data);
         return 0;
     }

@@ -26,8 +26,8 @@ void initial_game(int width, int height) {
 	aiState = true;
 	aiState2 = true;
 	s_exit_game = false;
-	RegionManager::getInstance().set(width, height);
-	RegionManager::getInstance().get_player().create();
+	RegionManager::instance_of().set(width, height);
+	RegionManager::instance_of().get_player().create();
 	ai.create(1);
 	ai2.create(2);
 	ai.setParameter(1);
@@ -95,82 +95,82 @@ void read_input(int& idx) {
 			//ai.setParameter(id); //1,2,3
 			break;
 		case Operator::SetPowerStation:
-			RegionManager::getInstance().get_player().build(op);
+			RegionManager::instance_of().get_player().build(op);
 			break;
 		case Operator::SetRefinery:
-			RegionManager::getInstance().get_player().build(op);
+			RegionManager::instance_of().get_player().build(op);
 			break;
 		case Operator::SetSteelFactory:
-			RegionManager::getInstance().get_player().build(op);
+			RegionManager::instance_of().get_player().build(op);
 			break;
 		case Operator::SetCivilFactory:
-			RegionManager::getInstance().get_player().build(op);
+			RegionManager::instance_of().get_player().build(op);
 			break;
 		case Operator::SetMilitaryFactory:
-			RegionManager::getInstance().get_player().build(op);
+			RegionManager::instance_of().get_player().build(op);
 			break;
 		case Operator::RemoveBuilding:
-			RegionManager::getInstance().get_player().remove_building(op);
+			RegionManager::instance_of().get_player().remove_building(op);
 			break;
 		case Operator::SetResearch:
-			RegionManager::getInstance().get_player().set_research(op);
+			RegionManager::instance_of().get_player().set_research(op);
 			break;
 		case Operator::BuildingLevel:
-			RegionManager::getInstance().get_player().upgrade_building(op);
+			RegionManager::instance_of().get_player().upgrade_building(op);
 			break;
 		case Operator::PowerStationUpLevel:
-			RegionManager::getInstance().get_player().research(op);
+			RegionManager::instance_of().get_player().research(op);
 			break;
 		case Operator::RefineryUpLevel:
-			RegionManager::getInstance().get_player().research(op);
+			RegionManager::instance_of().get_player().research(op);
 			break;
 		case Operator::SteelFactoryUpLevel:
-			RegionManager::getInstance().get_player().research(op);
+			RegionManager::instance_of().get_player().research(op);
 			break;
 		case Operator::CivilFactoryUpLevel:
-			RegionManager::getInstance().get_player().research(op);
+			RegionManager::instance_of().get_player().research(op);
 			break;
 		case Operator::MilitaryFactoryUpLevel:
-			RegionManager::getInstance().get_player().research(op);
+			RegionManager::instance_of().get_player().research(op);
 			break;
 		case Operator::ArmyUpLevel:
-			RegionManager::getInstance().get_player().research(op);
+			RegionManager::instance_of().get_player().research(op);
 			break;
 		case Operator::Weapon0UpLevel:
-			RegionManager::getInstance().get_player().research(op);
+			RegionManager::instance_of().get_player().research(op);
 			break;
 		case Operator::Weapon1UpLevel:
-			RegionManager::getInstance().get_player().research(op);
+			RegionManager::instance_of().get_player().research(op);
 			break;
 		case Operator::Weapon2UpLevel:
-			RegionManager::getInstance().get_player().research(op);
+			RegionManager::instance_of().get_player().research(op);
 			break;
 		case Operator::ArmyMove:
-			RegionManager::getInstance().get_player().move_army(op, size);
+			RegionManager::instance_of().get_player().move_army(op, size);
 			break;
 		case Operator::Weapon0Attack:
-			RegionManager::getInstance().get_player().attack(op);
+			RegionManager::instance_of().get_player().attack(op);
 			break;
 		case Operator::Weapon1Attack:
-			RegionManager::getInstance().get_player().attack(op);
+			RegionManager::instance_of().get_player().attack(op);
 			break;
 		case Operator::Weapon2Attack:
-			RegionManager::getInstance().get_player().attack(op);
+			RegionManager::instance_of().get_player().attack(op);
 			break;
 		case Operator::RangeAttack:
-			RegionManager::getInstance().get_player().rangeAttack(op);
+			RegionManager::instance_of().get_player().range_attack(op);
 			break;
 		case Operator::ProductArmy:
-			RegionManager::getInstance().get_player().product(op);
+			RegionManager::instance_of().get_player().product(op);
 			break;
 		case Operator::ProductWeapon0:
-			RegionManager::getInstance().get_player().product(op);
+			RegionManager::instance_of().get_player().product(op);
 			break;
 		case Operator::ProductWeapon1:
-			RegionManager::getInstance().get_player().product(op);
+			RegionManager::instance_of().get_player().product(op);
 			break;
 		case Operator::ProductWeapon2:
-			RegionManager::getInstance().get_player().product(op);
+			RegionManager::instance_of().get_player().product(op);
 			break;
 		default:
 			throw std::invalid_argument("Invalid Operator");
@@ -185,7 +185,7 @@ int __push_input(const Operation& op) {
 	Operation tmp = op;
 	tmp.idx = result_dict_counter;
 	g_main_operation.push(std::move(tmp));
-	DEBUG::DebugOutput("Pushed: ", g_main_operation.back().idx);
+	DEBUGOUTPUT("Pushed: ", g_main_operation.back().idx);
 	return tmp.idx;
 }
 std::string wait_for_result(int idx) {
@@ -198,10 +198,10 @@ std::string wait_for_result(int idx) {
 				result = result_dict[idx];
 				result_dict.erase(idx);
 				result_dict_mutex.unlock();
-				DEBUG::DebugOutput("Got Result: ", result, "Idx", idx);
+				DEBUGOUTPUT("Got Result: ", result, "Idx", idx);
 				break;
 			}
-			//DEBUG::DebugOutput("Waiting for Result: ", idx);
+			//DEBUGOUTPUT("Waiting for Result: ", idx);
 		}
 		result_dict_mutex.unlock();
 		// 1ms
@@ -220,8 +220,8 @@ std::string push_input_wait_for_result(const Operation& op) {
 }
 
 void update() {
-	RegionManager::getInstance().update(GlobalTimer::getInstance());
-	RegionManager::getInstance().get_player().update(GlobalTimer::getInstance());
+	RegionManager::instance_of().update(GlobalTimer::instance_of());
+	RegionManager::instance_of().get_player().update(GlobalTimer::instance_of());
 	ai.update(isPause, aiState);
 	ai2.update(isPause, aiState2);
 }
@@ -233,11 +233,11 @@ void main_loop() {
 	g_game_over = false;
 	g_game_stop = false;
 	s_wait_lock.lock();
-	GlobalTimer::getInstance().reset();
+	GlobalTimer::instance_of().reset();
 	while (!s_exit_game) {
-		if ((aiState || aiState2) && RegionManager::getInstance().get_player().is_alive()) {
-			//DEBUG::DebugOutput("New Loop\n");
-			GlobalTimer::getInstance().update();
+		if ((aiState || aiState2) && RegionManager::instance_of().get_player().is_alive()) {
+			//DEBUGOUTPUT("New Loop\n");
+			GlobalTimer::instance_of().update();
 
 			result_dict_mutex.lock();
 			int idx = -1;
@@ -252,23 +252,23 @@ void main_loop() {
 			}
 			result_dict[idx] = result;
 			if(idx != -1)
-				DEBUG::DebugOutput("Result: ", result, "Idx", idx);
+				DEBUGOUTPUT("Result: ", result, "Idx", idx);
 			result_dict_mutex.unlock();
 
 			update();
-			//DEBUG::DebugOutput("End Loop\n");
+			//DEBUGOUTPUT("End Loop\n");
 
 		}
 		else {
 			g_game_stop = true;
-			if (!RegionManager::getInstance().get_player().is_alive()) {
+			if (!RegionManager::instance_of().get_player().is_alive()) {
 				g_game_over = true;
 			}
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	release_game();
-	DEBUG::DebugOutput("Loop Exited!");
+	DEBUGOUTPUT("Loop Exited!");
 	s_wait_lock.unlock();
 }
 

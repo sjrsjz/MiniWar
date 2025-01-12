@@ -135,7 +135,7 @@ namespace GAMESOUND {
 			NULL        // 不使用CLSID
 		)) {
 			int error = BASS_ErrorGetCode();
-			DEBUG::DebugOutput("BASS Init Error: ", error);
+			DEBUGOUTPUT("BASS Init Error: ", error);
 			return;
 		}
 
@@ -143,7 +143,7 @@ namespace GAMESOUND {
 		BASS_SetConfig(BASS_CONFIG_BUFFER, 100);  // 设置缓冲区大小
 		BASS_SetConfig(BASS_CONFIG_UPDATEPERIOD, 10);  // 设置更新周期
 
-		DEBUG::DebugOutput("BASS Init Success");
+		DEBUGOUTPUT("BASS Init Success");
 
 
 		s_sound_background_idx = rand() % (sizeof(s_sound_background) / sizeof(s_sound_background[0]));
@@ -164,7 +164,7 @@ namespace GAMESOUND {
 	}
 	void check_if_need_play_next() {
 		if (!BASS_ChannelIsActive(s_background_stream)) {
-			DEBUG::DebugOutput("Background Music End, Play Next");
+			DEBUGOUTPUT("Background Music End, Play Next");
 			BASS_StreamFree(s_background_stream);
 			play_background();
 		}
@@ -452,12 +452,12 @@ static class TechTreeGui {
 public:
 	void init_tech_tree_gui() {
 		tree.nodes.clear();
-		show.setTotalDuration(0.25);
-		show.setStartPosition(0, 0);
-		tree_offset_X.setTotalDuration(0.125);
-		tree_offset_Y.setTotalDuration(0.125);
-		tree_offset_X.setStartPosition(0, 0);
-		tree_offset_Y.setStartPosition(0, 0);
+		show.set_total_duration(0.25);
+		show.set_start_position(0, 0);
+		tree_offset_X.set_total_duration(0.125);
+		tree_offset_Y.set_total_duration(0.125);
+		tree_offset_X.set_start_position(0, 0);
+		tree_offset_Y.set_start_position(0, 0);
 
 		tree.nodes.push_back({ u8"发电站", true, {} , ImVec2(-450,400), TEXTURE::s_image_lightning,[]() {} });
 		tree.nodes.push_back({ u8"炼油厂", true, {} , ImVec2(-500,200), TEXTURE::s_image_lightning,[]() {} });
@@ -548,58 +548,58 @@ public:
 
 	}
 	bool is_active() {
-		return show.getX() > 1e-3;
+		return show.x() > 1e-3;
 	}
 	void render_gui(ImGuiIO& io) {
 		if (!is_active()) return;
 
-		ImGui::SetNextWindowBgAlpha(0.75 * show.getX());
+		ImGui::SetNextWindowBgAlpha(0.75 * show.x());
 		ImGui::Begin("Tech Tree", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
 		ImGui::SetWindowPos(ImVec2(0, 0));
 
-		tree.draw(io, show.getX(), ImVec2(1000 * tree_offset_X.getX(), 1000 * tree_offset_Y.getX()));
+		tree.draw(io, show.x(), ImVec2(1000 * tree_offset_X.x(), 1000 * tree_offset_Y.x()));
 
 		ImGui::End();
 	}
 
 	void update(const Timer& timer) {
-		show.update_sin(timer.getTime());
+		show.update_sin(timer.time());
 		
 
 		
-		tree_offset_X.update_sin(timer.getTime());
-		tree_offset_Y.update_sin(timer.getTime());
+		tree_offset_X.update_sin(timer.time());
+		tree_offset_Y.update_sin(timer.time());
 
-		tree_offset_X.clamp(-1, 1, timer.getTime());
-		tree_offset_Y.clamp(-1, 1, timer.getTime());
+		tree_offset_X.clamp(-1, 1, timer.time());
+		tree_offset_Y.clamp(-1, 1, timer.time());
 
 		if (is_active()) {
 			float speed = 0.25 * exp(timer.dt);
 			if (keys[GLFW_KEY_W]) {
-				tree_offset_Y.newEndPosition(tree_offset_Y.getX() + speed, timer.getTime());
+				tree_offset_Y.new_end_position(tree_offset_Y.x() + speed, timer.time());
 			}
 			if (keys[GLFW_KEY_S]) {
-				tree_offset_Y.newEndPosition(tree_offset_Y.getX() - speed, timer.getTime());
+				tree_offset_Y.new_end_position(tree_offset_Y.x() - speed, timer.time());
 			}
 			if (keys[GLFW_KEY_A]) {
-				tree_offset_X.newEndPosition(tree_offset_X.getX() + speed, timer.getTime());
+				tree_offset_X.new_end_position(tree_offset_X.x() + speed, timer.time());
 			}
 			if (keys[GLFW_KEY_D]) {
-				tree_offset_X.newEndPosition(tree_offset_X.getX() - speed, timer.getTime());
+				tree_offset_X.new_end_position(tree_offset_X.x() - speed, timer.time());
 			}
-			int powerstation_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::PowerStation);
-			int refinery_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::Refinery);
-			int steelfactory_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::SteelFactory);
-			int civilian_factory_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::CivilFactory);
-			int military_factory_level = RegionManager::getInstance().get_player().get_building_level_limit(BuildingType::MilitaryFactory);
+			int powerstation_level = RegionManager::instance_of().get_player().get_building_level_limit(BuildingType::PowerStation);
+			int refinery_level = RegionManager::instance_of().get_player().get_building_level_limit(BuildingType::Refinery);
+			int steelfactory_level = RegionManager::instance_of().get_player().get_building_level_limit(BuildingType::SteelFactory);
+			int civilian_factory_level = RegionManager::instance_of().get_player().get_building_level_limit(BuildingType::CivilFactory);
+			int military_factory_level = RegionManager::instance_of().get_player().get_building_level_limit(BuildingType::MilitaryFactory);
 
-			int army_level = RegionManager::getInstance().get_player().get_army_level(0);
-			int cm_level = RegionManager::getInstance().get_player().get_army_level(1);
-			int mbrm_level = RegionManager::getInstance().get_player().get_army_level(2);
-			int icbm_level = RegionManager::getInstance().get_player().get_army_level(3);
+			int army_level = RegionManager::instance_of().get_player().get_army_level(0);
+			int cm_level = RegionManager::instance_of().get_player().get_army_level(1);
+			int mbrm_level = RegionManager::instance_of().get_player().get_army_level(2);
+			int icbm_level = RegionManager::instance_of().get_player().get_army_level(3);
 
-			bool research_institution = RegionManager::getInstance().get_player().get_have_research_institution();
+			bool research_institution = RegionManager::instance_of().get_player().get_have_research_institution();
 
 			try {
 
@@ -651,19 +651,19 @@ public:
 	void open(bool open, const Timer& timer) {
 		if (open) {
 			GAMESOUND::play_popup_sound();
-			show.newEndPosition(1, timer.getTime());
-			tree_offset_X.newEndPosition(0, timer.getTime());
-			tree_offset_Y.newEndPosition(0, timer.getTime());
+			show.new_end_position(1, timer.time());
+			tree_offset_X.new_end_position(0, timer.time());
+			tree_offset_Y.new_end_position(0, timer.time());
 		}
 		else {
-			show.newEndPosition(0, timer.getTime());
+			show.new_end_position(0, timer.time());
 		}
 	}
 	bool is_open() {
-		return show.getX() > 1e-3;
+		return show.x() > 1e-3;
 	}
 	double getX() {
-		return show.getX();
+		return show.x();
 	}
 } s_tech_tree_gui;
 
@@ -675,12 +675,12 @@ public:
 	}
 	void update(const Timer& timer) {
 		for (auto& s : shake_list) {
-			s.update_sin(timer.getTime());
-			s.newEndPosition(0, timer.getTime());
+			s.update_sin(timer.time());
+			s.new_end_position(0, timer.time());
 		}
 		std::vector<SmoothMove> next = {};
 		for (auto& s : shake_list) {
-			if (s.getX() > 1e-3) {
+			if (s.x() > 1e-3) {
 				next.push_back(s);
 			}
 		}
@@ -688,9 +688,9 @@ public:
 	}
 	void push_shake(const Timer& timer) {
 		shake_list.push_back(SmoothMove());
-		shake_list.back().setTotalDuration(1);
-		shake_list.back().setStartPosition(1, timer.getTime());
-		shake_list.back().newEndPosition(0, timer.getTime());
+		shake_list.back().set_total_duration(1);
+		shake_list.back().set_start_position(1, timer.time());
+		shake_list.back().new_end_position(0, timer.time());
 	}
 	void get_shake_matrix(mat4x4 m) {
 		mat4x4 shake_matrix;
@@ -698,7 +698,7 @@ public:
 		for (auto& s : shake_list) {
 			mat4x4 m0;
 			Camera cam;
-			cam.setPos(sin(s.getX() * 50) * 0.0125, sin(s.getX() * 25) * 0.0125, sin(s.getX() * 12.5) * 0.0125);
+			cam.setPos(sin(s.x() * 50) * 0.0125, sin(s.x() * 25) * 0.0125, sin(s.x() * 12.5) * 0.0125);
 			cam.getMat4(m0);
 
 			mat4x4_mul(shake_matrix, shake_matrix, m0);
@@ -721,14 +721,14 @@ public:
 	std::string message;
 	
 	SelectedGui() {
-		shake.setTotalDuration(1);
-		shake.setStartPosition(0, 0);
+		shake.set_total_duration(1);
+		shake.set_start_position(0, 0);
 	}
 
 	void render_gui(ImGuiIO& io) {
-		if (shake.getX() > 1e-3) {
-			ImVec2 shake_offset = ImVec2(sin(shake.getX() * 50) * 10, (1 + sin(shake.getX() * 25)) * 10);
-			ImGui::SetNextWindowBgAlpha(0.5 * shake.getX());
+		if (shake.x() > 1e-3) {
+			ImVec2 shake_offset = ImVec2(sin(shake.x() * 50) * 10, (1 + sin(shake.x() * 25)) * 10);
+			ImGui::SetNextWindowBgAlpha(0.5 * shake.x());
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 			ImGui::Begin("Weapon Warning", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoScrollbar);
 
@@ -736,7 +736,7 @@ public:
 			ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, 0) + shake_offset);
 			ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 50));
 			ImGui::SetCursorPosX(io.DisplaySize.x / 8 - text_size.x / 2);			
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, shake.getX())); // 前景色
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, shake.x())); // 前景色
 			ImGui::Text(message.c_str());
 			ImGui::PopStyleColor();
 			ImGui::End();
@@ -750,9 +750,9 @@ public:
 		ImGui::Begin("Selected Grid", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
 
 		// 移动到最低端
-		Region& region = RegionManager::getInstance().get_region(grid[0], grid[1]);
-		float grid_center_x = region.getPosition().x / RegionManager::getInstance().get_map_width() * 2.0 - 1.0;
-		float grid_center_z = region.getPosition().y / RegionManager::getInstance().get_map_height() * 2.0 - 1.0;
+		Region& region = RegionManager::instance_of().region(grid[0], grid[1]);
+		float grid_center_x = region.get_center_position().x / RegionManager::instance_of().map_width() * 2.0 - 1.0;
+		float grid_center_z = region.get_center_position().y / RegionManager::instance_of().map_height() * 2.0 - 1.0;
 		float grid_center_y = map_plane_y;
 
 		float screen_pos_x, screen_pos_y;
@@ -761,7 +761,7 @@ public:
 		screen_pos_x *= io.DisplaySize.x;
 		screen_pos_y *= io.DisplaySize.y;
 
-		//DEBUG::DebugOutput(grid_center_x, grid_center_y, grid_center_z, screen_pos_x, screen_pos_y);
+		//DEBUGOUTPUT(grid_center_x, grid_center_y, grid_center_z, screen_pos_x, screen_pos_y);
 		//ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, io.DisplaySize.y - 200));
 		float W = 400;
 		float H = 150;
@@ -790,7 +790,7 @@ public:
 			ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 10.0f);  // 设置滑块大小
 			ImGui::SetNextItemWidth(W - 20);  // 设置滑块条宽度
 			ImGui::SetCursorPosX(10);
-			ImGui::SliderInt("##ScatterBombRange", &s_scatter_bomb_range, 1, map_info.getWidth() / 2);
+			ImGui::SliderInt("##ScatterBombRange", &s_scatter_bomb_range, 1, map_info.width() / 2);
 			ImGui::PopStyleVar();
 			ImGui::PopStyleColor(2);
 			break;
@@ -798,28 +798,28 @@ public:
 
 		//ImGui::Text(u8"区块坐标: %d, %d", grid[0], grid[1]);
 		try {
-			BuildingType building_type = region.getBuilding().getType();
+			BuildingType building_type = region.get_building().get_type();
 			if (building_type != BuildingType::None)
 				ImGui::Text(u8"建筑: %s", BuildingTypeToString(building_type).c_str());
-			if (region.getOwner() >= 0) {
-				if (region.getOwner() == 0) {
+			if (region.get_owner() >= 0) {
+				if (region.get_owner() == 0) {
 					ImGui::Text(u8"所有者: 玩家");
 					if (s_selected_weapon == ARMY) {
-						ImGui::Text(u8"军队: %d", region.getArmy().getForce());
+						ImGui::Text(u8"军队: %d", region.get_army().get_force());
 					}
 					if (s_selected_weapon == NUCLEAR_MISSILE) {
-						ImGui::Text(u8"导弹数量：%d", region.getWeapons()[s_nuclear_missile_level]);
+						ImGui::Text(u8"导弹数量：%d", region.get_weapons()[s_nuclear_missile_level]);
 					}
 				}
 				else {
 					ImGui::Text(u8"所有者: AI");
 					if (s_selected_weapon == ARMY) {
-						ImGui::Text(u8"军队: %d", region.getArmy().getForce());
+						ImGui::Text(u8"军队: %d", region.get_army().get_force());
 					}
 				}
 			}
 			ImGui::SameLine();
-			ImGui::Text("HP: %.2f", region.getHp());
+			ImGui::Text("HP: %.2f", region.get_HP());
 		}
 		catch (std::exception e) {
 			// nothing
@@ -855,12 +855,12 @@ public:
 	}
 
 	void update(const Timer& timer) {
-		shake.update_sin(timer.getTime());
-		shake.newEndPosition(0, timer.getTime());
+		shake.update_sin(timer.time());
+		shake.new_end_position(0, timer.time());
 	}
 
 	void shake_gui(const Timer& timer) {
-		shake.setStartPosition(1, timer.getTime());
+		shake.set_start_position(1, timer.time());
 	}
 
 
@@ -901,17 +901,17 @@ private:
 		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, bc); // 前景色
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.25f));	   // 背景色
 		ImVec2 pos = ImGui::GetCursorPos();
-		ImGui::ProgressBar(b.getX() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
+		ImGui::ProgressBar(b.x() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
 		ImGui::PopStyleColor(2); // 恢复颜色设置
 		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, fc); // 前景色
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.0f));	   // 背景色
 		ImGui::SetCursorPos(pos);
-		ImGui::ProgressBar(f.getX() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
+		ImGui::ProgressBar(f.x() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
 		ImGui::PopStyleColor(2); // 恢复颜色设置
 		ImVec2 text_size = ImGui::CalcTextSize(title);
 		ImGui::SetCursorPos(ImVec2(pos.x + 5, pos.y + 30 - text_size.y));
 		ImGui::PushStyleColor(ImGuiCol_Text, tc); // 前景色
-		ImGui::Text(title, (int)round(f.getX()));
+		ImGui::Text(title, (int)round(f.x()));
 		ImGui::PopStyleColor(1);
 	}
 
@@ -919,26 +919,26 @@ public:
 	StatusGui() {
 		// 资源条
 		{
-			gold_amount.setTotalDuration(0.125);
-			gold_amount_back.setTotalDuration(0.5);
+			gold_amount.set_total_duration(0.125);
+			gold_amount_back.set_total_duration(0.5);
 			gold_amount_max = 100;
-			electricity_amount.setTotalDuration(0.125);
-			electricity_amount_back.setTotalDuration(0.5);
+			electricity_amount.set_total_duration(0.125);
+			electricity_amount_back.set_total_duration(0.5);
 			electricity_amount_max = 100;
-			labor_amount.setTotalDuration(0.125);
-			labor_amount_back.setTotalDuration(0.5);
+			labor_amount.set_total_duration(0.125);
+			labor_amount_back.set_total_duration(0.5);
 			labor_amount_max = 100;
-			oil_amount.setTotalDuration(0.125);
-			oil_amount_back.setTotalDuration(0.5);
+			oil_amount.set_total_duration(0.125);
+			oil_amount_back.set_total_duration(0.5);
 			oil_amount_max = 100;
-			steel_amount.setTotalDuration(0.125);
-			steel_amount_back.setTotalDuration(0.5);
+			steel_amount.set_total_duration(0.125);
+			steel_amount_back.set_total_duration(0.5);
 			steel_amount_max = 100;
-			army_amount.setTotalDuration(0.125);
-			army_amount_back.setTotalDuration(0.5);
+			army_amount.set_total_duration(0.125);
+			army_amount_back.set_total_duration(0.5);
 			army_amount_max = 100;
-			occupation_amount.setTotalDuration(1);
-			occupation_amount_back.setTotalDuration(2);
+			occupation_amount.set_total_duration(1);
+			occupation_amount_back.set_total_duration(2);
 			occupation_amount_max = 100;
 
 		}
@@ -970,64 +970,64 @@ public:
 	}
 	void update(const Timer& timer) {
 		if (!GAMESTATUS::s_in_game) return;
-		gold_amount.update_sin(timer.getTime());
-		gold_amount_back.update_sin(timer.getTime());
-		electricity_amount.update_sin(timer.getTime());
-		electricity_amount_back.update_sin(timer.getTime());
-		labor_amount.update_sin(timer.getTime());
-		labor_amount_back.update_sin(timer.getTime());
-		oil_amount.update_sin(timer.getTime());
-		oil_amount_back.update_sin(timer.getTime());
-		steel_amount.update_sin(timer.getTime());
-		steel_amount_back.update_sin(timer.getTime());
-		army_amount.update_sin(timer.getTime());
-		army_amount_back.update_sin(timer.getTime());
-		occupation_amount.update_sin(timer.getTime());
-		occupation_amount_back.update_sin(timer.getTime());
+		gold_amount.update_sin(timer.time());
+		gold_amount_back.update_sin(timer.time());
+		electricity_amount.update_sin(timer.time());
+		electricity_amount_back.update_sin(timer.time());
+		labor_amount.update_sin(timer.time());
+		labor_amount_back.update_sin(timer.time());
+		oil_amount.update_sin(timer.time());
+		oil_amount_back.update_sin(timer.time());
+		steel_amount.update_sin(timer.time());
+		steel_amount_back.update_sin(timer.time());
+		army_amount.update_sin(timer.time());
+		army_amount_back.update_sin(timer.time());
+		occupation_amount.update_sin(timer.time());
+		occupation_amount_back.update_sin(timer.time());
 
-		std::vector<double> resources = RegionManager::getInstance().get_player().get_remain_resources();
-		std::vector<double> max_resources = RegionManager::getInstance().get_player().get_resources();
+		std::vector<double> resources = RegionManager::instance_of().get_player().get_remain_resources();
+		std::vector<double> max_resources = RegionManager::instance_of().get_player().get_resources();
 		
 		double gold = resources[ResourceType::GOLD];
-		gold_amount.newEndPosition(gold, timer.getTime());
-		gold_amount_back.newEndPosition(gold, timer.getTime());
+		gold_amount.new_end_position(gold, timer.time());
+		gold_amount_back.new_end_position(gold, timer.time());
 		gold_amount_max = _10_n_max_than(gold);
 		double electricity = resources[ResourceType::ELECTRICITY];
-		electricity_amount.newEndPosition(electricity, timer.getTime());
-		electricity_amount_back.newEndPosition(electricity, timer.getTime());
+		electricity_amount.new_end_position(electricity, timer.time());
+		electricity_amount_back.new_end_position(electricity, timer.time());
 		electricity_amount_max = _10_n_max_than(electricity);
 		double labor = resources[ResourceType::LABOR];
 		labor_amount_max = max_resources[ResourceType::LABOR];
-		labor_amount.newEndPosition(fmax(0, labor), timer.getTime());
-		labor_amount_back.newEndPosition(fmax(0, labor), timer.getTime());
+		labor_amount.new_end_position(fmax(0, labor), timer.time());
+		labor_amount_back.new_end_position(fmax(0, labor), timer.time());
 		double oil = resources[ResourceType::OIL];
-		oil_amount.newEndPosition(oil, timer.getTime());
-		oil_amount_back.newEndPosition(oil, timer.getTime());
+		oil_amount.new_end_position(oil, timer.time());
+		oil_amount_back.new_end_position(oil, timer.time());
 		oil_amount_max = _10_n_max_than(oil);
 		double steel = resources[ResourceType::STEEL];
-		steel_amount.newEndPosition(steel, timer.getTime());
-		steel_amount_back.newEndPosition(steel, timer.getTime());
+		steel_amount.new_end_position(steel, timer.time());
+		steel_amount_back.new_end_position(steel, timer.time());
 		steel_amount_max = _10_n_max_than(steel);
 		
 		int region_count = 0;
 		int army_count = 0;
-		for (int i{}; i < RegionManager::getInstance().get_map_width(); i++) {
-			for (int j{}; j < RegionManager::getInstance().get_map_height(); j++) {
-				if (RegionManager::getInstance().get_region(i, j).getOwner() == 0) {
+		for (int i{}; i < RegionManager::instance_of().map_width(); i++) {
+			for (int j{}; j < RegionManager::instance_of().map_height(); j++) {
+				if (RegionManager::instance_of().region(i, j).get_owner() == 0) {
 					region_count++;
-					army_count += RegionManager::getInstance().get_region(i, j).getArmy().getForce();
+					army_count += RegionManager::instance_of().region(i, j).get_army().get_force();
 				}
 			}
 		}
 		army_amount_max = _10_n_max_than(army_count);
-		army_amount.newEndPosition(army_count, timer.getTime());
-		army_amount_back.newEndPosition(army_count, timer.getTime());
+		army_amount.new_end_position(army_count, timer.time());
+		army_amount_back.new_end_position(army_count, timer.time());
 
 
-		occupation_amount_max = RegionManager::getInstance().get_map_width() * RegionManager::getInstance().get_map_height();
+		occupation_amount_max = RegionManager::instance_of().map_width() * RegionManager::instance_of().map_height();
 		double x = region_count;
-		occupation_amount.newEndPosition(x, timer.getTime());
-		occupation_amount_back.newEndPosition(x, timer.getTime());
+		occupation_amount.new_end_position(x, timer.time());
+		occupation_amount_back.new_end_position(x, timer.time());
 
 	}
 
@@ -1062,23 +1062,23 @@ public:
 		// 列表
 		if (ImGui::BeginListBox("##BuildingList")) {
 			if (ImGui::Selectable(u8"发电站")) {
-				push_input({ Point::toPoint(grid),Operator::SetPowerStation });
+				push_input({ Point::to_point(grid),Operator::SetPowerStation });
 				open = false;
 			}
 			if (ImGui::Selectable(u8"炼油厂")) {
-				push_input({ Point::toPoint(grid),Operator::SetRefinery });
+				push_input({ Point::to_point(grid),Operator::SetRefinery });
 				open = false;
 			}
 			if (ImGui::Selectable(u8"炼钢厂")) {
-				push_input({ Point::toPoint(grid),Operator::SetSteelFactory });
+				push_input({ Point::to_point(grid),Operator::SetSteelFactory });
 				open = false;
 			}
 			if (ImGui::Selectable(u8"民生工厂")) {
-				push_input({ Point::toPoint(grid),Operator::SetCivilFactory });
+				push_input({ Point::to_point(grid),Operator::SetCivilFactory });
 				open = false;
 			}
 			if (ImGui::Selectable(u8"军事工厂")) {
-				push_input({ Point::toPoint(grid),Operator::SetMilitaryFactory });
+				push_input({ Point::to_point(grid),Operator::SetMilitaryFactory });
 				open = false;
 			}
 			/*if (ImGui::Selectable(u8"升级建筑")) {
@@ -1086,7 +1086,7 @@ public:
 				open = false;
 			}*/
 			if (ImGui::Selectable(u8"移除建筑")) {
-				push_input({ Point::toPoint(grid),Operator::RemoveBuilding });
+				push_input({ Point::to_point(grid),Operator::RemoveBuilding });
 				open = false;
 			}
 			ImGui::EndListBox();
@@ -1095,19 +1095,19 @@ public:
 		ImGui::Text(u8"生产");
 		if (ImGui::BeginListBox("##ProductionList")) {
 			if (ImGui::Selectable(u8"军队")) {
-				push_input({ Point::toPoint(grid),Point::toPoint(grid),100,Operator::ProductArmy });
+				push_input({ Point::to_point(grid),Point::to_point(grid),100,Operator::ProductArmy });
 				open = false;
 			}
 			if (ImGui::Selectable(u8"核导弹一级")) {
-				push_input({ Point::toPoint(grid),Point::toPoint(grid),Operator::ProductWeapon0 });
+				push_input({ Point::to_point(grid),Point::to_point(grid),Operator::ProductWeapon0 });
 				open = false;
 			}
 			if (ImGui::Selectable(u8"核导弹二级")) {
-				push_input({ Point::toPoint(grid),Point::toPoint(grid),Operator::ProductWeapon1 });
+				push_input({ Point::to_point(grid),Point::to_point(grid),Operator::ProductWeapon1 });
 				open = false;
 			}
 			if (ImGui::Selectable(u8"核导弹三级")) {
-				push_input({ Point::toPoint(grid),Point::toPoint(grid),Operator::ProductWeapon2 });
+				push_input({ Point::to_point(grid),Point::to_point(grid),Operator::ProductWeapon2 });
 				open = false;
 			}
 			ImGui::EndListBox();
@@ -1119,7 +1119,7 @@ public:
 			open = false;
 		}
 		try {
-			if (RegionManager::getInstance().get_region(grid[0], grid[1]).getOwner() != 0) {
+			if (RegionManager::instance_of().region(grid[0], grid[1]).get_owner() != 0) {
 				open = false;
 			}
 		}
@@ -1178,20 +1178,20 @@ float randfloat() {
 }
 
 void render_update_info() {
-	RegionManager& rm = RegionManager::getInstance();
-	for (int i{}; i < rm.get_map_width(); i++) {
-		for (int j{}; j < rm.get_map_height(); j++) {
-			Region& region_info = rm.get_region(i, j);
+	RegionManager& rm = RegionManager::instance_of();
+	for (int i{}; i < rm.map_width(); i++) {
+		for (int j{}; j < rm.map_height(); j++) {
+			Region& region_info = rm.region(i, j);
 			RegionData region;
-			region.cell_center_x = region_info.getPosition().x - i;
-			region.cell_center_y = region_info.getPosition().y - j;
+			region.cell_center_x = region_info.get_center_position().x - i;
+			region.cell_center_y = region_info.get_center_position().y - j;
 			region.army_position_x = -1e6;
 			region.army_position_y = -1e6;
-			region.identity = region_info.getOwner();
-			if ((i == RegionManager::getInstance().get_player().get_capital_x() && j == RegionManager::getInstance().get_player().get_capital_y()) && region_info.getOwner() == 0)
+			region.identity = region_info.get_owner();
+			if ((i == RegionManager::instance_of().get_player().get_capital_x() && j == RegionManager::instance_of().get_player().get_capital_y()) && region_info.get_owner() == 0)
 				region.region_additional_info = 1;
 			else {
-				switch (region_info.getBuilding().getType()) {
+				switch (region_info.get_building().get_type()) {
 				case BuildingType::PowerStation:
 					region.region_additional_info = 2;
 					break;
@@ -1212,7 +1212,7 @@ void render_update_info() {
 					break;
 				}
 			}
-			map_info.setRegion(i, j, region);
+			map_info.set_region(i, j, region);
 		}
 	}
 	map_info.update();
@@ -1220,7 +1220,7 @@ void render_update_info() {
 	std::vector<Vertex> vertices;
 	auto army = rm.get_moving_army_position();
 	for (auto& a : army) {
-		Vertex tmp = { std::get<0>(a.current_pos) / map_info.getWidth() * 2 - 1, map_plane_y, std::get<1>(a.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 1 };
+		Vertex tmp = { std::get<0>(a.current_pos) / map_info.width() * 2 - 1, map_plane_y, std::get<1>(a.current_pos) / map_info.height() * 2 - 1, 1, 1, 1 };
 		if (a.owner_id == 0)
 		{
 			tmp.r = 0; tmp.g = 1; tmp.b = 0;
@@ -1232,10 +1232,10 @@ void render_update_info() {
 	}
 	auto missile = rm.get_moving_missle_position();
 	for (auto& m : missile) {
-		Vertex tmp = { std::get<0>(m.current_pos) / map_info.getWidth() * 2 - 1, map_plane_y + std::get<2>(m.current_pos), std::get<1>(m.current_pos) / map_info.getHeight() * 2 - 1, 1, 1, 0 };
+		Vertex tmp = { std::get<0>(m.current_pos) / map_info.width() * 2 - 1, map_plane_y + std::get<2>(m.current_pos), std::get<1>(m.current_pos) / map_info.height() * 2 - 1, 1, 1, 0 };
 		vertices.push_back(tmp);
 	}
-	//DEBUG::DebugOutput("Army size", army.size());
+	//DEBUGOUTPUT("Army size", army.size());
 	point_renderer.update(vertices);
 
 
@@ -1245,13 +1245,13 @@ void render_update_info() {
 void load_new_game(const LevelConfig& level_config) {
 
 
-	DEBUG::DebugOutput("Loading new game..");
-	DEBUG::DebugOutput("Map Width", level_config.map_width);
-	DEBUG::DebugOutput("Map Height", level_config.map_height);
+	DEBUGOUTPUT("Loading new game..");
+	DEBUGOUTPUT("Map Width", level_config.map_width);
+	DEBUGOUTPUT("Map Height", level_config.map_height);
 
 	map_info.create(level_config.map_width, level_config.map_height);
 
-	DEBUG::DebugOutput("Creating SSBO..");
+	DEBUGOUTPUT("Creating SSBO..");
 	for (int i{}; i < level_config.map_width; i++) {
 		for (int j{}; j < level_config.map_height; j++) {
 			RegionData region;
@@ -1261,12 +1261,12 @@ void load_new_game(const LevelConfig& level_config) {
 			region.army_position_y = -1e6;
 			region.identity = 0;
 			region.region_additional_info = 0;
-			map_info.setRegion(i, j, region);
+			map_info.set_region(i, j, region);
 		}
 	}
 	map_info.create_ssbo();
 	map_info.update();
-	DEBUG::DebugOutput("SSBO Created");
+	DEBUGOUTPUT("SSBO Created");
 
 
 	std::vector<Vertex> vertices;
@@ -1281,17 +1281,17 @@ void load_new_game(const LevelConfig& level_config) {
 
 	GAMESTATUS::s_in_game = true;
 	GAMESTATUS::s_enable_control = true;
-	DEBUG::DebugOutput("Game loaded");	
+	DEBUGOUTPUT("Game loaded");	
 }
 
 void exit_game() {
-	DEBUG::DebugOutput("Exiting game..");
+	DEBUGOUTPUT("Exiting game..");
 	GAMESTATUS::s_in_game = false;
 	GAMESTATUS::s_enable_control = false;
 	exit_curr_game();
 	wait_for_exit();
 	map_info.release();
-	DEBUG::DebugOutput("Game exited");
+	DEBUGOUTPUT("Game exited");
 }
 
 
@@ -1309,8 +1309,8 @@ private:
 	SmoothMove x{};
 public:
 	MenuGui() {
-		x.setTotalDuration(0.5);
-		x.setStartPosition(1, 0);
+		x.set_total_duration(0.5);
+		x.set_start_position(1, 0);
 
 		// 默认开始游戏
 		m_gui_mode = StartGame;
@@ -1323,20 +1323,20 @@ public:
 		this->open = open;
 		if (open) {
 			GAMESOUND::play_popup_sound();
-			x.newEndPosition(1, timer.getTime());
+			x.new_end_position(1, timer.time());
 		}
 		else {
-			x.newEndPosition(0, timer.getTime());
+			x.new_end_position(0, timer.time());
 		}
 	}
 	bool is_activitied() {
-		return x.getX() > 1e-3;
+		return x.x() > 1e-3;
 	}
 	void render_gui(ImGuiIO& io) {
 		if (!is_activitied()) {
 			return;
 		}
-		ImGui::SetNextWindowBgAlpha(0.25 * x.getX());
+		ImGui::SetNextWindowBgAlpha(0.25 * x.x());
 		// 设置边框宽度为0
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
@@ -1352,9 +1352,9 @@ public:
 		ImGui::SetWindowPos(ImVec2(x_pos, 0));
 		ImGui::SetWindowSize(io.DisplaySize);
 		// 调整字体大小(不使用缩放而是直接使用大号字体）
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25, 0.25, 0.25, 0.25 * x.getX()));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35, 0.35, 0.35, 0.5 * x.getX()));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15, 0.15, 0.15, 0.5 * x.getX()));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25, 0.25, 0.25, 0.25 * x.x()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35, 0.35, 0.35, 0.5 * x.x()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15, 0.15, 0.15, 0.5 * x.x()));
 		
 		// 列表框的
 		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.25f, 0.25f, 0.25f, 0.55f));        // 选中项背景
@@ -1364,7 +1364,7 @@ public:
 
 		
 
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, x.getX()));
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, x.x()));
 
 		const char* title = "MiniWar";
 
@@ -1504,16 +1504,16 @@ public:
 
 	}
 	void update(const Timer& timer) {
-		x.update_sin(timer.getTime());
+		x.update_sin(timer.time());
 	}
 	bool is_open() const{
 		return open;
 	}
 	void set_move_time(double time) {
-		x.setTotalDuration(time);
+		x.set_total_duration(time);
 	}
 	double getX() {
-		return x.getX();
+		return x.x();
 	}
 } s_menu_gui;
 
@@ -1653,13 +1653,13 @@ void render_main_game_pass() {
 	//g_frame_width, g_frame_height
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_width"), W);
 	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_height"), H);
-	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.getTime());
-	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), map_info.getWidth(), map_info.getHeight());
+	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.time());
+	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), map_info.width(), map_info.height());
 
 
 	Camera model_camera;
 	model_camera.setPos(0, 0.5, 0);
-	model_camera.setRot(0, -map_rotation.getX(), 0);
+	model_camera.setRot(0, -map_rotation.x(), 0);
 	mat4x4 model_mat;
 	model_camera.getMat4(model_mat);
 	mat4x4_scale_aniso(model_mat, model_mat, 0.25, 0.25, 0.25);
@@ -1668,7 +1668,7 @@ void render_main_game_pass() {
 
 	mat4x4 model_mat_inv_rot;
 	model_camera.setPos(0, 0.5, 0);
-	model_camera.setRot(0, map_rotation.getX(), 0);
+	model_camera.setRot(0, map_rotation.x(), 0);
 	model_camera.getMat4(model_mat_inv_rot);
 	mat4x4_scale_aniso(model_mat_inv_rot, model_mat_inv_rot, 0.25, 0.25, 0.25);
 
@@ -1691,7 +1691,7 @@ void render_main_game_pass() {
 
 
 
-	auto [selected, gridX, gridY] = RegionSelector(-2.0, W, H, g_trans_mat, model_mat, map_info.getWidth(), map_info.getHeight(), map_info.getRegions())(s_mouse_position[0], s_mouse_position[1]);
+	auto [selected, gridX, gridY] = RegionSelector(-2.0, W, H, g_trans_mat, model_mat, map_info.width(), map_info.height(), map_info.regions())(s_mouse_position[0], s_mouse_position[1]);
 
 	s_current_selected_grid[0] = gridX;
 	s_current_selected_grid[1] = gridY;
@@ -1713,7 +1713,7 @@ void render_main_game_pass() {
 	bool s_if_selected = s_selected_gui.is_selected;
 
 	// 核辐射标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, RegionManager::getInstance().get_weapon(s_nuclear_missile_level).getDamageRange(RegionManager::getInstance().get_player().get_army_level(s_nuclear_missile_level + 1)), s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
+	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, RegionManager::instance_of().get_weapon(s_nuclear_missile_level).get_damage_range(RegionManager::instance_of().get_player().get_army_level(s_nuclear_missile_level + 1)), s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_radioactive);
 	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_radioactive"), 0);
@@ -1747,7 +1747,7 @@ void render_main_game_pass() {
 	case NONE:
 		break;
 	case NUCLEAR_MISSILE:
-		attack_range = std::get<1>(RegionManager::getInstance().get_weapon(s_nuclear_missile_level).getAttackRange()) * fmax(RegionManager::getInstance().get_map_width(), RegionManager::getInstance().get_map_height());
+		attack_range = std::get<1>(RegionManager::instance_of().get_weapon(s_nuclear_missile_level).get_attack_range()) * fmax(RegionManager::instance_of().map_width(), RegionManager::instance_of().map_height());
 		break;
 	case ARMY:
 		attack_range = 1e6;
@@ -1773,14 +1773,14 @@ void prepare_render() {
 	GAMESOUND::check_if_need_play_next();
 
 
-	scale_map_camera.update(timer.getTime());
-	scale_map_camera.clampZ(-8, 0,timer.getTime());
+	scale_map_camera.update(timer.time());
+	scale_map_camera.clampZ(-8, 0,timer.time());
 
-	camera.update(timer.getTime());
-	camera.clampX(-5, 5, timer.getTime());
-	camera.clampZ(-6, 4, timer.getTime());
+	camera.update(timer.time());
+	camera.clampX(-5, 5, timer.time());
+	camera.clampZ(-6, 4, timer.time());
 
-	map_rotation.update_sin(timer.getTime());
+	map_rotation.update_sin(timer.time());
 
 	s_menu_gui.update(timer);
 	s_status_gui.update(timer);
@@ -1853,14 +1853,14 @@ void render_points() {
 	//g_frame_width, g_frame_height
 	glUniform1f(glGetUniformLocation(s_points_program, "g_frame_width"), W);
 	glUniform1f(glGetUniformLocation(s_points_program, "g_frame_height"), H);
-	glUniform1f(glGetUniformLocation(s_points_program, "g_time"), (float)timer.getTime());
-	glUniform2i(glGetUniformLocation(s_points_program, "g_map_size"), map_info.getWidth(), map_info.getHeight());
+	glUniform1f(glGetUniformLocation(s_points_program, "g_time"), (float)timer.time());
+	glUniform2i(glGetUniformLocation(s_points_program, "g_map_size"), map_info.width(), map_info.height());
 
 
 	Camera model_camera;
 	mat4x4 model_mat_inv_rot;
 	model_camera.setPos(0, 0.5, 0);
-	model_camera.setRot(0, map_rotation.getX(), 0);
+	model_camera.setRot(0, map_rotation.x(), 0);
 	model_camera.getMat4(model_mat_inv_rot);
 	mat4x4_scale_aniso(model_mat_inv_rot, model_mat_inv_rot, 0.25, 0.25, 0.25);
 	glUniformMatrix4fv(glGetUniformLocation(s_points_program, "g_model_trans_mat_inv"), 1, GL_FALSE, (const GLfloat*)model_mat_inv_rot);
@@ -1898,7 +1898,7 @@ void get_screen_position(float x, float y, float z, float& screen_x, float& scre
 	Camera model_camera;
 	mat4x4 model_mat_inv_rot;
 	model_camera.setPos(0, 0.5, 0);
-	model_camera.setRot(0, map_rotation.getX(), 0);
+	model_camera.setRot(0, map_rotation.x(), 0);
 	model_camera.getMat4(model_mat_inv_rot);
 	mat4x4_scale_aniso(model_mat_inv_rot, model_mat_inv_rot, 0.25, 0.25, 0.25);
 	
@@ -2204,11 +2204,11 @@ void render() {
 }
 
 void reset_camera() {
-	camera.move_to(0, 0, -1.75, timer.getTime());
-	camera.rotate_to(0, 0, -1.2, timer.getTime());
-	scale_map_camera.move_to(0, 0, -8, timer.getTime());
-	camera.rotate_to(0, 0, -1.2 / (1 + 2 * exp(-0.05 * -8 * -8)), timer.getTime());
-	map_rotation.newEndPosition(-(exp(-0.01 * pow(-8 * -8, 2))), timer.getTime());
+	camera.move_to(0, 0, -1.75, timer.time());
+	camera.rotate_to(0, 0, -1.2, timer.time());
+	scale_map_camera.move_to(0, 0, -8, timer.time());
+	camera.rotate_to(0, 0, -1.2 / (1 + 2 * exp(-0.05 * -8 * -8)), timer.time());
+	map_rotation.new_end_position(-(exp(-0.01 * pow(-8 * -8, 2))), timer.time());
 }
 
 void KeyProcess() {
@@ -2236,7 +2236,7 @@ void KeyProcess() {
 	if (dx != 0 || dz != 0) {
 		dx *= exp(timer.dt);
 		dz *= exp(timer.dt);
-		camera.move(dx, 0, dz, timer.getTime());
+		camera.move(dx, 0, dz, timer.time());
 
 	}
 	if (keys[GLFW_KEY_R]) {
@@ -2268,11 +2268,11 @@ void KeyRelease(int key) {
 	case GLFW_KEY_E: // 发动攻击
 		if (GAMESTATUS::s_enable_control) {
 			if (s_selected_gui.is_selected) {
-				Point start_point = Point::toPoint(s_selected_gui.grid);
-				Point end_point = Point::toPoint(s_current_selected_grid);
+				Point start_point = Point::to_point(s_selected_gui.grid);
+				Point end_point = Point::to_point(s_current_selected_grid);
 				try {
-					Region& from_region = RegionManager::getInstance().get_region(start_point.x, start_point.y);
-					Region& to_region = RegionManager::getInstance().get_region(end_point.x, end_point.y);
+					Region& from_region = RegionManager::instance_of().region(start_point.x, start_point.y);
+					Region& to_region = RegionManager::instance_of().region(end_point.x, end_point.y);
 					std::string result = "";
 					switch (s_selected_weapon)
 					{
@@ -2280,7 +2280,7 @@ void KeyRelease(int key) {
 						//push_input({ start_point, end_point, Operator::ArmyMove });
 						break;
 					case NUCLEAR_MISSILE:
-						if (from_region.getOwner() != 0) {
+						if (from_region.get_owner() != 0) {
 							s_selected_gui.message = u8"无效区块！";
 							s_selected_gui.shake_gui(timer);
 							break;
@@ -2301,7 +2301,7 @@ void KeyRelease(int key) {
 							break;
 						}
 						if (result == "Success") {
-							DEBUG::DebugOutput("Nuclear Missile");
+							DEBUGOUTPUT("Nuclear Missile");
 							GAMESOUND::play_nuclear_launch_sound();
 							s_selected_gui.message = u8"核导弹已发射";
 							s_selected_gui.shake_gui(timer);
@@ -2309,11 +2309,11 @@ void KeyRelease(int key) {
 						}
 						break;
 					case ARMY:
-						DEBUG::DebugOutput("Army");
-						push_input({ start_point, end_point, from_region.getArmy().getForce() / 2, Operator::ArmyMove });
+						DEBUGOUTPUT("Army");
+						push_input({ start_point, end_point, from_region.get_army().get_force() / 2, Operator::ArmyMove });
 						break;
 					case SCATTER_BOMB:
-						DEBUG::DebugOutput("Scatter Bomb");
+						DEBUGOUTPUT("Scatter Bomb");
 						break;
 					default:
 						break;
@@ -2329,11 +2329,11 @@ void KeyRelease(int key) {
 	case GLFW_KEY_G: // 快速生产
 		if (GAMESTATUS::s_enable_control) {
 			if (s_selected_gui.is_selected) {
-				Point start_point = Point::toPoint(s_selected_gui.grid);
-				Point end_point = Point::toPoint(s_current_selected_grid);
+				Point start_point = Point::to_point(s_selected_gui.grid);
+				Point end_point = Point::to_point(s_current_selected_grid);
 				try {
-					Region& from_region = RegionManager::getInstance().get_region(start_point.x, start_point.y);
-					Region& to_region = RegionManager::getInstance().get_region(end_point.x, end_point.y);
+					Region& from_region = RegionManager::instance_of().region(start_point.x, start_point.y);
+					Region& to_region = RegionManager::instance_of().region(end_point.x, end_point.y);
 					std::string result = "";
 					switch (s_selected_weapon)
 					{
@@ -2341,7 +2341,7 @@ void KeyRelease(int key) {
 						GAMESOUND::play_error_sound();
 						break;
 					case NUCLEAR_MISSILE:
-						if (from_region.getOwner() != 0) {
+						if (from_region.get_owner() != 0) {
 							s_selected_gui.message = u8"无效区块！";
 							s_selected_gui.shake_gui(timer);
 							break;
@@ -2366,14 +2366,14 @@ void KeyRelease(int key) {
 						}
 						break;
 					case ARMY:
-						DEBUG::DebugOutput("Army");
+						DEBUGOUTPUT("Army");
 						result = push_input_wait_for_result({ start_point, end_point, 100, Operator::ProductArmy });
 						if (result == "Success") {
 							GAMESOUND::play_click_sound();
 						}
 						break;
 					case SCATTER_BOMB:
-						DEBUG::DebugOutput("Scatter Bomb");
+						DEBUGOUTPUT("Scatter Bomb");
 						break;
 					default:
 						break;
@@ -2398,7 +2398,7 @@ void KeyRelease(int key) {
 	case GLFW_KEY_X:
 		if (GAMESTATUS::s_enable_control && s_selected_weapon == SCATTER_BOMB) {
 			// 增大范围
-			s_scatter_bomb_range = fmin(map_info.getWidth() / 2, s_scatter_bomb_range + 1);
+			s_scatter_bomb_range = fmin(map_info.width() / 2, s_scatter_bomb_range + 1);
 		}
 		if (GAMESTATUS::s_enable_control && s_selected_weapon == NUCLEAR_MISSILE) {
 			s_nuclear_missile_level = (s_nuclear_missile_level - 1 + 3) % 3;
@@ -2431,7 +2431,7 @@ void KeyRelease(int key) {
 
 
 bool compileShaders() {
-	DEBUG::DebugOutput("Compiling Shaders");
+	DEBUGOUTPUT("Compiling Shaders");
 	s_main_game_pass_program = CompileShader(main_game_pass_vert, main_game_pass_frag, nullptr, &vertex_shader, &fragment_shader, nullptr);
 	if (s_main_game_pass_program == -1) return false;
 	s_normal_gl_program = CompileShader(normal_gl_vert, normal_gl_frag, nullptr, &normal_gl_vertex_shader, &normal_gl_fragment_shader, nullptr);
@@ -2443,7 +2443,7 @@ bool compileShaders() {
 	s_direct_tex_program = CompileShader(direct_tex_pass_vert, direct_tex_pass_frag, nullptr, &direct_tex_vertex_shader, &direct_tex_fragment_shader, nullptr);
 	if (s_direct_tex_program == -1) return false;
 	s_points_program = CompileShader(point_renderer_vert, point_renderer_frag, nullptr, &points_vertex_shader, &points_fragment_shader, nullptr);
-	DEBUG::DebugOutput("Shaders Compiled");
+	DEBUGOUTPUT("Shaders Compiled");
 	return true;
 }
 
@@ -2458,17 +2458,17 @@ void init() {
 	glEnable(GL_POINT_SPRITE);
 
 	scale_map_camera.setMoveDuration(0.25);
-	scale_map_camera.setPos(0, 0, -32,timer.getTime());
+	scale_map_camera.setPos(0, 0, -32,timer.time());
 	camera.setMoveDuration(0.5);
 	camera.setRotateDuration(0.25);
-	camera.rotate(0, 0, -1.5, timer.getTime());
-	camera.move(0, 0, -2, timer.getTime());
-	map_rotation.setStartPosition(-1, timer.getTime());
-	map_rotation.setTotalDuration(0.25);
+	camera.rotate(0, 0, -1.5, timer.time());
+	camera.move(0, 0, -2, timer.time());
+	map_rotation.set_start_position(-1, timer.time());
+	map_rotation.set_total_duration(0.25);
 
 	reset_camera();
 
-	DEBUG::DebugOutput("Building meshes..");
+	DEBUGOUTPUT("Building meshes..");
 
 	s_mash.append(1, -1, 0);
 	s_mash.append(1, 1, 0);
@@ -2481,12 +2481,12 @@ void init() {
 	map_mash.append(-1, 1, 0);
 	map_mash.append(-1, -1, 0);
 	map_mash.build();
-	DEBUG::DebugOutput("Meshes built");
+	DEBUGOUTPUT("Meshes built");
 
 	point_renderer.init();
 
 
-	DEBUG::DebugOutput("Loading Textures...");
+	DEBUGOUTPUT("Loading Textures...");
 	TEXTURE::s_image_radioactive = LoadPNG("resources/textures/radioactivity.png");
 	TEXTURE::s_image_attack_target = LoadPNG("resources/textures/target.png");
 	TEXTURE::s_image_scatter = LoadPNG("resources/textures/scatter.png");
@@ -2494,8 +2494,8 @@ void init() {
 	TEXTURE::s_image_guard = LoadPNG("resources/textures/guard.png");
 	TEXTURE::s_image_forbid = LoadPNG("resources/textures/forbid.png");
 	TEXTURE::s_image_building_icon = LoadPNG("resources/textures/buildings.png");
-	DEBUG::DebugOutput("Textures Loaded");
-	timer.setTime(glfwGetTime());
+	DEBUGOUTPUT("Textures Loaded");
+	timer.set_time(glfwGetTime());
 	// 启动背景音乐
 	GAMESOUND::play_background();
 }
@@ -2556,7 +2556,7 @@ void destroy() {
 int main() {
 	srand(time(0));
 	if (!glfwInit()) {
-		println("Failed to initialize glfw"); return 0;
+		DEBUGOUTPUT("Failed to initialize glfw"); return 0;
 	}
 	glfwSetErrorCallback((GLFWerrorfun)glfwErrorCallBack);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -2588,7 +2588,7 @@ int main() {
 
 	glfwSwapInterval(1);
 	if (!glfw_win) {
-		println("Failed to create window"); return 0;
+		DEBUGOUTPUT("Failed to create window"); return 0;
 	}
 
 
@@ -2612,20 +2612,20 @@ int main() {
 	int err = glewInit();
 
 	if (err) {
-		println("Failed to initialize glew");
-		println((char*)glewGetErrorString(err));
+		DEBUGOUTPUT("Failed to initialize glew");
+		DEBUGOUTPUT((char*)glewGetErrorString(err));
 		goto destroy;
 	}
 	GLint float_framebuffer_supported;
 	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &float_framebuffer_supported);
 	if (!float_framebuffer_supported) {
-		DEBUG::DebugOutput("ARB_color_buffer_float not supported");
+		DEBUGOUTPUT("ARB_color_buffer_float not supported");
 	}
 	else {
 		// 启用扩展
 		glewExperimental = GL_TRUE;
 		if (GLEW_ARB_color_buffer_float) {
-			DEBUG::DebugOutput("Activate ARB_color_buffer_float");
+			DEBUGOUTPUT("Activate ARB_color_buffer_float");
 			glClampColorARB(GL_CLAMP_VERTEX_COLOR_ARB, GL_FALSE);
 			glClampColorARB(GL_CLAMP_FRAGMENT_COLOR_ARB, GL_FALSE);
 			glClampColorARB(GL_CLAMP_READ_COLOR_ARB, GL_FALSE);
@@ -2633,12 +2633,12 @@ int main() {
 	}
 
 #ifdef _DEBUG
-	glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
+	glDebugMessageCallback((GLDEBUGPROC)debugproc, 0);
 	glEnable(GL_DEBUG_CALLBACK_FUNCTION);
 #endif // DEBUG
 	GLint maxTexSize;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
-	DEBUG::DebugOutput("Max Texture Size:", std::to_string(maxTexSize));
+	DEBUGOUTPUT("Max Texture Size:", std::to_string(maxTexSize));
 
 	io.Fonts->TexDesiredWidth = maxTexSize;
 
@@ -2648,14 +2648,14 @@ int main() {
 	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("./resources/fonts/msyh.ttf", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("./resources/fonts/msyh.ttf", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	if (!io.Fonts->Build()) {
-		DEBUG::DebugOutput("Failed to build fonts");
+		DEBUGOUTPUT("Failed to build fonts");
 		goto destroy;
 	}
 	ImGui_ImplGlfw_InitForOpenGL(glfw_win, true);
 
 	ImGui_ImplOpenGL3_Init(glsl_version);
-	DEBUG::DebugOutput("OpenGL Version", (std::string)(char*)glGetString(GL_VERSION));
-	DEBUG::DebugOutput("GLSL Version", (std::string)(char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+	DEBUGOUTPUT("OpenGL Version", (std::string)(char*)glGetString(GL_VERSION));
+	DEBUGOUTPUT("GLSL Version", (std::string)(char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
 
 	int width, height;
@@ -2689,7 +2689,7 @@ int main() {
 			ImGui_ImplGlfw_Sleep(10);
 			continue;
 		}
-		timer.setTime(glfwGetTime());
+		timer.set_time(glfwGetTime());
 		prepare_render();
 		KeyProcess();
 		render();
@@ -2705,10 +2705,10 @@ int main() {
 		// Rendering
 		glDebugMessageCallback(0, 0);
 		ImGui::Render();
-		glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
+		glDebugMessageCallback((GLDEBUGPROC)debugproc, 0);
 		glDebugMessageCallback(0, 0);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		glDebugMessageCallback((GLDEBUGPROC)debugProc, 0);
+		glDebugMessageCallback((GLDEBUGPROC)debugproc, 0);
 		ImGui::EndFrame();
 
 		glfwSwapBuffers(glfw_win);
@@ -2726,7 +2726,7 @@ destroy:
 	return 0;
 }
 void glfwErrorCallBack(int error, const char* str) {
-	println(str);
+	DEBUGOUTPUT(str);
 }
 void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int mods) {
 	keys[key] = (bool)action;
@@ -2762,9 +2762,9 @@ void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 	if (s_menu_gui.is_open() || !GAMESTATUS::s_in_game || !GAMESTATUS::s_enable_control) { 
 		return;
 	}
-	scale_map_camera.move(0, 0, yoffset, timer.getTime());
-	camera.rotate_to(0, 0, -1.2 /(1 + 2 * exp(-0.05 * scale_map_camera.getZ() * scale_map_camera.getZ())), timer.getTime());
-	map_rotation.newEndPosition(-(exp(-0.01 * pow(scale_map_camera.getZ() * scale_map_camera.getZ(),2))),timer.getTime());
+	scale_map_camera.move(0, 0, yoffset, timer.time());
+	camera.rotate_to(0, 0, -1.2 /(1 + 2 * exp(-0.05 * scale_map_camera.getZ() * scale_map_camera.getZ())), timer.time());
+	map_rotation.new_end_position(-(exp(-0.01 * pow(scale_map_camera.getZ() * scale_map_camera.getZ(),2))),timer.time());
 }
 
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {

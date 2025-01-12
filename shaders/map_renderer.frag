@@ -276,10 +276,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     if(region.region_additional_info > 0.5){
 		vec2 region_uv = (vec2(cell_idx.real_idx) + region.cell_center) / g_map_size * 2 - 1;
 		vec2 d_uv = (uv - region_uv) * g_map_size / 1 * 2 * 0.25 + 0.5;
-        if(region.region_additional_info < 1.5){
-            color = mix(color, vec3(7,10,0), float(region.region_additional_info > 0.5) * p_s);
-        }
-        else if(d_uv.x>=0&&d_uv.x<=1){
+        if(d_uv.x>=0&&d_uv.x<=1){
             const float ICON_OFFSETS[5] = float[5](
                 0.373,  // info = 2  
                 0.25,   // info = 3
@@ -294,7 +291,9 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
                 color = mix(color, icon.rgb, icon.a * p_s);
             }
         }
-
+        if(region.region_additional_info < 1.5){
+            color = mix(color, vec3(7,10,0), float(region.region_additional_info > 0.5) * p_s);
+        }
     }
 
 
@@ -326,7 +325,8 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
         is_selected = is_selected || cell_idx.real_idx.x == g_mouse_selected.x && cell_idx.real_idx.y == g_mouse_selected.y;
     }
     if(is_selected){
-        color = vec3(0,10,0) * (0.5 + 0.5 * sin(g_time * 15));
+        float mix_s = (0.5 + 0.5 * sin(g_time * 15));
+        color = mix(color, vec3(0,10,0), mix_s);
     }
 
     if(attack_distance <= g_valid_attack_range && is_player_s){

@@ -7,13 +7,13 @@
 class RegionSelector
 {
 private:
-    float fov;
-    float width, height;
-    mat4x4 viewMat;
-    mat4x4 modelMat;
-    int mapWidth, mapHeight; 
+    float m_fov;
+    float m_width, m_height;
+    mat4x4 m_view_mat;
+    mat4x4 m_model_mat;
+    int m_map_width, m_map_height; 
    
-    RegionData* regions;
+    RegionData* m_regions;
 
 private:
 	inline RegionData empty_region() {
@@ -26,10 +26,10 @@ private:
 		region.region_additional_info = 0;
 		return region;
 	}
-	inline RegionData getRegion(int x, int y) {
-        if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight)
+	inline RegionData get_region(int x, int y) {
+        if (x < 0 || x >= m_map_width || y < 0 || y >= m_map_height)
             return empty_region();
-        return regions[y * mapWidth + x];
+        return m_regions[y * m_map_width + x];
 	}
     inline std::tuple<int, int, float> cell(vec2 cell_uv, vec2 cell_center[3][3]) {
 		float min_dist = 1e9;
@@ -51,8 +51,8 @@ private:
 		return { idx[0] - 1, idx[1] - 1, min_dist };
     }
     inline std::tuple<int, int, float, float> uv_to_cell_position(float u, float v) {
-		u = (0.5 * u + 0.5) * mapWidth;
-		v = (0.5 * v + 0.5) * mapHeight;
+		u = (0.5 * u + 0.5) * m_map_width;
+		v = (0.5 * v + 0.5) * m_map_height;
 		int x = (int)u;
 		int y = (int)v;
 		float cell_u = u - x;
@@ -62,33 +62,33 @@ private:
 
 
 public:
-    inline std::tuple<float, float, float> intersectPlane(float mouseX, float mouseY) {
+    inline std::tuple<float, float, float> intersect_plane(float mouseX, float mouseY) {
         // NDC坐标转换
-        float ndcX = (2.0f * mouseX / this->width) - 1.0f;
-        float ndcY = 1.0f - (2.0f * mouseY / this->height);
+        float ndcX = (2.0f * mouseX / this->m_width) - 1.0f;
+        float ndcY = 1.0f - (2.0f * mouseY / this->m_height);
 
         // 射线方向计算
-        float aspect = this->width / this->height;
-        vec3 dir = { ndcX * aspect, ndcY , this->fov };
+        float aspect = this->m_width / this->m_height;
+        vec3 dir = { ndcX * aspect, ndcY , this->m_fov };
         vec3_norm(dir, dir);
 
         vec4 dirWorld;
 		float dirW[4] = { dir[0], dir[1], dir[2], 0.0f };
-        mat4x4_mul_vec4(dirWorld, this->viewMat, dirW);
+        mat4x4_mul_vec4(dirWorld, this->m_view_mat, dirW);
 
         // 射线原点
         vec4 rayOrigin;
 		vec4 zero = { 0,0,0,1.0f };
-        mat4x4_mul_vec4(rayOrigin, this->viewMat, zero);
+        mat4x4_mul_vec4(rayOrigin, this->m_view_mat, zero);
 
         // 平面参数
         vec4 planeU, planeV, planePos;
 		vec4 u0 = { 1,0,0,0 };
 		vec4 v0 = { 0,0,1,0 };
 		vec4 pos0 = { 0,0,0,1 };
-        mat4x4_mul_vec4(planeU, this->modelMat, u0);
-        mat4x4_mul_vec4(planeV, this->modelMat, v0);
-        mat4x4_mul_vec4(planePos, this->modelMat, pos0);
+        mat4x4_mul_vec4(planeU, this->m_model_mat, u0);
+        mat4x4_mul_vec4(planeV, this->m_model_mat, v0);
+        mat4x4_mul_vec4(planePos, this->m_model_mat, pos0);
 
         // 平面法向量
         vec3 normal;
@@ -130,8 +130,8 @@ public:
         return { u, v, t };
     }
 
-	inline std::tuple<bool, int, int> selectRegion(float mouseX, float mouseY) {
-		auto [u, v, t] = intersectPlane(mouseX, mouseY);
+	inline std::tuple<bool, int, int> select_region(float mouseX, float mouseY) {
+		auto [u, v, t] = intersect_plane(mouseX, mouseY);
 
 		if (abs(u)>1 || abs(v)>1) return { false, -1, -1 };
 
@@ -139,14 +139,14 @@ public:
 		vec2 cell_center[3][3];
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
-				RegionData cell = getRegion(x + i, y + j);
+				RegionData cell = get_region(x + i, y + j);
 				cell_center[i + 1][j + 1][0] = cell.cell_center_x;
 				cell_center[i + 1][j + 1][1] = cell.cell_center_y;
 			}
 		}
 		vec2 cell_uv = { cell_u, cell_v };
 		auto [idx_x, idx_y, min_dist] = cell(cell_uv, cell_center);
-		if (x + idx_x < 0 || x + idx_x >= mapWidth || y + idx_y < 0 || y + idx_y >= mapHeight)
+		if (x + idx_x < 0 || x + idx_x >= m_map_width || y + idx_y < 0 || y + idx_y >= m_map_height)
 			return { false, -1, -1 };
 		return { true, x + idx_x, y + idx_y };
 	}
@@ -154,22 +154,22 @@ public:
 		
 
     inline std::tuple<bool, int, int> operator()(float mouseX, float mouseY) {
-		return selectRegion(mouseX, mouseY);
+		return select_region(mouseX, mouseY);
     }
     inline RegionSelector(float fov, float width, float height, mat4x4 viewMat, mat4x4 modelMat, int mapWidth, int mapHeight, void* regions) {
-		this->fov = fov;
-		this->width = width;
-		this->height = height;
+		this->m_fov = fov;
+		this->m_width = width;
+		this->m_height = height;
 		
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 4; j++) {
-				this->viewMat[i][j] = viewMat[i][j];
-				this->modelMat[i][j] = modelMat[i][j];
+				this->m_view_mat[i][j] = viewMat[i][j];
+				this->m_model_mat[i][j] = modelMat[i][j];
 			}
 		}
 
-		this->mapWidth = mapWidth;
-		this->mapHeight = mapHeight;
-		this->regions = (RegionData*)regions;
+		this->m_map_width = mapWidth;
+		this->m_map_height = mapHeight;
+		this->m_regions = (RegionData*)regions;
 	}
 };

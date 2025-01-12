@@ -124,7 +124,7 @@ public:
     }
 
 
-    void RGBA(float r, float g, float b, float a) {
+    void rgba(float r, float g, float b, float a) {
         this->r = r; this->g = g; this->b = b; this->a = a;
     }
 
@@ -132,7 +132,7 @@ public:
         this->u = u; this->v = v;
     }
 
-    void Normal(float n_x, float n_y, float n_z) {
+    void normal(float n_x, float n_y, float n_z) {
         this->n_x = n_x; this->n_y = n_y; this->n_z = n_z;
     }
 

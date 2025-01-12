@@ -30,13 +30,13 @@ inline std::string BuildingTypeToString(BuildingType type) {
 }
 
 class Building {
-	int level = 0;
-	BuildingType type = BuildingType::None;
+	int m_level = 0;
+	BuildingType m_type = BuildingType::None;
 public:
 	Building(BuildingType);
 	~Building();
-	bool upLevel(int MaxLevel);
-	BuildingType getType();
-	int getLevel();
+	bool up_level(int max_level);
+	BuildingType get_type();
+	int get_level();
 	bool remove();
 };

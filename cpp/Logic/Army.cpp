@@ -1,39 +1,39 @@
 ﻿#include "../../header/Logic/Army.h"
 
 Army::Army(int force, int level) {
-	this->level = level;
-	this->force = force;
+	this->m_level = level;
+	this->m_force = force;
 	/* speed = */ 
 }
 
 Army::~Army() {
 }
 
-double Army::getSpeed() {
-	return this->speed;
+double Army::get_speed() {
+	return this->m_speed;
 }
 
-int Army::getLevel(){
-	return this->level;
+int Army::get_level(){
+	return this->m_level;
 }
 
-int Army::getForce(){
-	return this->force;
+int Army::get_force(){
+	return this->m_force;
 }
 
-bool Army::addArmy(int num){
-	this->force += num;
+bool Army::add_amount(int num){
+	this->m_force += num;
 	return true;
 }
 
-bool Army::removeArmy(int num){
-	if (this->force < num) {
+bool Army::reduce_amount(int num){
+	if (this->m_force < num) {
 		return false;
 	}
-	this->force -= num;
-	this->force = this->force < 0 ? 0 : this->force;
+	this->m_force -= num;
+	this->m_force = this->m_force < 0 ? 0 : this->m_force;
 	return true;
 }
-void Army::setArmy(int num) {
-	this->force = num;
+void Army::set_amount(int num) {
+	this->m_force = num;
 }

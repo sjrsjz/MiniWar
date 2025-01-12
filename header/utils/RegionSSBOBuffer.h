@@ -4,72 +4,72 @@
 // SSBO缓冲区，用于存储区域数据并传递给地图着色器
 class RegionSSBOBuffer
 {
-	RegionData* regions;
-	SSBO ssbo;
-	int mapWidth, mapHeight;
+	RegionData* m_regions;
+	SSBO m_ssbo;
+	int m_map_width, m_map_height;
 
 public:
-	RegionSSBOBuffer() : regions(nullptr), mapWidth(0), mapHeight(0) {}
+	RegionSSBOBuffer() : m_regions(nullptr), m_map_width(0), m_map_height(0) {}
 	~RegionSSBOBuffer() {
 	}
 
 	void create(int width, int height) {
-		regions = new RegionData[width * height];
-		mapWidth = width;
-		mapHeight = height;
+		m_regions = new RegionData[width * height];
+		m_map_width = width;
+		m_map_height = height;
 	}
 
 	void release() {
-		if (regions) {
-			delete[] regions;
-			regions = nullptr;
+		if (m_regions) {
+			delete[] m_regions;
+			m_regions = nullptr;
 		}
 	}
 
-	void setRegion(int x, int y, RegionData region) {
-		if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight)
+	void set_region(int x, int y, RegionData region) {
+		if (x < 0 || x >= m_map_width || y < 0 || y >= m_map_height)
 			throw std::out_of_range("RegionSSBOBuffer::setRegion out of range");
-		regions[y * mapWidth + x] = region;
+		m_regions[y * m_map_width + x] = region;
 	}
 	void create_ssbo() {
-		ssbo.set_binding_point_index(0);
-		ssbo = SSBO(mapWidth * mapHeight * sizeof(RegionData), GL_DYNAMIC_DRAW);
+		m_ssbo.set_binding_point_index(0);
+		m_ssbo = SSBO(m_map_width * m_map_height * sizeof(RegionData), GL_DYNAMIC_DRAW);
 	}
 
 	void update() {
-		ssbo.update_data(regions, mapWidth * mapHeight * sizeof(RegionData));
+		m_ssbo.update_data(m_regions, m_map_width * m_map_height * sizeof(RegionData));
 	}
 
 	void bind(GLuint index) {
-		ssbo.bind(index);
+		m_ssbo.bind(index);
 	}
 
 	void unbind() {
-		ssbo.unbind_ssbo();
+		m_ssbo.unbind_ssbo();
 	}
 
-	int getWidth() const {
-		return mapWidth;
+	int width() const {
+		return m_map_width;
 	}
 
-	int getHeight() const {
-		return mapHeight;
+	int height() const {
+		return m_map_height;
 	}
 
-	void* getRegions() const {
-		return regions;
+	void* regions() const {
+		return m_regions;
 	}
 
-	RegionData& getRegion(int x, int y) {
-		if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight)
+	RegionData& region(int x, int y) {
+		if (x < 0 || x >= m_map_width || y < 0 || y >= m_map_height)
 			throw std::out_of_range("RegionSSBOBuffer::getRegion out of range");
-		return regions[y * mapWidth + x];
+		return m_regions[y * m_map_width + x];
 	}
 
-	const RegionData& getRegion(int x, int y) const {
-		if (x < 0 || x >= mapWidth || y < 0 || y >= mapHeight)
+	const RegionData& region(int x, int y) const {
+		if (x < 0 || x >= m_map_width || y < 0 || y >= m_map_height)
 			throw std::out_of_range("RegionSSBOBuffer::getRegion out of range");
-		return regions[y * mapWidth + x];
+		return m_regions[y * m_map_width + x];
 	}
 
 	// 迭代器，用于遍历区域数据，为 {RegionData&, x, y} 的元组
@@ -97,11 +97,11 @@ public:
 	};
 
 	iterator begin() {
-		return iterator(regions, 0, 0, mapWidth);
+		return iterator(m_regions, 0, 0, m_map_width);
 	}
 
 	iterator end() {
-		return iterator(regions, 0, mapHeight, mapWidth);
+		return iterator(m_regions, 0, m_map_height, m_map_width);
 	}
 
 

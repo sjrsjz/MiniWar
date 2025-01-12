@@ -35,15 +35,15 @@ private:
 		double labor{};
 	}m_steady_cost_resources; // 固定的资源消耗
 
-	bool power_off = false;
-	int id{};
-	bool have_research_institution = false;
-	std::tuple<int, int> capital = std::make_tuple(-1,-1);
-	const std::vector<int> max_army_level = { 3, 3, 3, 3 };
-	std::vector<int> army_level = { 1,0,0,0 };//0: army, 1: CM 2: MRBM 3: ICBM
-	const std::vector<int> max_institution_level = { 3,3,3,3,3 };
-	std::vector<int> institution_level_limit = { 1,1,1,1,1 };//0: powerstation, 1: refinery, 2: steelfactory, 3: civilian_factory, 4: military_factory
-	RegionManager& regionmanager;
+	bool m_is_power_off = false;
+	int m_id{};
+	bool m_have_research_institution = false;
+	std::tuple<int, int> m_capital_idx = std::make_tuple(-1,-1);
+	const std::vector<int> m_max_army_level = { 3, 3, 3, 3 };
+	std::vector<int> m_army_level = { 1,0,0,0 };//0: army, 1: CM 2: MRBM 3: ICBM
+	const std::vector<int> m_max_institution_level = { 3,3,3,3,3 };
+	std::vector<int> m_institution_level_limit = { 1,1,1,1,1 };//0: powerstation, 1: refinery, 2: steelfactory, 3: civilian_factory, 4: military_factory
+	RegionManager& m_region_manager;
 
 public:
 	Player();
@@ -76,14 +76,14 @@ public:
 	int get_building_level_limit(BuildingType type);
 	int get_army_level(int id) {
 		try {
-			return army_level[id];
+			return m_army_level[id];
 		}
 		catch (std::exception e) {
 			throw e;
 		}
 	}
 	bool get_have_research_institution() {
-		return have_research_institution;
+		return m_have_research_institution;
 	}
 	bool is_alive();
 
@@ -98,7 +98,7 @@ public:
 	void remove_building(Operation operation);
 	void product_weapon(int weapon_type, Region& region);
 	void product(Operation operation);
-	void rangeAttack(Operation operation);
+	void range_attack(Operation operation);
 	void create();
 
 	//update function

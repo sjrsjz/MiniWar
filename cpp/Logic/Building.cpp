@@ -1,35 +1,35 @@
 ﻿#include "../../header/Logic/Building.h"
 
 Building::Building(BuildingType type) {
-	this->type = type;
-	this->level = 1;
+	this->m_type = type;
+	this->m_level = 1;
 }
 
 Building::~Building() {
 }
 
-bool Building::upLevel(int MaxLevel) {
-	if (this->level < MaxLevel) {
-		this->level++;
+bool Building::up_level(int MaxLevel) {
+	if (this->m_level < MaxLevel) {
+		this->m_level++;
 		return true;
 	}
 	return false;
 }
 
-BuildingType Building::getType() {
-	return this->type;
+BuildingType Building::get_type() {
+	return this->m_type;
 }
 
-int Building::getLevel() {
-	return this->level;
+int Building::get_level() {
+	return this->m_level;
 }
 
 bool Building::remove() {
-	if (this->type == BuildingType::None) {
+	if (this->m_type == BuildingType::None) {
 		return false;
 	} else {
-		this->level = 0;
-		this->type = BuildingType::None;
+		this->m_level = 0;
+		this->m_type = BuildingType::None;
 	}
 	return true;
 }

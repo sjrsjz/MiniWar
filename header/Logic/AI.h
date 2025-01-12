@@ -73,8 +73,8 @@ class AI {
 	std::vector<int> arm_level;	
 	int maxLevel = 2;
 	std::tuple<int, int> capital;
-	RegionManager& regionManager = RegionManager::getInstance();
-	Config& config = Config::getInstance();
+	RegionManager& regionManager = RegionManager::instance_of();
+	Config& config = Config::instance_of();
 	int id;
 	std::tuple<int, int> playerCapital;
 	double size;
@@ -144,11 +144,11 @@ public:
 			throw std::runtime_error("Player Capital not found");
 		}
 
-		std::tuple<double, double> originSize = config.getDefaultRegionSetting().OriginSize;
+		std::tuple<double, double> originSize = config.get_default_region_setting().OriginSize;
 
 
-		int mapWidth = regionManager.get_map_width();
-		int mapHeight = regionManager.get_map_height();
+		int mapWidth = regionManager.map_width();
+		int mapHeight = regionManager.map_height();
 		std::random_device rd;
 		std::mt19937 gen(rd());
 		std::uniform_int_distribution<int> disX(3, mapWidth - 3);
@@ -165,7 +165,7 @@ public:
 				{
 					if (i*i + j*j > size*size) continue;
 					try {
-						if (regionManager.get_region(x + i, y + j).getOwner() != -1)
+						if (regionManager.region(x + i, y + j).get_owner() != -1)
 						{
 							flag = false;
 							break;
@@ -188,15 +188,15 @@ public:
 			{
 				if (i*i + j*j > size*size) continue;
 				try {
-					regionManager.get_region(std::get<0>(capital) + i, std::get<1>(capital) + j).setOwner(id);
+					regionManager.region(std::get<0>(capital) + i, std::get<1>(capital) + j).set_owner(id);
 				} catch (std::exception& e) {
 					continue;
 				}
 			}
 		}
-		regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).setMaxHp(1000);
-		regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).setHp(1000);
-		regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).getArmy().addArmy(200);
+		regionManager.region(std::get<0>(capital), std::get<1>(capital)).set_max_HP(1000);
+		regionManager.region(std::get<0>(capital), std::get<1>(capital)).set_HP(1000);
+		regionManager.region(std::get<0>(capital), std::get<1>(capital)).get_army().add_amount(200);
 
 	}		
 
@@ -215,11 +215,11 @@ public:
 			throw std::runtime_error("Player Capital not found");
 		}
 
-		std::tuple<double, double> originSize = config.getDefaultRegionSetting().OriginSize;
+		std::tuple<double, double> originSize = config.get_default_region_setting().OriginSize;
 
 
-		int mapWidth = regionManager.get_map_width();
-		int mapHeight = regionManager.get_map_height();
+		int mapWidth = regionManager.map_width();
+		int mapHeight = regionManager.map_height();
 		std::random_device rd;
 		std::mt19937 gen(rd());
 		std::uniform_int_distribution<int> disX(3, mapWidth - 3);
@@ -236,7 +236,7 @@ public:
 				{
 					if (i*i + j*j > size*size) continue;
 					try {
-						if (regionManager.get_region(x + i, y + j).getOwner() != -1)
+						if (regionManager.region(x + i, y + j).get_owner() != -1)
 						{
 							flag = false;
 							break;
@@ -259,15 +259,15 @@ public:
 			{
 				if (i*i + j*j > size*size) continue;
 				try {
-					regionManager.get_region(std::get<0>(capital) + i, std::get<1>(capital) + j).setOwner(id);
+					regionManager.region(std::get<0>(capital) + i, std::get<1>(capital) + j).set_owner(id);
 				} catch (std::exception& e) {
 					continue;
 				}
 			}
 		}
-		regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).setMaxHp(1000);
-		regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).setHp(1000);
-		regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).getArmy().addArmy(200);
+		regionManager.region(std::get<0>(capital), std::get<1>(capital)).set_max_HP(1000);
+		regionManager.region(std::get<0>(capital), std::get<1>(capital)).set_HP(1000);
+		regionManager.region(std::get<0>(capital), std::get<1>(capital)).get_army().add_amount(200);
 
 		}		
 
@@ -281,9 +281,9 @@ public:
 		} else if (id == 3) {
 			difficulty = "Hard";
 		}
-		this->A = config.getAIParameter(difficulty).A;
-		this->k = config.getAIParameter(difficulty).k;
-		this->t0 = config.getAIParameter(difficulty).t0;
+		this->A = config.get_AI_parameter(difficulty).A;
+		this->k = config.get_AI_parameter(difficulty).k;
+		this->t0 = config.get_AI_parameter(difficulty).t0;
 	}
 
 	void attack() {
@@ -304,18 +304,18 @@ public:
 				for (auto aiRegion: AIRegions) {
 					Point start(std::get<0>(aiRegion), std::get<1>(aiRegion));
 					Point end(std::get<0>(playerRegion), std::get<1>(playerRegion));
-					auto attackRange = regionManager.get_weapon(i).getAttackRange();
-					double dist = start.distance(end) / regionManager.get_map_width();
+					auto attackRange = regionManager.get_weapon(i).get_attack_range();
+					double dist = start.distance(end) / regionManager.map_width();
 					auto [min, max] = attackRange;
-					int damage = regionManager.get_weapon(i).getDamage(arm_level[i + 1]);
-					double time = start.distance(end) / regionManager.get_weapon(i).getAttackSpeed(arm_level[i + 1]);
+					int damage = regionManager.get_weapon(i).get_damage(arm_level[i + 1]);
+					double time = start.distance(end) / regionManager.get_weapon(i).get_attack_speed(arm_level[i + 1]);
 					if (dist >= min && dist <= max) {
-						//DEBUG::DebugOutput("WeaponAttack() called");
+						//DEBUGOUTPUT("WeaponAttack() called");
 						regionManager.attack_region_missle(i, arm_level[i + 1], start, end, time);
 						push_game_effects(GameEffect::GAME_EFFECT_PLAY_NUCLEAR_WARNING);
 						cnt++;
 						canAttack = false;
-						//DEBUG::DebugOutput("WeaponAttack() finished");
+						//DEBUGOUTPUT("WeaponAttack() finished");
 					}
 					if (cnt >= maxcnt) {
 						return;
@@ -343,17 +343,17 @@ public:
 		distance.clear();
 		averageForce = 0;
 		playerAverageForce = 0;
-		for (int i = 0; i < regionManager.get_map_width(); i++) {
-			for (int j = 0; j < regionManager.get_map_height(); j++) {
-				if (regionManager.get_region(i, j).getOwner() == id) {
+		for (int i = 0; i < regionManager.map_width(); i++) {
+			for (int j = 0; j < regionManager.map_height(); j++) {
+				if (regionManager.region(i, j).get_owner() == id) {
 					AIRegions.push_back(std::make_tuple(i, j));
-				} else if (regionManager.get_region(i, j).getOwner() != id && regionManager.get_region(i, j).getOwner() != -1) {
+				} else if (regionManager.region(i, j).get_owner() != id && regionManager.region(i, j).get_owner() != -1) {
 					playerRegions.push_back(std::make_tuple(i, j));
 				} 
 			}
 		}
-		for (int i = 0; i < regionManager.get_map_width(); i++) {
-			for (int j = 0; j < regionManager.get_map_height(); j++) {
+		for (int i = 0; i < regionManager.map_width(); i++) {
+			for (int j = 0; j < regionManager.map_height(); j++) {
 				if (isBorder(i, j)) {
 					border.push_back(std::make_tuple(i, j));
 				}
@@ -377,9 +377,9 @@ public:
 
 		for (auto AIRegion : AIRegions) {
 			auto [x, y] = AIRegion;
-			Region& region = regionManager.get_region(x, y);
-			Army& regionArmy = region.getArmy();
-			averageForce += regionArmy.getForce();
+			Region& region = regionManager.region(x, y);
+			Army& regionArmy = region.get_army();
+			averageForce += regionArmy.get_force();
 		}
 
 		for (auto AIRegion : AIRegions) {
@@ -404,9 +404,9 @@ public:
 
 		for (auto playerRegion : playerRegions) {
 			auto [x, y] = playerRegion;
-			Region& region = regionManager.get_region(x, y);
-			Army& regionArmy = region.getArmy();
-			playerAverageForce += regionArmy.getForce();
+			Region& region = regionManager.region(x, y);
+			Army& regionArmy = region.get_army();
+			playerAverageForce += regionArmy.get_force();
 		}
 
 		
@@ -443,18 +443,18 @@ public:
 			canAttack = true;
 		}
 
-		//DEBUG::DebugOutput("gold: ", this->gold);
-		//DEBUG::DebugOutput("army: ", this->averageForce);
-		//DEBUG::DebugOutput("canMove: ", this->canMove);
-		//DEBUG::DebugOutput("canDefend: ", this->canDefend);
+		//DEBUGOUTPUT("gold: ", this->gold);
+		//DEBUGOUTPUT("army: ", this->averageForce);
+		//DEBUGOUTPUT("canMove: ", this->canMove);
+		//DEBUGOUTPUT("canDefend: ", this->canDefend);
 		this->gold += formula(Timer.elapsedSeconds());	
 		delta_t -= 1;
 		if (capitalAlive) {
 			int buildArmy = std::min((int)(this->gold * 0.2), 2000);
 			//int cost = 1000;// ArmyInfo["cost"].template get<int>();
-			int cost = config.getArmy().cost;
-			Army& army = regionManager.get_region(std::get<0>(capital), std::get<1>(capital)).getArmy();
-			army.addArmy(buildArmy / cost);
+			int cost = config.get_army_parameter().cost;
+			Army& army = regionManager.region(std::get<0>(capital), std::get<1>(capital)).get_army();
+			army.add_amount(buildArmy / cost);
 			this->gold -= buildArmy;
 		}
 
@@ -463,21 +463,21 @@ public:
 		for (int i = 0; i < distance.size(); i++) {
 			sumDis += distance[i].second;
 		}
-		double dist = std::sqrt(sumDis) / playerRegionSize / regionManager.get_map_width();
+		double dist = std::sqrt(sumDis) / playerRegionSize / regionManager.map_width();
 		if (dist <= 0.25) {
-			if (biuldWeapon >= regionManager.get_weapon(0).getAICost() && arm_level[1] > 0) {
+			if (biuldWeapon >= regionManager.get_weapon(0).get_AI_cost() && arm_level[1] > 0) {
 				weapons[0]++;
-				this->gold -= regionManager.get_weapon(0).getAICost();
+				this->gold -= regionManager.get_weapon(0).get_AI_cost();
 			}
 		} else if (dist <= 0.5) {
-			if (biuldWeapon >= regionManager.get_weapon(1).getAICost() && arm_level[2] > 0) {
+			if (biuldWeapon >= regionManager.get_weapon(1).get_AI_cost() && arm_level[2] > 0) {
 				weapons[1]++;
-				this->gold -= regionManager.get_weapon(1).getAICost();
+				this->gold -= regionManager.get_weapon(1).get_AI_cost();
 			}
 		} else {
-			if (biuldWeapon >= regionManager.get_weapon(2).getAICost() && arm_level[3] > 0) {
+			if (biuldWeapon >= regionManager.get_weapon(2).get_AI_cost() && arm_level[3] > 0) {
 				weapons[2]++;
-				this->gold -= regionManager.get_weapon(2).getAICost();
+				this->gold -= regionManager.get_weapon(2).get_AI_cost();
 			}
 		}
 		int maxLevelCount = 0;
@@ -526,11 +526,11 @@ public:
 	}
 
 	bool isBorder(int x, int y) {
-		if (regionManager.get_region(x, y).getOwner() == id) return false;
+		if (regionManager.region(x, y).get_owner() == id) return false;
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
-				if (x + i < 0 || x + i >= regionManager.get_map_width() || y + j < 0 || y + j >= regionManager.get_map_height()) continue;
-				if (regionManager.get_region(x + i, y + j).getOwner() == id && !(i==0 && j==0)) {
+				if (x + i < 0 || x + i >= regionManager.map_width() || y + j < 0 || y + j >= regionManager.map_height()) continue;
+				if (regionManager.region(x + i, y + j).get_owner() == id && !(i==0 && j==0)) {
 					return true;
 				}
 			}
@@ -543,7 +543,7 @@ public:
 		auto start = std::chrono::steady_clock::now();
 		std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
 		auto end = std::chrono::steady_clock::now();		
-		//DEBUG::DebugOutput( "Elapsed time: ", std::chrono::duration<double>(end - start).count());
+		//DEBUGOUTPUT( "Elapsed time: ", std::chrono::duration<double>(end - start).count());
 		this->canMove = true;
 	}
 
@@ -558,17 +558,17 @@ public:
 		std::vector<std::pair<std::tuple<int, int>, int>> originForce;
 		for (auto region : distance) {
 			army.push_back(std::make_pair(region.first, 0));	
-			Army& tmp = regionManager.get_region(std::get<0>(region.first), std::get<1>(region.first)).getArmy();
-			originForce.push_back(std::make_pair(region.first, tmp.getForce()));
+			Army& tmp = regionManager.region(std::get<0>(region.first), std::get<1>(region.first)).get_army();
+			originForce.push_back(std::make_pair(region.first, tmp.get_force()));
 		}
 		std::vector<double> weights(regionSize);
 		int sumArmy = 0;
 		int sumDistance = 0;
 		for (auto AIRegion : AIRegions) {
 			auto [x, y] = AIRegion;
-			Region& region = regionManager.get_region(x, y);
-			Army& regionArmy = region.getArmy();
-			sumArmy += regionArmy.getForce();
+			Region& region = regionManager.region(x, y);
+			Army& regionArmy = region.get_army();
+			sumArmy += regionArmy.get_force();
 		}
 		for (auto item : this->distance) {
 			sumDistance += item.second;
@@ -640,8 +640,8 @@ public:
 			Point start = Point(std::get<0>(from), std::get<1>(from));
 			Point end = Point(std::get<0>(to), std::get<1>(to));
 			int armyLevel = this->arm_level[0];
-			//DEBUG::DebugOutput("moveArmy() calls move_Army");
-			//DEBUG::DebugOutput("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
+			//DEBUGOUTPUT("moveArmy() calls move_Army");
+			//DEBUGOUTPUT("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
 			maxTime = std::max(maxTime, regionManager.move_army(end, start, force, armyLevel));
 		}
 		if (maxTime == -1) {
@@ -653,7 +653,7 @@ public:
 				this->sleep(std::ceil(maxTime));
 				});
 		t.detach();
-		//DEBUG::DebugOutput("maxTime: ", maxTime);
+		//DEBUGOUTPUT("maxTime: ", maxTime);
 	}
 
 	void armyAttack(Point start, int amount, Point end) {
@@ -664,12 +664,12 @@ public:
 		}
 		this->canMove = false;
 		this->canDefend = true;
-		//DEBUG::DebugOutput("armyAttack() called");
-		//DEBUG::DebugOutput("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
-		Army& army = regionManager.get_region(start.x, start.y).getArmy();
-		int curForce = army.getForce() * 0.7;
-		if (army.getForce() * 0.7 >= amount) {
-			//DEBUG::DebugOutput("armyAttack only one region attack");
+		//DEBUGOUTPUT("armyAttack() called");
+		//DEBUGOUTPUT("from (", start.x, ",", start.y, ")", "to", "(", end.x, ",", end.y, ")");
+		Army& army = regionManager.region(start.x, start.y).get_army();
+		int curForce = army.get_force() * 0.7;
+		if (army.get_force() * 0.7 >= amount) {
+			//DEBUGOUTPUT("armyAttack only one region attack");
 			try {
 				double time = regionManager.move_army(start, end, curForce, this->arm_level[0]);
 				this->isAttacked.emplace_back(std::make_tuple(end.x, end.y));
@@ -677,34 +677,34 @@ public:
 				return;
 			}
 			catch (std::exception& e) {
-				DEBUG::DebugOutput("armyAttack error: " + std::string(e.what()));
+				DEBUGOUTPUT("armyAttack error: " + std::string(e.what()));
 				this->canMove = true;
 				return;
 			}
-			//DEBUG::DebugOutput("armyAttack only one region attack need time", time);
+			//DEBUGOUTPUT("armyAttack only one region attack need time", time);
 		}
 		std::vector<Point> regionlist;
 		for (int i = -1; i <= 1 ;i++) {
 			for (int j = -1; j <= 1; j++) {
 				try {
-					if (regionManager.get_region(start.x + i, start.y + j).getOwner() != id) continue;
-					Army& tmp = regionManager.get_region(start.x + i, start.y + j).getArmy();
-					curForce +=	tmp.getForce() * 0.7;
+					if (regionManager.region(start.x + i, start.y + j).get_owner() != id) continue;
+					Army& tmp = regionManager.region(start.x + i, start.y + j).get_army();
+					curForce +=	tmp.get_force() * 0.7;
 					regionlist.push_back(Point(start.x + i, start.y + j));
 					double maxTime = 0;
 					int armyLevel = this->arm_level[0];
 					if (curForce >= amount) {
 						for (auto region : regionlist) {
-							//DEBUG::DebugOutput("armyAttack() calls move_army()");
-							Army& t = regionManager.get_region(region.x, region.y).getArmy();
-							maxTime = std::max(maxTime, regionManager.move_army(region, start, t.getForce() * 0.7, armyLevel));
-							//DEBUG::DebugOutput("move_army() finished");
+							//DEBUGOUTPUT("armyAttack() calls move_army()");
+							Army& t = regionManager.region(region.x, region.y).get_army();
+							maxTime = std::max(maxTime, regionManager.move_army(region, start, t.get_force() * 0.7, armyLevel));
+							//DEBUGOUTPUT("move_army() finished");
 						}
 						this->isAttacked.emplace_back(std::make_tuple(end.x, end.y));
-						//DEBUG::DebugOutput("ArmyAttack time: ", maxTime);
+						//DEBUGOUTPUT("ArmyAttack time: ", maxTime);
 						this->canMove = false;
 						std::this_thread::sleep_for(std::chrono::milliseconds((int)(maxTime * 1100)));
-						//DEBUG::DebugOutput("ArmyAttack finished: ");
+						//DEBUGOUTPUT("ArmyAttack finished: ");
 						this->canMove = true;
 						regionManager.move_army(start, end, curForce, armyLevel);
 						return;
@@ -745,18 +745,18 @@ public:
 			// TODO
 			for (int i = borderDistance.size() - 1; i >= borderDistance.size() / 2; i--) {
 				auto [x, y] = borderDistance[i].first;
-				Army& borderArmy = regionManager.get_region(x, y).getArmy();
-				int borderArmyForce = borderArmy.getForce(); 
+				Army& borderArmy = regionManager.region(x, y).get_army();
+				int borderArmyForce = borderArmy.get_force(); 
 				if (borderArmyForce < averageForce - 20) {
 					Point maxForce(0, 0);
 					int maxForceValue = 0;
 					for (int j = -1; j <= 1; j++) {
 						for (int k = -1; k <= 1; k++) {
-							if (x + j < 0 || x + j >= regionManager.get_map_width() || y + k < 0 || y + k >= regionManager.get_map_height()) continue;
-							if (regionManager.get_region(x + j, y + k).getOwner() == id) {
-								Army& tmp = regionManager.get_region(x + j, y + k).getArmy();
-								if (tmp.getForce() >= maxForceValue) {
-									maxForceValue = tmp.getForce();
+							if (x + j < 0 || x + j >= regionManager.map_width() || y + k < 0 || y + k >= regionManager.map_height()) continue;
+							if (regionManager.region(x + j, y + k).get_owner() == id) {
+								Army& tmp = regionManager.region(x + j, y + k).get_army();
+								if (tmp.get_force() >= maxForceValue) {
+									maxForceValue = tmp.get_force();
 									maxForce = Point(x + j, y + k);
 								}
 							}
@@ -789,20 +789,20 @@ public:
 			// TODO
 			for (int i = 0; i <= borderDistance.size() / 2; i++) {
 				auto [x, y] = borderDistance[i].first;
-				Army& borderArmy = regionManager.get_region(x, y).getArmy();
-				int borderArmyForce = borderArmy.getForce(); 
+				Army& borderArmy = regionManager.region(x, y).get_army();
+				int borderArmyForce = borderArmy.get_force(); 
 				if (borderArmyForce < averageForce - 20) {
 					Point maxForce(0, 0);
 					int maxForceValue = 0;
 					for (int j = -1; j <= 1; j++) {
 						for (int k = -1; k <= 1; k++) {
-							int w = regionManager.get_map_width();
-							int h = regionManager.get_map_height();
-							if (x + j < 0 || x + j >= regionManager.get_map_width() || y + k < 0 || y + k >= regionManager.get_map_height()) continue;
-							if (regionManager.get_region(x + j, y + k).getOwner() == id) {
-								Army& tmp = regionManager.get_region(x + j, y + k).getArmy();
-								if (tmp.getForce() >= maxForceValue) {
-									maxForceValue = tmp.getForce();
+							int w = regionManager.map_width();
+							int h = regionManager.map_height();
+							if (x + j < 0 || x + j >= regionManager.map_width() || y + k < 0 || y + k >= regionManager.map_height()) continue;
+							if (regionManager.region(x + j, y + k).get_owner() == id) {
+								Army& tmp = regionManager.region(x + j, y + k).get_army();
+								if (tmp.get_force() >= maxForceValue) {
+									maxForceValue = tmp.get_force();
 									maxForce = Point(x + j, y + k);
 								}
 							}
@@ -845,9 +845,9 @@ public:
 		}
 
 
-		//DEBUG::DebugOutput("AI source", this->gold);
-		//DEBUG::DebugOutput("canMove: ", this->canMove);
-		//DEBUG::DebugOutput("AI Called increse()");
+		//DEBUGOUTPUT("AI source", this->gold);
+		//DEBUGOUTPUT("canMove: ", this->canMove);
+		//DEBUGOUTPUT("AI Called increse()");
 		
 		try {
 			this->increase();
@@ -855,11 +855,11 @@ public:
 				aiState = false;
 				return;
 			}
-			//DEBUG::DebugOutput("AI Called defend()");
+			//DEBUGOUTPUT("AI Called defend()");
 			this->defend();
-			//DEBUG::DebugOutput("AI Called expand()");
+			//DEBUGOUTPUT("AI Called expand()");
 			this->expand();
-			//DEBUG::DebugOutput("AI Called attack()");
+			//DEBUGOUTPUT("AI Called attack()");
 			this->attack();
 		}
 		catch (std::exception e) {

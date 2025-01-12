@@ -23,7 +23,6 @@ public:
 
     inline SSBO(SSBO& o) {
 		// Copy constructor
-		// �½�һ��SSBO����Ȼ��o�����ݿ������¶�����
 		if (this == &o) {
 			return;
 		}
@@ -36,7 +35,6 @@ public:
 		create_ssbo();
 		o.bind_ssbo();
 	    
-		// ��o�ж�ȡ����
 		void* data = new char[m_size];
 		glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_size, data);
 		update_data(data, m_size);
@@ -48,7 +46,6 @@ public:
 
 	inline SSBO& operator=(const SSBO& o) {
 		// Copy assignment
-		// �ͷŵ�ǰ�������Դ��Ȼ��o�����ݿ�������ǰ������
 		if (this != &o) {
 			release();
 			m_binding_point_index = o.m_binding_point_index;
@@ -72,7 +69,6 @@ public:
 
 	inline SSBO(const SSBO& o) {
 		// move constructor
-		// ��o�������ƶ�����ǰ������
 		m_ssbo = o.m_ssbo;
 		m_binding_point_index = o.m_binding_point_index;
 		m_size = o.m_size;

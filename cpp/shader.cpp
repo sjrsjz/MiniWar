@@ -14,7 +14,7 @@ int CompileShader(const char* vertex_shader_text, const char* fragment_shader_te
 		{
 			char buf[2048]; int err_size;
 			glGetShaderInfoLog(*vertex_shader, 2047, &err_size, (char*)buf);
-			println(buf); err |= true;
+			DEBUGOUTPUT(buf); err |= true;
 		}
 	}
 	if (geometry_shader_text != nullptr) {
@@ -27,7 +27,7 @@ int CompileShader(const char* vertex_shader_text, const char* fragment_shader_te
 		{
 			char buf[2048]; int err_size;
 			glGetShaderInfoLog(*geometry_shader, 2047, &err_size, (char*)buf);
-			println(buf); err |= true;
+			DEBUGOUTPUT(buf); err |= true;
 		}
 	}
 	if (vertex_shader_text != nullptr) {
@@ -40,7 +40,7 @@ int CompileShader(const char* vertex_shader_text, const char* fragment_shader_te
 		{
 			char buf[2048]; int err_size;
 			glGetShaderInfoLog(*fragment_shader, 2047, &err_size, (char*)buf);
-			println(buf); err |= true;
+			DEBUGOUTPUT(buf); err |= true;
 		}
 	}
 	program = glCreateProgram();
@@ -65,7 +65,7 @@ int CompileComputeShader(const char* compute_shader_text, GLuint* compute_shader
 		{
 			char buf[2048]; int err_size;
 			glGetShaderInfoLog(*compute_shader, 2047, &err_size, (char*)buf);
-			println(buf); err |= true;
+			DEBUGOUTPUT(buf); err |= true;
 		}
 	}
 	program = glCreateProgram();

@@ -8,70 +8,56 @@
 #include "../utils/Point.h"
 class Region {
 private:
-	Building building = Building(BuildingType::None);
-	double hp;
-	double maxHp;
-	int owner;
-	Point position;
-	std::vector<int> weapons;
-	Army army;
-	/* int availableLabor; */
-	/* int allLabor; */
-	/* int availableElectricity; */
-	/* int allElectricity; */
+	Building m_building = Building(BuildingType::None);
+	double m_HP;
+	double m_max_HP;
+	int m_owner;
+	Point m_position;
+	std::vector<int> m_weapons;
+	Army m_army;
 
 public:
 	Region();
 	Region(int x, int y);
 	inline Region(Region& region) {
 		// copy constructor
-		this->building = region.building;
-		this->hp = region.hp;
-		this->maxHp = region.maxHp;
-		this->owner = region.owner;
-		this->position = region.position;
-		this->weapons = region.weapons;
-		this->army = region.army;
+		this->m_building = region.m_building;
+		this->m_HP = region.m_HP;
+		this->m_max_HP = region.m_max_HP;
+		this->m_owner = region.m_owner;
+		this->m_position = region.m_position;
+		this->m_weapons = region.m_weapons;
+		this->m_army = region.m_army;
 	}
 	Region(const Region& region) {
 		// copy constructor
-		this->building = region.building;
-		this->hp = region.hp;
-		this->maxHp = region.maxHp;
-		this->owner = region.owner;
-		this->position = region.position;
-		this->weapons = region.weapons;
-		this->army = region.army;
+		this->m_building = region.m_building;
+		this->m_HP = region.m_HP;
+		this->m_max_HP = region.m_max_HP;
+		this->m_owner = region.m_owner;
+		this->m_position = region.m_position;
+		this->m_weapons = region.m_weapons;
+		this->m_army = region.m_army;
 
 	}
 	~Region();
-	bool setOwner(int owner);//in manage to judge if exists this player
-	int getOwner();
-	bool increaseHp(double hp);
-	bool decreaseHp(double hp);
-	double getHp();
-	bool setBuilding(Building& building);
-	Building& getBuilding();
-	Point getPosition();
-	bool addWeapon(int weapon, int num = 1);
-	bool removeWeapon(int weapon);
-	std::vector<int> getWeapons();
-	bool removeArmy(int num);
-	bool addArmy(int num);
-	Army& getArmy();
-	bool removeBuilding();
-	bool setHp(double hp);
-	bool setMaxHp(double hp);
-	/* int getAvailableLabor(); */
-	/* int getAllLabor(); */
-	/* int getAvailableElectricity(); */
-	/* int getAllElectricity(); */
-	/* bool addAvailableLabor(int labor); */
-	/* bool addAllLabor(int labor); */
-	/* bool addAvailableElectricity(int electricity); */
-	/* bool addAllElectricity(int electricity); */
-	/* bool removeAvailableLabor(int labor); */
-	/* bool removeAllLabor(int labor); */
-	
+	bool set_owner(int owner);//in manage to judge if exists this player
+	int get_owner();
+	bool increase_HP(double hp);
+	bool decrease_HP(double hp);
+	double get_HP();
+	bool set_building(Building& building);
+	Building& get_building();
+	Point get_center_position();
+	bool add_weapon_amount(int weapon, int num = 1);
+	bool remove_weapon(int weapon);
+	std::vector<int> get_weapons();
+	bool reduce_army_amount(int num);
+	bool add_army_amount(int num);
+	Army& get_army();
+	bool remove_building();
+	bool set_HP(double hp);
+	bool set_max_HP(double hp);
+
 	
 };

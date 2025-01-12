@@ -5,7 +5,7 @@
 #include <type_traits>
 #include "ByteArray.h"
 #include <iostream>
-//#include <Windows.h>
+#include <regex>
 
 #define ENABLE_DEBUG_OUTPUT
 
@@ -52,10 +52,10 @@ namespace DEBUG {
         }
         else {
             if constexpr (std::is_same<decltype(data), const std::string&>::value) {
-                ss << L"\"" << to_wide_string(data) << L"\"";
+                ss << to_wide_string(data);
             }
             else if constexpr (std::is_same<decltype(data), const std::wstring&>::value) {
-                ss << L"\"" << data << L"\"";
+                ss << data;
             }
             else {
                 ss << data;
@@ -79,4 +79,28 @@ namespace DEBUG {
         //std::wcout << tmp << std::endl;
 #endif
     }
+
+    inline std::string GetNamespacedFunctionName(const std::string& fullFuncName) {
+        std::regex pattern(R"(([a-zA-Z0-9_:]+)\s*\([^)]*\))");
+        std::smatch match;
+        if (std::regex_search(fullFuncName, match, pattern) && match.size() > 1) {
+            return match[1].str();
+        }
+        else if (fullFuncName.find("(") != std::string::npos) {
+            std::regex simple_pattern(R"(([a-zA-Z0-9_]+)\s*\([^)]*\))");
+            if (std::regex_search(fullFuncName, match, simple_pattern) && match.size() > 1) {
+                return match[1].str();
+            }
+        }
+
+        return fullFuncName;
+    }
 }
+#ifdef _MSC_VER
+#define FULL_FUNC_NAME __FUNCSIG__
+#elif defined(__GNUG__)
+#define FULL_FUNC_NAME __PRETTY_FUNCTION__
+#else
+#define FULL_FUNC_NAME __func__
+#endif
+#define DEBUGOUTPUT(...) DEBUG::DebugOutput(DEBUG::GetNamespacedFunctionName(FULL_FUNC_NAME) + "()", __VA_ARGS__)

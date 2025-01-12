@@ -121,70 +121,70 @@ public:
 		yaw = SmoothMove();
 		roll = SmoothMove();
 #define DURATION 1
-		x.setTotalDuration(DURATION);
-		y.setTotalDuration(DURATION);
-		z.setTotalDuration(DURATION);
-		pitch.setTotalDuration(DURATION);
-		yaw.setTotalDuration(DURATION);
-		roll.setTotalDuration(DURATION);
+		x.set_total_duration(DURATION);
+		y.set_total_duration(DURATION);
+		z.set_total_duration(DURATION);
+		pitch.set_total_duration(DURATION);
+		yaw.set_total_duration(DURATION);
+		roll.set_total_duration(DURATION);
 #undef DURATION
 	}
 	void setPos(double x, double y, double z, double time) {
-		this->x.setStartPosition(x, time);
-		this->y.setStartPosition(y, time);
-		this->z.setStartPosition(z, time);
+		this->x.set_start_position(x, time);
+		this->y.set_start_position(y, time);
+		this->z.set_start_position(z, time);
 	}
 	void setRot(double pitch, double yaw, double roll, double time) {
-		this->pitch.setStartPosition(pitch, time);
-		this->yaw.setStartPosition(yaw, time);
-		this->roll.setStartPosition(roll, time);
+		this->pitch.set_start_position(pitch, time);
+		this->yaw.set_start_position(yaw, time);
+		this->roll.set_start_position(roll, time);
 	}
 
 	void move(double dx, double dy, double dz, double time) {
-		x.newEndPosition(x.getX() + dx, time);
-		y.newEndPosition(y.getX() + dy, time);
-		z.newEndPosition(z.getX() + dz, time);
+		x.new_end_position(x.x() + dx, time);
+		y.new_end_position(y.x() + dy, time);
+		z.new_end_position(z.x() + dz, time);
 	}
 	void move_to(double x, double y, double z, double time) {
-		this->x.newEndPosition(x, time);
-		this->y.newEndPosition(y, time);
-		this->z.newEndPosition(z, time);
+		this->x.new_end_position(x, time);
+		this->y.new_end_position(y, time);
+		this->z.new_end_position(z, time);
 	}
 	void clampX(double x_min, double x_max, double time) {
-		if (x.getX() > x_max) x.newEndPosition(x_max, time);
-		if (x.getX() < x_min) x.newEndPosition(x_min, time);
+		if (x.x() > x_max) x.new_end_position(x_max, time);
+		if (x.x() < x_min) x.new_end_position(x_min, time);
 	}
 	void clampY(double y_min, double y_max, double time) {
-		if (y.getX() > y_max) y.newEndPosition(y_max, time);
-		if (y.getX() < y_min) y.newEndPosition(y_min, time);
+		if (y.x() > y_max) y.new_end_position(y_max, time);
+		if (y.x() < y_min) y.new_end_position(y_min, time);
 	}
 	void clampZ(double z_min, double z_max, double time) {
-		if (z.getX() > z_max) z.newEndPosition(z_max, time);
-		if (z.getX() < z_min) z.newEndPosition(z_min, time);
+		if (z.x() > z_max) z.new_end_position(z_max, time);
+		if (z.x() < z_min) z.new_end_position(z_min, time);
 	}
 
 	void rotate(double dpitch, double dyaw, double droll, double time) {
-		pitch.newEndPosition(pitch.getX() + dpitch, time);
-		yaw.newEndPosition(yaw.getX() + dyaw, time);
-		roll.newEndPosition(roll.getX() + droll, time);
+		pitch.new_end_position(pitch.x() + dpitch, time);
+		yaw.new_end_position(yaw.x() + dyaw, time);
+		roll.new_end_position(roll.x() + droll, time);
 	}
 
 	void rotate_to(double pitch, double yaw, double roll, double time) {
-		this->pitch.newEndPosition(pitch, time);
-		this->yaw.newEndPosition(yaw, time);
-		this->roll.newEndPosition(roll, time);
+		this->pitch.new_end_position(pitch, time);
+		this->yaw.new_end_position(yaw, time);
+		this->roll.new_end_position(roll, time);
 	}
 
 	void setMoveDuration(double time) {
-		x.setTotalDuration(time);
-		y.setTotalDuration(time);
-		z.setTotalDuration(time);
+		x.set_total_duration(time);
+		y.set_total_duration(time);
+		z.set_total_duration(time);
 	}
 
 	void setRotateDuration(double time) {
-		pitch.setTotalDuration(time);
-		yaw.setTotalDuration(time);
-		roll.setTotalDuration(time);
+		pitch.set_total_duration(time);
+		yaw.set_total_duration(time);
+		roll.set_total_duration(time);
 	}
 
 	void update(double time) {
@@ -197,33 +197,33 @@ public:
 	}
 
 	void getCamera(Camera& camera) {
-		camera.setPos(x.getX(), y.getX(), z.getX());
-		camera.setRot(pitch.getX(), yaw.getX(), roll.getX());
+		camera.setPos(x.x(), y.x(), z.x());
+		camera.setRot(pitch.x(), yaw.x(), roll.x());
 	}
 
 	Camera getCamera() {
 		Camera camera;
-		camera.setPos(x.getX(), y.getX(), z.getX());
-		camera.setRot(pitch.getX(), yaw.getX(), roll.getX());
+		camera.setPos(x.x(), y.x(), z.x());
+		camera.setRot(pitch.x(), yaw.x(), roll.x());
 		return camera;
 	}
 
 	double getX() {
-		return x.getX();
+		return x.x();
 	}
 	double getY() {
-		return y.getX();
+		return y.x();
 	}
 	double getZ() {
-		return z.getX();
+		return z.x();
 	}
 	double getPitch() {
-		return pitch.getX();
+		return pitch.x();
 	}
 	double getYaw() {
-		return yaw.getX();
+		return yaw.x();
 	}
 	double getRoll() {
-		return roll.getX();
+		return roll.x();
 	}
 };

@@ -15,79 +15,79 @@ namespace DATA {
     template<typename class_T = unsigned char>
     class ByteArray {
     private:
-        void Destroy() {
-            if (!ptr) delete ptr;
-            size = 0;
+        void destroy() {
+            if (!m_ptr) delete m_ptr;
+            m_size = 0;
         }
 
     public:
-        size_t size;
-        char* ptr;
+        size_t m_size;
+        char* m_ptr;
 
         ByteArray(const ByteArray& o) {
-            size = o.size;
-            ptr = (char*)new class_T[size];
-            memcpy(ptr, o.ptr, size);
+            m_size = o.m_size;
+            m_ptr = (char*)new class_T[m_size];
+            memcpy(m_ptr, o.m_ptr, m_size);
         }
         void operator =(const ByteArray& o) {
-            Destroy();
-            size = o.size;
-            ptr = (char*)new class_T[size];
-            memcpy(ptr, o.ptr, size);
+            destroy();
+            m_size = o.m_size;
+            m_ptr = (char*)new class_T[m_size];
+            memcpy(m_ptr, o.m_ptr, m_size);
         }
         ByteArray(ByteArray&& o) noexcept {
-            size = o.size;
-            ptr = o.ptr;
-            o.size = 0;
-            o.ptr = nullptr;
+            m_size = o.m_size;
+            m_ptr = o.m_ptr;
+            o.m_size = 0;
+            o.m_ptr = nullptr;
         }
         void operator =(ByteArray&& o) noexcept {
-            size = o.size;
-            ptr = o.ptr;
-            o.size = 0;
-            o.ptr = nullptr;
+            m_size = o.m_size;
+            m_ptr = o.m_ptr;
+            o.m_size = 0;
+            o.m_ptr = nullptr;
         }
 
         ByteArray() {
-            ptr = nullptr;
-            size = 0;
+            m_ptr = nullptr;
+            m_size = 0;
         }
         ByteArray(const size_t length) {
-            size = length;
-            ptr = new char[size];
+            m_size = length;
+            m_ptr = new char[m_size];
         }
         ~ByteArray() {
-            Destroy();
+            destroy();
         }
-        ByteArray Attach(const ByteArray& o) {
-            ByteArray t(size + o.size);
-            if (ptr) memcpy(t.ptr, ptr, size);
-            if (o.ptr) memcpy((void*)((size_t)t.ptr + size), o.ptr, o.size);
+        ByteArray attach(const ByteArray& o) {
+            ByteArray t(m_size + o.m_size);
+            if (m_ptr) memcpy(t.m_ptr, m_ptr, m_size);
+            if (o.m_ptr) memcpy((void*)((size_t)t.m_ptr + m_size), o.m_ptr, o.m_size);
             return t;
         }
-        ByteArray Attach(const std::string& o) {
-            ByteArray t(size + o.length());
-            if (ptr) memcpy(t.ptr, ptr, size);
-            if (o.c_str()) memcpy((void*)((size_t)t.ptr + size), o.c_str(), o.size());
+        ByteArray attach(const std::string& o) {
+            ByteArray t(m_size + o.length());
+            if (m_ptr) memcpy(t.m_ptr, m_ptr, m_size);
+            if (o.c_str()) memcpy((void*)((size_t)t.m_ptr + m_size), o.c_str(), o.size());
             return t;
         }
-        ByteArray Attach(const std::wstring& o) {
-            ByteArray t(size + o.size() * sizeof(wchar_t));
-            if (ptr) memcpy(t.ptr, ptr, size);
-            if (o.c_str()) memcpy((void*)((size_t)t.ptr + size), o.c_str(), o.size() * sizeof(wchar_t));
+        ByteArray attach(const std::wstring& o) {
+            ByteArray t(m_size + o.size() * sizeof(wchar_t));
+            if (m_ptr) memcpy(t.m_ptr, m_ptr, m_size);
+            if (o.c_str()) memcpy((void*)((size_t)t.m_ptr + m_size), o.c_str(), o.size() * sizeof(wchar_t));
             return t;
         }
         template<typename T>void push_back(const T& o) {
-            *this = Attach(o);
+            *this = attach(o);
         }
-        template<typename T>ByteArray Attach(const T& o) {
-            ByteArray t(size + sizeof(T));
-            if (ptr) memcpy(t.ptr, ptr, size);
-            memcpy((void*)((size_t)t.ptr + size), &o, sizeof(T));
+        template<typename T>ByteArray attach(const T& o) {
+            ByteArray t(m_size + sizeof(T));
+            if (m_ptr) memcpy(t.m_ptr, m_ptr, m_size);
+            memcpy((void*)((size_t)t.m_ptr + m_size), &o, sizeof(T));
             return t;
         }
         template<typename T>ByteArray operator +(const T& o) {
-            return Attach(o);
+            return attach(o);
         }
         template<typename T>void operator +=(const T& o) {
             push_back(o);
@@ -96,81 +96,81 @@ namespace DATA {
             push_back(t);
             return *this;
         }
-        template<typename T> T& Get(size_t index) {
-            return *((T*)((size_t)ptr + index));
+        template<typename T> T& get(size_t index) {
+            return *((T*)((size_t)m_ptr + index));
         }
-        template<typename T> void Set(size_t index, T& o) {
-            memcpy((void*)((size_t)ptr + index), &o, sizeof(T));
+        template<typename T> void set(size_t index, T& o) {
+            memcpy((void*)((size_t)m_ptr + index), &o, sizeof(T));
         }
         class_T& operator [](size_t index) {
-            return *((class_T*)((size_t)ptr + index));
+            return *((class_T*)((size_t)m_ptr + index));
         }
         template<typename T> T& operator [](size_t index) {
-            return Get<T>(index);
+            return get<T>(index);
         }
-        ByteArray SubByteArray(size_t offset, size_t length) {
+        ByteArray sub_of(size_t offset, size_t length) {
             ByteArray t(length);
-            memcpy(t.ptr, (void*)((size_t)ptr + offset), t.size);
+            memcpy(t.m_ptr, (void*)((size_t)m_ptr + offset), t.m_size);
             return t;
         }
-        ByteArray Replace(size_t offset, const ByteArray& o, std::optional<size_t> length) {
+        ByteArray replace(size_t offset, const ByteArray& o, std::optional<size_t> length) {
             if (length.has_value()) {
-                ByteArray t(size + o.size - length.value());
-                if (ptr) {
-					memcpy(t.ptr, ptr, offset);
-					memcpy(t.ptr + offset, o.ptr, o.size);
-					memcpy(t.ptr + offset + o.size, ptr + offset + length.value(), size - offset - length.value());
-				}
-				return t;
-			}
-			else {
-				ByteArray t(size + o.size);
-                if (ptr) {
-					memcpy(t.ptr, ptr, offset);
-					memcpy(t.ptr + offset, o.ptr, o.size);
-					memcpy(t.ptr + offset + o.size, ptr + offset + o.size, size - offset - o.size);
-				}
-				return t;
+                ByteArray t(m_size + o.m_size - length.value());
+                if (m_ptr) {
+                    memcpy(t.m_ptr, m_ptr, offset);
+                    memcpy(t.m_ptr + offset, o.m_ptr, o.m_size);
+                    memcpy(t.m_ptr + offset + o.m_size, m_ptr + offset + length.value(), m_size - offset - length.value());
+                }
+                return t;
+            }
+            else {
+                ByteArray t(m_size + o.m_size);
+                if (m_ptr) {
+                    memcpy(t.m_ptr, m_ptr, offset);
+                    memcpy(t.m_ptr + offset, o.m_ptr, o.m_size);
+                    memcpy(t.m_ptr + offset + o.m_size, m_ptr + offset + o.m_size, m_size - offset - o.m_size);
+                }
+                return t;
             }
         }
-        std::string ToString() {
+        std::string to_string() {
             std::string t;
-            t.resize(size);
-            memcpy((void*)t.data(), (void*)ptr, size);
+            t.resize(m_size);
+            memcpy((void*)t.data(), (void*)m_ptr, m_size);
             return t;
         }
-        std::wstring ToWString() {
+        std::wstring to_wstring() {
             std::wstring t;
-            t.resize(size);
-            memcpy((void*)t.data(), (void*)ptr, size);
+            t.resize(m_size);
+            memcpy((void*)t.data(), (void*)m_ptr, m_size);
             return t;
         }
         ByteArray insert(size_t offset, const ByteArray& o) {
-			ByteArray t(size + o.size);
-            if (ptr) {
-                memcpy(t.ptr, ptr, offset);
-                memcpy(t.ptr + o.size, ptr + offset, size - offset);
+            ByteArray t(m_size + o.m_size);
+            if (m_ptr) {
+                memcpy(t.m_ptr, m_ptr, offset);
+                memcpy(t.m_ptr + o.m_size, m_ptr + offset, m_size - offset);
             }
-			if (o.ptr) memcpy(t.ptr + offset, o.ptr, o.size);
-			return t;
-		}
-        bool selfInsert(size_t offset, const ByteArray& o) {
-            ByteArray t(size + o.size);
-            if (ptr) {
-                memcpy(t.ptr, ptr, offset);
-                memcpy(t.ptr + o.size + offset, ptr + offset, size - offset);
+            if (o.m_ptr) memcpy(t.m_ptr + offset, o.m_ptr, o.m_size);
+            return t;
+        }
+        bool self_insert(size_t offset, const ByteArray& o) {
+            ByteArray t(m_size + o.m_size);
+            if (m_ptr) {
+                memcpy(t.m_ptr, m_ptr, offset);
+                memcpy(t.m_ptr + o.m_size + offset, m_ptr + offset, m_size - offset);
             }
-            if (o.ptr) memcpy(t.ptr + offset, o.ptr, o.size);
+            if (o.m_ptr) memcpy(t.m_ptr + offset, o.m_ptr, o.m_size);
             std::swap(*this, t);
             return true;
         }
         template<typename T>
         ByteArray& operator = (const T& o) {
-            Destroy();
-			size = sizeof(T);
-			ptr = new char[size];
-			memcpy(ptr, &o, size);
-			return *this;
+            destroy();
+            m_size = sizeof(T);
+            m_ptr = new char[m_size];
+            memcpy(m_ptr, &o, m_size);
+            return *this;
         }
     };
 }

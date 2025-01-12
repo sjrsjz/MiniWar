@@ -6,7 +6,7 @@
 class GlobalTimer
 {
 public:
-	static GlobalTimer& getInstance();
+	static GlobalTimer& instance_of();
 
 	// 获得累计时间
 	double get_acc_time() const {

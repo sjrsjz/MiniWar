@@ -10,10 +10,10 @@ public:
 	Timer() {
 	}
 	Timer(double t) { lt = t; }
-	void setTime(double t) {
+	void set_time(double t) {
 		dt = t - lt; lt = t;
 	}
-	double getTime() const{
+	double time() const{
 		return lt;
 	}
 };

@@ -11,7 +11,7 @@ public:
 	bool operator==(const Point& p);
 	bool operator!=(const Point& p);
 	Point operator+(const Point& p);
-	static Point toPoint(int p[2]) {
+	static Point to_point(int p[2]) {
 		return Point(p[0], p[1]);
 	}
 };
