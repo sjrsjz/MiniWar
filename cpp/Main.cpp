@@ -76,6 +76,8 @@ static GLFWwindow* glfw_win;
 static bool keys[512];
 static vec3 s_mouse_position;
 
+static float s_dpi_scale = 1.0f;
+
 static int s_current_selected_grid[2] = { -1,-1 };
 static bool s_is_selected = false;
 
@@ -387,10 +389,10 @@ static class TechTreeGui {
 					auto text_size_2 = ImGui::CalcTextSize(nodes[dep].name);
 					float r1 = fmaxf(text_size_1.x, text_size_1.y) / 2 + 10;
 					float r2 = fmaxf(text_size_2.x, text_size_2.y) / 2 + 10;
-					ImVec2 p1 = offset + nodes[dep].pos + normalize(nodes[i].pos - nodes[dep].pos) * r2;
-					ImVec2 p2 = offset + nodes[i].pos + normalize(nodes[dep].pos - nodes[i].pos) * r1;
+					ImVec2 p1 = offset + (nodes[dep].pos + normalize(nodes[i].pos - nodes[dep].pos) * r2) * s_dpi_scale;
+					ImVec2 p2 = offset + (nodes[i].pos + normalize(nodes[dep].pos - nodes[i].pos) * r1) * s_dpi_scale;
 					if (nodes[dep].unlocked && nodes[i].unlocked)
-						draw_list->AddLine(p1, p2, IM_COL32(100, 255, 100, 128 * alpha), 5.0f);
+						draw_list->AddLine(p1 , p2, IM_COL32(100, 255, 100, 128 * alpha), 5.0f);
 					else
 						draw_list->AddLine(p1, p2, IM_COL32(200, 200, 200, 128 * alpha), 5.0f);
 				}
@@ -399,7 +401,8 @@ static class TechTreeGui {
 			// 绘制节点
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, alpha));
 			for (auto& node : nodes) {
-				ImGui::SetCursorScreenPos(offset + node.pos);
+				ImVec2 p0 = offset + node.pos * s_dpi_scale;
+				ImGui::SetCursorScreenPos(p0);
 
 				ImU32 node_color = node.unlocked ?
 					IM_COL32(100, 255, 100, 64 * alpha) :
@@ -408,19 +411,19 @@ static class TechTreeGui {
 				auto text_size = ImGui::CalcTextSize(node.name);
 
 				draw_list->AddCircleFilled(
-					offset + node.pos,
+					p0,
 					fmaxf(text_size.x, text_size.y) / 2 + 10,
 					node_color
 				);
 				float L = fmaxf(text_size.x, text_size.y) + 20;
-				ImGui::SetCursorScreenPos(offset + node.pos - ImVec2(L / 4, L / 4));
+				ImGui::SetCursorScreenPos(p0 - ImVec2(L / 4, L / 4));
 				ImGui::Image(node.tex,
 					ImVec2(L / 2, L / 2),
 					ImVec2(0, 0),                    // UV coordinates - 左上
 					ImVec2(1, 1),                    // UV coordinates - 右下
 					ImVec4(1.0f, 1.0f, 1.0f, 0.25f * alpha)  // 颜色调制 (这里设置50%透明)
 				);
-				ImGui::SetCursorScreenPos(offset + node.pos - ImVec2(L / 2, L / 2));
+				ImGui::SetCursorScreenPos(p0 - ImVec2(L / 2, L / 2));
 				if (ImGui::InvisibleButton(node.name, ImVec2(L, L))) {
 
 					// 处理点击
@@ -438,7 +441,7 @@ static class TechTreeGui {
 					}
 				}
 				ImGui::SetCursorScreenPos(
-					offset + node.pos - ImVec2(text_size.x / 2, text_size.y / 2)
+					p0 - ImVec2(text_size.x / 2, text_size.y / 2)
 				);
 				ImGui::Text("%s", node.name);
 			}
@@ -556,9 +559,9 @@ public:
 		ImGui::SetNextWindowBgAlpha(0.75 * show.x());
 		ImGui::Begin("Tech Tree", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
-		ImGui::SetWindowPos(ImVec2(0, 0));
+		ImGui::SetWindowPos(ImVec2(0, 0) * s_dpi_scale);
 
-		tree.draw(io, show.x(), ImVec2(1000 * tree_offset_X.x(), 1000 * tree_offset_Y.x()));
+		tree.draw(io, show.x(), ImVec2(1000 * tree_offset_X.x(), 1000 * tree_offset_Y.x()) * s_dpi_scale);
 
 		ImGui::End();
 	}
@@ -763,11 +766,11 @@ public:
 
 		//DEBUGOUTPUT(grid_center_x, grid_center_y, grid_center_z, screen_pos_x, screen_pos_y);
 		//ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, io.DisplaySize.y - 200));
-		float W = 400;
-		float H = 150;
+		float W = 400 * s_dpi_scale;
+		float H = 150 * s_dpi_scale;
 
-		float W_target = 25;
-		float H_target = 25;
+		float W_target = 25 * s_dpi_scale;
+		float H_target = 25 * s_dpi_scale;
 
 		ImGui::SetWindowPos(ImVec2(screen_pos_x - W / 2, screen_pos_y - H - H_target));
 
@@ -896,20 +899,20 @@ private:
 	int occupation_amount_max = 0;
 
 	void render_bar(ImGuiIO& io, const SmoothMove& f, const SmoothMove& b, const char* title, GLuint tex, int scale, const ImVec4& fc, const ImVec4& bc, const ImVec4& tc) {
-		ImGui::Image(tex, ImVec2(30, 30));
+		ImGui::Image(tex, ImVec2(30, 30) * s_dpi_scale);
 		ImGui::SameLine();
 		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, bc); // 前景色
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.25f));	   // 背景色
 		ImVec2 pos = ImGui::GetCursorPos();
-		ImGui::ProgressBar(b.x() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
+		ImGui::ProgressBar(b.x() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30) * s_dpi_scale, u8"");
 		ImGui::PopStyleColor(2); // 恢复颜色设置
 		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, fc); // 前景色
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.25f, 0.25f, 0.25f, 0.0f));	   // 背景色
 		ImGui::SetCursorPos(pos);
-		ImGui::ProgressBar(f.x() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30), u8"");
+		ImGui::ProgressBar(f.x() / scale, ImVec2(io.DisplaySize.x / 4 - 30, 30) * s_dpi_scale, u8"");
 		ImGui::PopStyleColor(2); // 恢复颜色设置
 		ImVec2 text_size = ImGui::CalcTextSize(title);
-		ImGui::SetCursorPos(ImVec2(pos.x + 5, pos.y + 30 - text_size.y));
+		ImGui::SetCursorPos(ImVec2(pos.x + 5 * s_dpi_scale, pos.y + 30 * s_dpi_scale - text_size.y));
 		ImGui::PushStyleColor(ImGuiCol_Text, tc); // 前景色
 		ImGui::Text(title, (int)round(f.x()));
 		ImGui::PopStyleColor(1);
@@ -945,8 +948,8 @@ public:
 	}
 	void render_gui(ImGuiIO& io) {
 		ImGui::Begin("Status", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoCollapse);
-		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 250));
-		ImGui::SetWindowPos(ImVec2(50, io.DisplaySize.y - 275));
+		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x / 4, 250) * s_dpi_scale);
+		ImGui::SetWindowPos(ImVec2(50 * s_dpi_scale, io.DisplaySize.y - 275 * s_dpi_scale));
 
 		// 资源条
 		render_bar(io, gold_amount, gold_amount_back, u8"金钱:%d", TEXTURE::s_image_lightning, gold_amount_max, ImVec4(1,1,0,0.5), ImVec4(1,0,0,0.5), ImVec4(0.15, 0.15, 0.15, 0.5));
@@ -1389,7 +1392,7 @@ public:
 		}
 
 		ImVec2 title_size = ImGui::CalcTextSize(title);
-		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - title_size.x) / 2 + x_pos, 50));
+		ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - title_size.x) / 2 + x_pos, 50 * s_dpi_scale));
 		ImGui::Text(title);
 		ImGui::SetWindowFontScale(1);
 		ImGui::PopFont();
@@ -1398,22 +1401,22 @@ public:
 		{
 		case MenuGui::StartGame:
 			ImGui::PushFont(UIFonts::large_font);
-			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 200));
-			if (ImGui::Button(u8"开始游戏", ImVec2(400, 100))) {
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 200 * s_dpi_scale));
+			if (ImGui::Button(u8"开始游戏", ImVec2(400, 100) * s_dpi_scale)) {
 				m_gui_mode = MenuGui::SelectLevel;
 				GAMESOUND::play_click_sound();
 			}
-			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 360));
-			if (ImGui::Button(u8"退出游戏", ImVec2(400, 100))) {
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 360 * s_dpi_scale));
+			if (ImGui::Button(u8"退出游戏", ImVec2(400, 100) * s_dpi_scale)) {
 				glfwSetWindowShouldClose(glfw_win, true);
 			}
 			ImGui::PopFont();
 			break;
 		case MenuGui::SelectLevel:
 			ImGui::PushFont(UIFonts::large_font);
-			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - io.DisplaySize.x/3) / 2 + x_pos, 200));
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - io.DisplaySize.x / 3) / 2 + x_pos, 200 * s_dpi_scale));
 			
-			if (ImGui::BeginListBox("##LevelSelectionListBox", ImVec2(io.DisplaySize.x / 3, 400))) {
+			if (ImGui::BeginListBox("##LevelSelectionListBox", ImVec2(io.DisplaySize.x / 3, 300 * s_dpi_scale))) {
 				for (int n = 0; n < IM_ARRAYSIZE(LEVELDATA::s_levels); n++) {
 					const bool is_selected = (LEVELDATA::s_selected_level == n);
 
@@ -1439,9 +1442,9 @@ public:
 				}
 				ImGui::EndListBox();
 			}
-			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 660));
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 525 * s_dpi_scale));
 
-			if (ImGui::Button(u8"载入游戏", ImVec2(400, 100))) {
+			if (ImGui::Button(u8"载入游戏", ImVec2(400, 100) * s_dpi_scale)) {
 				GAMESOUND::play_click_sound();
 				m_gui_mode = MenuGui::Pause;
 				switch (LEVELDATA::s_selected_level)
@@ -1463,9 +1466,9 @@ public:
 				}
 				open_gui(false, timer);
 			}
-			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 820));
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 650 * s_dpi_scale));
 
-			if (ImGui::Button(u8"返回主界面", ImVec2(400, 100))) {
+			if (ImGui::Button(u8"返回主界面", ImVec2(400, 100) * s_dpi_scale)) {
 				GAMESOUND::play_click_sound();
 				m_gui_mode = MenuGui::StartGame;
 			}
@@ -1473,19 +1476,19 @@ public:
 			break;
 		case MenuGui::Pause:
 			ImGui::PushFont(UIFonts::large_font);
-			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 200));
-			if (ImGui::Button(u8"继续游戏", ImVec2(400, 100))) {
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 200 * s_dpi_scale));
+			if (ImGui::Button(u8"继续游戏", ImVec2(400, 100) * s_dpi_scale)) {
 				GAMESOUND::play_click_sound();
 				open_gui(false, timer);
 			}
-			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 360));
-			if (ImGui::Button(u8"返回主界面", ImVec2(400, 100))) {
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 360 * s_dpi_scale));
+			if (ImGui::Button(u8"返回主界面", ImVec2(400, 100) * s_dpi_scale)) {
 				GAMESOUND::play_click_sound();
 				exit_game();
 				m_gui_mode = MenuGui::StartGame;
 			}
-			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400) / 2 + x_pos, 520));
-			if (ImGui::Button(u8"退出游戏", ImVec2(400, 100))) {
+			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 520 * s_dpi_scale));
+			if (ImGui::Button(u8"退出游戏", ImVec2(400, 100) * s_dpi_scale)) {
 				GAMESOUND::play_click_sound();
 				exit_game();
 				glfwSetWindowShouldClose(glfw_win, true);
@@ -1530,19 +1533,19 @@ void render_imgui(ImGuiIO& io) {
 		ImGui::SetNextWindowBgAlpha(0.25);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 		ImGui::Begin("SelectedWeapon", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing);
-		ImGui::SetWindowSize(ImVec2(120, 120));
-		ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - 130, io.DisplaySize.y - 130));
-		ImGui::SetCursorPos(ImVec2(10, 10));
+		ImGui::SetWindowSize(ImVec2(120, 120) * s_dpi_scale);
+		ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - 130 * s_dpi_scale, io.DisplaySize.y - 130 * s_dpi_scale));
+		ImGui::SetCursorPos(ImVec2(10, 10) * s_dpi_scale);
 		switch (s_selected_weapon)
 		{
 		case NUCLEAR_MISSILE:
-			ImGui::Image(TEXTURE::s_image_radioactive, ImVec2(100, 100));
+			ImGui::Image(TEXTURE::s_image_radioactive, ImVec2(100, 100) * s_dpi_scale);
 			break;
 		case ARMY:
-			ImGui::Image(TEXTURE::s_image_attack_target, ImVec2(100, 100));
+			ImGui::Image(TEXTURE::s_image_attack_target, ImVec2(100, 100) * s_dpi_scale);
 			break;
 		case SCATTER_BOMB:
-			ImGui::Image(TEXTURE::s_image_scatter, ImVec2(100, 100));
+			ImGui::Image(TEXTURE::s_image_scatter, ImVec2(100, 100) * s_dpi_scale);
 			break;
 		default:
 			break;
@@ -2603,8 +2606,6 @@ int main() {
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
 
-
-
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
@@ -2699,21 +2700,26 @@ int main() {
 		glUseProgram(0);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-		render_imgui(io);
+
+		try {
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+			render_imgui(io);
 
 
-		// Rendering
-		glDebugMessageCallback(0, 0);
-		ImGui::Render();
-		glDebugMessageCallback((GLDEBUGPROC)debugproc, 0);
-		glDebugMessageCallback(0, 0);
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		glDebugMessageCallback((GLDEBUGPROC)debugproc, 0);
-		ImGui::EndFrame();
-
+			// Rendering
+			glDebugMessageCallback(0, 0);
+			ImGui::Render();
+			glDebugMessageCallback((GLDEBUGPROC)debugproc, 0);
+			glDebugMessageCallback(0, 0);
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+			glDebugMessageCallback((GLDEBUGPROC)debugproc, 0);
+			ImGui::EndFrame();
+		}
+		catch (const std::exception& e) {
+			DEBUGOUTPUT("Exception in ImGui", e.what());
+		}
 		glfwSwapBuffers(glfw_win);
 	}
 destroy:
@@ -2780,6 +2786,42 @@ void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {
 		g_point_render_pass_fbo.resize(width, height);
 		g_flame_render_pass.get_fbo().resize(width, height);
 		s_pause_rendering = false;
+
+		ImGuiIO& io = ImGui::GetIO();
+
+		if (height >= 800) {
+			s_dpi_scale = 1;
+		}
+		else if (height >= 600) {
+			s_dpi_scale = 0.75;
+		}
+		else {
+			s_dpi_scale = 0.5;
+		}
+
+		// 方法1: 设置全局字体缩放
+		io.FontGlobalScale = s_dpi_scale;
+
+		// 方法2: 修改整体Style缩放
+		ImGuiStyle& style = ImGui::GetStyle();
+		style.ScaleAllSizes(s_dpi_scale);
+		style.WindowMinSize = ImVec2(
+			std::fmax(1.0f, style.WindowMinSize.x),
+			std::fmax(1.0f, style.WindowMinSize.y)
+		);
+		style.ScrollbarSize = std::fmax(1.0f, style.ScrollbarSize);
+		style.GrabMinSize = std::fmax(1.0f, style.GrabMinSize);
+		style.WindowBorderSize = std::fmax(0.0f, style.WindowBorderSize);
+		style.FrameBorderSize = std::fmax(0.0f, style.FrameBorderSize);
+		style.TabBorderSize = std::fmax(0.0f, style.TabBorderSize);
+		style.IndentSpacing = std::fmax(0.0f, style.IndentSpacing);
+		style.ScrollbarRounding = std::fmax(0.0f, style.ScrollbarRounding);
+		style.GrabRounding = std::fmax(0.0f, style.GrabRounding);
+		style.WindowRounding = (style.WindowRounding < 0.0f || style.WindowRounding > 14.0f) ? 0.0f : style.WindowRounding;
+		style.FrameRounding = (style.FrameRounding < 0.0f || style.FrameRounding > 14.0f) ? 0.0f : style.FrameRounding;
+		style.PopupRounding = (style.PopupRounding < 0.0f || style.PopupRounding > 14.0f) ? 0.0f : style.PopupRounding;
+		style.ChildRounding = (style.ChildRounding < 0.0f || style.ChildRounding > 14.0f) ? 0.0f : style.ChildRounding;
+		
 	}
 	catch (const char* str) {
 		s_pause_rendering = true;
