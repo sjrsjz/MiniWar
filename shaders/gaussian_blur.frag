@@ -1,4 +1,4 @@
-#ifndef __glsl_gaussian_blur_frag__
+﻿#ifndef __glsl_gaussian_blur_frag__
 #define __glsl_gaussian_blur_frag__
 static const char* gaussian_blur_frag= R"(
 #version 430 core

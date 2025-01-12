@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "../../include/GL/glew.h"
 #include "SSBOByteArray.h"
 class SSBO {

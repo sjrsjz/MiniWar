@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.10)
+﻿cmake_minimum_required(VERSION 3.10)
 project(MiniWar)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(MSVC)
-    # 设置输出目录为build目录
+
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR})
@@ -91,18 +91,16 @@ if(WIN32)
     file(COPY ${DLL_FILES} DESTINATION ${CMAKE_BINARY_DIR})
 # linux
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    # ָ��bass.so��·��
-    # x86ƽ̨
-    # ��鴦�����ܹ���������Ӧ�� BASS ��
+
     if(CMAKE_SIZEOF_VOID_P EQUAL 4)
-        # 32λƽ̨ (x86)
+
         file(COPY "lib/linux/bass/x86/libbass.so" DESTINATION ${CMAKE_BINARY_DIR})
     elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
         if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-            # 64λ x86 ƽ̨ (x86_64)
+
             file(COPY "lib/linux/bass/x86_64/libbass.so" DESTINATION ${CMAKE_BINARY_DIR})
         elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
-            # 64λ ARM ƽ̨ (aarch64 �� arm64)
+
             file(COPY "lib/linux/bass/aarch64/libbass.so" DESTINATION ${CMAKE_BINARY_DIR})
         else()
             message(FATAL_ERROR "Unsupported 64-bit architecture: ${CMAKE_SYSTEM_PROCESSOR}")
@@ -111,17 +109,15 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         message(FATAL_ERROR "Unsupported platform: ${CMAKE_SIZEOF_VOID_P}-bit")
     endif()
 
-    # ����������·��
+
     link_directories(${CMAKE_BINARY_DIR})
 
-    # ���� BASS ��
     find_library(BASS_LIBRARY bass PATHS ${CMAKE_BINARY_DIR} NO_DEFAULT_PATH)
 
     if(NOT BASS_LIBRARY)
         message(FATAL_ERROR "BASS library not found in ${CMAKE_BINARY_DIR}")
     endif()
 
-    # ���ҵ��� BASS �����ӵ����Ŀ��
     target_link_libraries(MiniWar PRIVATE ${BASS_LIBRARY})
 
 
