@@ -389,8 +389,8 @@ static class TechTreeGui {
 					auto text_size_2 = ImGui::CalcTextSize(nodes[dep].name);
 					float r1 = fmaxf(text_size_1.x, text_size_1.y) / 2 + 10;
 					float r2 = fmaxf(text_size_2.x, text_size_2.y) / 2 + 10;
-					ImVec2 p1 = offset + (nodes[dep].pos + normalize(nodes[i].pos - nodes[dep].pos) * r2) * s_dpi_scale;
-					ImVec2 p2 = offset + (nodes[i].pos + normalize(nodes[dep].pos - nodes[i].pos) * r1) * s_dpi_scale;
+					ImVec2 p1 = offset + (nodes[dep].pos * s_dpi_scale + normalize(nodes[i].pos - nodes[dep].pos) * r2);
+					ImVec2 p2 = offset + (nodes[i].pos * s_dpi_scale + normalize(nodes[dep].pos - nodes[i].pos) * r1);
 					if (nodes[dep].unlocked && nodes[i].unlocked)
 						draw_list->AddLine(p1 , p2, IM_COL32(100, 255, 100, 128 * alpha), 5.0f);
 					else
