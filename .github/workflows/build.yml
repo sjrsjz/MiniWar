@@ -33,3 +33,18 @@ jobs:
            mkdir build
            cmake -B build -S .
            cmake --build build
+
+           
+      - name: Upload Linux Build Artifacts
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-build
+          path: build/
+
+      - name: Upload Windows Build Artifacts
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-build
+          path: build/
