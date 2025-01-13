@@ -31,5 +31,5 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
            mkdir build
-           cmake -G "MinGW Makefiles" -B build -S . -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake
+           cmake -B build -S .
            cmake --build build
