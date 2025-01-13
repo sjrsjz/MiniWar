@@ -4,94 +4,108 @@
 #include "../../header/Logic/Resource.h"
 #include "../../header/Logic/GameEffect.h"
 
-#include <cmath>
-#include <vector>
-#include <random>
-#include <mutex>
 
-std::mutex army_mutex;
-std::mutex missle_mutex;
+
 
 RegionManager::RegionManager() {
 }
 
 RegionManager::RegionManager(int width, int height){
-	set(width, height);
+	init(width, height);
 }
 
 RegionManager::~RegionManager() {
 
 }
 
-std::vector<Point> astar(const Array<int>& grid, Point start, Point end) {
-	int width = grid.width();
-	int height = grid.height();
-	Array<bool> closed(width, height);
-	auto cmp = [](const std::pair<Point, double>& a, const std::pair<Point, double>& b) {
-		return a.second > b.second;
-		};
-	std::priority_queue<std::pair<Point, double>, std::vector<std::pair<Point, double>>, decltype(cmp)> open(cmp);
+namespace PathFinder {
+	/**
+	 * @brief A*寻路算法
+	 * @param grid 地图，0表示障碍物，1表示可通行
+	 * @param neigbours 每个节点的邻接关系，用一个8位的二进制数表示，从右到左分别表示右、右下、下、左下、左、左上、上、右上是否可通行
+	 * @param start 起点
+	 * @param end 终点
+	 * @return std::vector<Point> 路径
+	 */
+	std::vector<Point> astar(const Array<int>& grid, const Array<int> neigbours, Point start, Point end) {
+		int width = grid.width();
+		int height = grid.height();
+		Array<bool> closed(width, height);
+		auto cmp = [](const std::pair<Point, double>& a, const std::pair<Point, double>& b) {
+			return a.second > b.second;
+			};
+		std::priority_queue<std::pair<Point, double>, std::vector<std::pair<Point, double>>, decltype(cmp)> open(cmp);
 
-	// 记录每个节点的g值
-	Array<double> g_scores(width, height);
-	g_scores.fill(std::numeric_limits<double>::infinity());
-	g_scores(std::floor(start.x), std::floor(start.y)) = 0;
+		// 记录每个节点的g值
+		Array<double> g_scores(width, height);
+		g_scores.fill(std::numeric_limits<double>::infinity());
+		g_scores(std::floor(start.x), std::floor(start.y)) = 0;
 
-	enum direction { E, W, S, N };
-	Array<direction> directions(width, height);
+		enum direction { W_S, S, E_S, E, E_N, N, W_N, W };
+		Array<direction> directions(width, height);
 
-	open.push({ start, 0.0 });
+		open.push({ start, 0.0 });
 
-	const int dx[4] = { 1, -1, 0, 0 };
-	const int dy[4] = { 0, 0, 1, -1 };
+		const int dx[8] = { -1, 0, 1, 1, 1, 0, -1, -1 };
+		const int dy[8] = { -1, -1, -1, 0, 1, 1, 1, 0 };
 
-	while (!open.empty()) {
-		Point current = open.top().first;
-		open.pop();
+		while (!open.empty()) {
+			Point current = open.top().first;
+			open.pop();
 
-		int x = std::floor(current.x);
-		int y = std::floor(current.y);
+			int x = std::floor(current.x);
+			int y = std::floor(current.y);
 
-		if (current == end) {
-			std::vector<Point> path;
-			Point position = end;
-			while (position != start) {
-				path.push_back(position);
-				direction dir = directions(std::floor(position.x), std::floor(position.y));
-				position.x -= dx[dir]; // 反向回溯
-				position.y -= dy[dir];
+			if (current == end) {
+				std::vector<Point> path;
+				Point position = end;
+				while (position != start) {
+					path.push_back(position);
+					direction dir = directions(std::floor(position.x), std::floor(position.y));
+					position.x -= dx[dir]; // 反向回溯
+					position.y -= dy[dir];
+				}
+				path.push_back(start);
+				std::reverse(path.begin(), path.end());
+				return path;
 			}
-			path.push_back(start);
-			std::reverse(path.begin(), path.end());
-			return path;
-		}
 
-		if (closed(x, y)) continue;
-		closed(x, y) = true;
+			if (closed(x, y)) continue;
+			closed(x, y) = true;
 
-		for (int i = 0; i < 4; i++) {
-			int nx = x + dx[i];
-			int ny = y + dy[i];
-			if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-			if (closed(nx, ny) || grid(nx, ny) == 0) continue;
 
-			Point next(nx, ny);
-			double tentative_g = g_scores(x, y) + current.distance(next);
+			int neighbour = neigbours(x, y);
+			for (int i = 0; i < 8; i++) {
+				int nx = x + dx[i];
+				int ny = y + dy[i];
+				bool is_neighbour = neighbour & (1 << i);
+				if (nx < 0 || nx >= width || ny < 0 || ny >= height || !is_neighbour) continue;
+				if (closed(nx, ny) || grid(nx, ny) == 0) continue;
 
-			if (tentative_g < g_scores(nx, ny)) {
-				g_scores(nx, ny) = tentative_g;
-				directions(nx, ny) = static_cast<direction>(i);
-				double h = next.distance(end);
-				open.push({ next, tentative_g + h });
+				Point next(nx, ny);
+				double tentative_g = g_scores(x, y) + current.distance(next);
+
+				if (tentative_g < g_scores(nx, ny)) {
+					g_scores(nx, ny) = tentative_g;
+					directions(nx, ny) = static_cast<direction>(i);
+					double h = next.distance(end);
+					open.push({ next, tentative_g + h });
+				}
 			}
 		}
+		return {};
 	}
-	return {};
 }
 
 
-
-double RegionManager::calculate_distance(Point start, Point end, std::vector<std::tuple<int, int>>& path) {
+/**
+ * @brief 计算两点之间的路径
+ * @param start 起点
+ * @param end 终点
+ * @param path 路径
+ * @return double 路径长度
+ */
+double RegionManager::calculate_path(Point start, Point end, std::vector<std::tuple<int, int>>& path) {
 	DEBUGOUTPUT("RegionManager::calculate_distance() called");
 	int start_x = std::floor(start.x);
 	int start_y = std::floor(start.y);
@@ -112,7 +126,7 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 			}
 		}
 	}
-	std::vector<Point> path_points = astar(player_region_matrix, start, end);
+	std::vector<Point> path_points = PathFinder::astar(player_region_matrix, m_neighbour_regions, start, end);
 
 	if (path_points.empty()) {
 		return -1.f;
@@ -126,6 +140,13 @@ double RegionManager::calculate_distance(Point start, Point end, std::vector<std
 
 	return distance;
 }
+
+/**
+ * @brief 获取范围内所有区域
+ * @param position 中心点
+ * @param range 半径
+ * @return std::vector<Region*> 区域列表
+ */
 std::vector<Region*> RegionManager::get_damaged_regions(Point position, double range) {
 	double start_x = position.x;
 	double start_y = position.y;
@@ -177,10 +198,10 @@ std::vector<MovingMissle> RegionManager::get_moving_missle_position() {
 	return copy;
 }
 
-void RegionManager::set(int width, int height) {
-	DEBUGOUTPUT("RegionManager::set() called");
-	this->m_regions.~Array();
+void RegionManager::init(int width, int height) {
+	DEBUGOUTPUT("Initializing RegionManager", width, height);
 	this->m_regions = Array<Region>(width, height);
+	this->m_neighbour_regions = Array<int>(width, height);
 	this->m_width = width;
 	this->m_height = height;
 	this->m_player.create();
@@ -188,23 +209,40 @@ void RegionManager::set(int width, int height) {
 	m_moving_armies = {};
 	m_moving_missles = {};
 
+	DEBUGOUTPUT("Initializing regions");
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
 			m_regions(x, y) = Region(x, y);
 		}
 	}
+	DEBUGOUTPUT("Calculating neighbour regions");
+	// 计算邻接关系
+	for (int x = 0; x < width; x++) {
+		for (int y = 0; y < height; y++) {
+			m_neighbour_regions(x, y) = calculate_neigbour_region(x, y);
+		}
+	}
+	DEBUGOUTPUT("Initializing weapons");
 	for (int i = 0; i <= 2; i++) {
 		Weapon weapon(i);
 		m_weapons.push_back(weapon);
 	}
-
+	DEBUGOUTPUT("Initialization complete");
 }
 
+/**
+ * @brief 移动军队
+ * @param start 起点
+ * @param end 终点
+ * @param amount 数量
+ * @param army_level 军队等级
+ * @return double 移动时间
+ */
 double RegionManager::move_army(Point start, Point end, int amount, int army_level) {
 	DEBUGOUTPUT("RegionManager::move_army() called");
 	std::vector<std::tuple<int, int>> path;
 
-	double distance = calculate_distance(start, end, path);
+	double distance = calculate_path(start, end, path);
 	if (distance == -1.f) {
 		DEBUGOUTPUT("RegionManager::move_army() can not find a path");
 		throw std::invalid_argument(u8"无法移动军队到指定位置");
@@ -241,6 +279,14 @@ double RegionManager::move_army(Point start, Point end, int amount, int army_lev
 	return time;
 }
 
+/**
+ * @brief 移动导弹
+ * @param weapon_id 武器id
+ * @param level 武器等级
+ * @param start 起点
+ * @param end 终点
+ * @param time 移动时间
+ */
 void RegionManager::attack_region_missle(int weapon_id, int level, Point start, Point end, double time) {
 	Region& start_region = region(start.x, start.y);
 	Region& end_region = region(end.x, end.y);
@@ -267,9 +313,15 @@ void RegionManager::attack_region_missle(int weapon_id, int level, Point start, 
 	//DEBUGOUTPUT("RegionManager::attack_region_missle() Unlock missle mutex");
 }
 
+/**
+ * @brief 移动军队
+ * @param start 起点
+ * @param end 终点
+ * @param amount 数量
+ */
 void RegionManager::attack_region_army(Point start, Point end, int amount) {
 	std::vector<std::tuple<int, int>> path;
-	double distance = calculate_distance(start, end, path);
+	double distance = calculate_path(start, end, path);
 
 	Region& start_region = region(start.x, start.y);
 	Region& end_region = region(end.x, end.y);
@@ -286,17 +338,6 @@ void RegionManager::attack_region_army(Point start, Point end, int amount) {
 	army_mutex.lock();
 	m_moving_armies.push_back(army);
 	army_mutex.unlock();
-	
-	//count time
-	//if time is up, attack
-	//if time is up, remove army
-	
-	/*int rest_army = amount - end_region.getArmy().getForce();
-	end_region.setOwner(start_region.getOwner());
-	end_region.getArmy().removeArmy(end_region.getArmy().getForce());
-	end_region.getArmy().addArmy(rest_army);
-	end_region.getWeapons().clear();
-	clear_building(end_region);*/
 }
 
 Array<Region>& RegionManager::regions() {
@@ -306,9 +347,9 @@ Array<Region>& RegionManager::regions() {
 Region& RegionManager::region(int x, int y) {
 	return m_regions(x, y);
 }
-
 static RegionManager instance;
 RegionManager& RegionManager::instance_of() {
+
 	return instance;
 }
 
@@ -316,8 +357,10 @@ void RegionManager::clear_building(Region& region) {
 	region.get_building().remove();
 }
 
-void push_game_effects(GameEffect effect);
-
+/**
+ * @brief 更新区域
+ * @param timer 游戏计时器
+ */
 void RegionManager::update(GlobalTimer& timer) {
 	m_current_time = timer.get_running_time();
 
@@ -390,6 +433,8 @@ void RegionManager::update(GlobalTimer& timer) {
 					region->set_HP(rest_hp);
 				}
 			}
+			// 指定前台产生的游戏效果
+			void push_game_effects(GameEffect effect);
 			push_game_effects(GameEffect::GAME_EFFECT_PLAY_NUCLEAR_EXPLOSION);
 		}
 		m_moving_missles.swap(swap_missles);
@@ -471,6 +516,12 @@ void RegionManager::update(GlobalTimer& timer) {
 	//DEBUGOUTPUT("RegionManager::update() Unlock missle mutex", "2nd");
 }
 
+/**
+ * @brief 计算增量资源
+ * @param delta_resource 增量资源
+ * @param delta_t 时间增量
+ * @param player_id 玩家id
+ */
 void RegionManager::calculate_delta_resources(std::vector<double>& delta_resource, double delta_t, int player_id) {
 	Config& configer = Config::instance_of();
 	for (int i = 0; i < m_width; i++) {
@@ -490,6 +541,11 @@ void RegionManager::calculate_delta_resources(std::vector<double>& delta_resourc
 	}
 }
 
+/**
+ * @brief 计算稳态资源消耗
+ * @param steady_cost_resource 稳态资源消耗
+ * @param player_id 玩家id
+ */
 void RegionManager::calculate_steady_cost_resources(std::vector<double>& steady_cost_resource, int player_id) {
 	Config& configer = Config::instance_of();
 	for (int i = 0; i < m_width; i++) {
@@ -510,6 +566,11 @@ void RegionManager::calculate_steady_cost_resources(std::vector<double>& steady_
 	}
 }
 
+/**
+ * @brief 计算玩家拥有的区域数量
+ * @param player_id 玩家id
+ * @return int 区域数量
+ */
 int RegionManager::calculate_region_amount(int player_id) {
 	int count = 0;
 	Config& configer = Config::instance_of();
@@ -521,4 +582,94 @@ int RegionManager::calculate_region_amount(int player_id) {
 		}
 	}
 	return count;
+}
+
+
+namespace PathFinder {
+	struct Circle {
+		Point center;
+		double radiussq;
+	};
+
+	Circle getCircumcircle(Point a, Point b, Point c) {
+		double d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+		if (std::abs(d) < 1e-9) { // 三点共线，无法构成外接圆
+			return { {0.0, 0.0}, -1.0 }; // 或者抛出异常
+		}
+
+		double ax_sq_ay_sq = a.x * a.x + a.y * a.y;
+		double bx_sq_by_sq = b.x * b.x + b.y * b.y;
+		double cx_sq_cy_sq = c.x * c.x + c.y * c.y;
+
+		double hx_sum = ax_sq_ay_sq * (b.y - c.y) + bx_sq_by_sq * (c.y - a.y) + cx_sq_cy_sq * (a.y - b.y);
+		double hy_sum = ax_sq_ay_sq * (c.x - b.x) + bx_sq_by_sq * (a.x - c.x) + cx_sq_cy_sq * (b.x - a.x);
+
+		double h = hx_sum / d;
+		double k = hy_sum / d;
+
+		double radiussq = (a.x - h) * (a.x - h) + (a.y - k) * (a.y - k);
+
+		return { {h, k}, radiussq };
+	}
+}
+
+int RegionManager::calculate_neigbour_region(int x, int y) {
+	Point center[3][3];
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			if (m_regions.in_range(x + i - 1, y + j - 1))
+				center[i][j] = region(x + i - 1, y + j - 1).get_center_position();
+			else
+				center[i][j] = { 0,0 };
+			if (x + i - 1 < 0) {
+				center[i][j].x = -std::numeric_limits<double>::infinity();
+			}
+			if (y + j - 1 < 0) {
+				center[i][j].y = -std::numeric_limits<double>::infinity();
+			}
+			if (x + i - 1 >= m_width) {
+				center[i][j].x = std::numeric_limits<double>::infinity();
+			}
+			if (y + j - 1 >= m_height) {
+				center[i][j].y = std::numeric_limits<double>::infinity();
+			}
+
+		}
+	}
+
+	struct { int x; int y; } cell_idx[8] = {
+		{0,0}, {0,1}, {0,2},
+		{1,2}, {2,2}, {2,1},
+		{2,0}, {1,0}
+	}; // 循环顺序
+
+	Point c = center[1][1];
+
+	int result = 0;
+
+	for (int i = 0; i < 8; i++) {
+		bool is_valid = false;
+		Point p = center[cell_idx[i].x][cell_idx[i].y];
+
+		for (int test_i = 0;test_i < 8;test_i++) {
+			if (test_i == i) continue;
+			auto circle = PathFinder::getCircumcircle(c, p, center[cell_idx[test_i].x][cell_idx[test_i].y]);
+			bool is_outside = true;
+			for (int test_j = 0; test_j < 8; test_j++) {
+				if (test_j == i || test_j == test_i) continue;
+				if (center[cell_idx[test_j].x][cell_idx[test_j].y].distancesq(circle.center) < circle.radiussq) {
+					is_outside = false;
+					break;
+				}
+			}
+			if (is_outside) {
+				is_valid = true;
+				break;
+			}
+		}
+
+		result |= ((int)is_valid) << i;
+	}
+
+	return result;
 }

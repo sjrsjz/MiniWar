@@ -767,7 +767,7 @@ public:
 		//DEBUGOUTPUT(grid_center_x, grid_center_y, grid_center_z, screen_pos_x, screen_pos_y);
 		//ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, io.DisplaySize.y - 200));
 		float W = 400 * s_dpi_scale;
-		float H = 150 * s_dpi_scale;
+		float H = 160 * s_dpi_scale;
 
 		float W_target = 25 * s_dpi_scale;
 		float H_target = 25 * s_dpi_scale;
@@ -799,7 +799,9 @@ public:
 			break;
 		}
 
-		//ImGui::Text(u8"区块坐标: %d, %d", grid[0], grid[1]);
+		ImGui::Text(u8"区块坐标: %d, %d", grid[0], grid[1]);
+
+
 		try {
 			BuildingType building_type = region.get_building().get_type();
 			if (building_type != BuildingType::None)

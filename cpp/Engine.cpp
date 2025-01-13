@@ -26,7 +26,7 @@ void initial_game(int width, int height) {
 	aiState = true;
 	aiState2 = true;
 	s_exit_game = false;
-	RegionManager::instance_of().set(width, height);
+	RegionManager::instance_of().init(width, height);
 	RegionManager::instance_of().get_player().create();
 	ai.create(1);
 	ai2.create(2);

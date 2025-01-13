@@ -260,6 +260,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     vec3 color = vec3(0);
     RegionData region = getRegion(cell_idx.real_idx.x, cell_idx.real_idx.y);
 
+
     vec3 region_normal = normalize(vec3(region.cell_center.x - 0.5, 1, region.cell_center.y-0.5));
 
     color = get_identity_color(region.identity, uv, region_normal, sky_color);
@@ -268,6 +269,8 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     
     // 区块中心
     // color = mix(color, vec3(1,0,0), float(cell_idx.cell_data.z < 0.05));
+
+    //color = mix(color, vec3(cell_idx.base_idx.x % 2 == 0, cell_idx.base_idx.y % 2 == 0,0), 0.25);
 
     float p_s = pow(0.65 + 0.35 * sin(g_time*5),3);
     // 首都区块（金色高亮
@@ -298,7 +301,7 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
 
 
     // 军队位置
-    color = mix(color, vec3(10,10,10), float(cell_idx.army_data.z < 0.05));
+    // color = mix(color, vec3(10,10,10), float(cell_idx.army_data.z < 0.05));
     
     float attack_distance = distance(g_mouse_selected,g_selected);
 
@@ -332,13 +335,14 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
     if(attack_distance <= g_valid_attack_range && is_player_s){
         // 圆形选中
         if(g_radioactive_selected.w > 0.5 && is_mouse_valid_selection){
-            vec2 center = g_radioactive_selected.xy;
+            RegionData target = getRegion(int(g_radioactive_selected.x), int(g_radioactive_selected.y));
+            vec2 center = g_radioactive_selected.xy + target.cell_center;
             float radius = g_radioactive_selected.z;
-            float dist = length(vec2(cell_idx.real_idx) - center);
-            if(dist < radius){
+            float dist = length(vec2(cell_idx.real_idx) - g_radioactive_selected.xy);
+            if(dist < radius + 1){
                 float weight = p_s * exp(-7*dist/(radius+1e-3));
                 color = mix(color, vec3(20,20,0), weight);
-                vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
+                vec2 region_uv = center / g_map_size * 2 - 1;
                 vec2 d_uv = (uv - region_uv) * g_map_size / radius * 1.25 * 0.25 + 0.5;
 
                 vec4 color_radioactive = texture(g_tex_radioactive, d_uv);
@@ -348,12 +352,12 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
         }
 
         if(g_attack_target.z > 0.5 && is_mouse_valid_selection){
-            vec2 center = g_attack_target.xy;
-		    float radius = 2;
-		    float dist = length(vec2(cell_idx.real_idx) - center);
-		    if(dist < radius){
-			    vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
-			    vec2 d_uv = (uv - region_uv) * g_map_size / radius * 2 * 0.25 + 0.5;
+            RegionData target = getRegion(int(g_attack_target.x), int(g_attack_target.y));
+            vec2 center = g_attack_target.xy + target.cell_center;
+		    float dist = length(vec2(cell_idx.real_idx) - g_attack_target.xy);
+		    if(dist < 3){
+			    vec2 region_uv = (center) / g_map_size * 2 - 1;
+			    vec2 d_uv = (uv - region_uv) * g_map_size * 0.25 + 0.5;
 
 			    vec4 color_attack_target = texture(g_tex_attack_target, d_uv);
 			    color_attack_target *= float(d_uv.x>=0 && d_uv.x <= 1 && d_uv.y >= 0 && d_uv.y <= 1);
@@ -362,13 +366,14 @@ vec4 doPlaneColoring(vec2 uv, vec3 sky_color){
          }
 
          if(g_scatter_target.w > 0.5 && is_mouse_valid_selection){
-             vec2 center = g_scatter_target.xy;
+            RegionData target = getRegion(int(g_scatter_target.x), int(g_scatter_target.y));
+             vec2 center = g_scatter_target.xy + target.cell_center;
              float radius = g_scatter_target.z;
-             float dist = length(vec2(cell_idx.real_idx) - center);
+             float dist = length(vec2(cell_idx.real_idx) - g_scatter_target.xy);
              if(dist < radius){
 		         float weight = p_s;
 		         color = mix(color, vec3(0.5,0,0), weight);
-		         vec2 region_uv = (vec2(g_mouse_selected) + 0.5) / g_map_size * 2 - 1;
+		         vec2 region_uv = center / g_map_size * 2 - 1;
 		         vec2 d_uv = (uv - region_uv) * g_map_size / radius * 1.25 * 0.25 + 0.5;
 
 		         vec4 color_scatter_target = texture(g_tex_scatter_target, d_uv);
@@ -427,7 +432,7 @@ vec4 render(out float depth){
 	vec4 color = vec4(sky_color,0);
 
 
-	vec2 base_box = boxIntersection(transformed_rayOrigin + vec3(0,0.875+1e-3,0), transformed_rayDir, vec3(1 + max_padding_board.x ,0.25, 1 + max_padding_board.y), box_normal);
+	vec2 base_box = boxIntersection(transformed_rayOrigin + vec3(0,1.625+1e-3,0), transformed_rayDir, vec3(1 + max_padding_board.x ,1, 1 + max_padding_board.y), box_normal);
 	if(base_box.x > 0){
 		vec3 p = transformed_rayOrigin + base_box.x * transformed_rayDir;
 		vec4 box_color = vec4(0.1,0.1,0.1,1)* pow(clamp(1.55+p.y,0.,1.),4);
