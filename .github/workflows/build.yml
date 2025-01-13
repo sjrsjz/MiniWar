@@ -14,19 +14,28 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - name: Install dependencies and build
+      - name: Install dependencies on Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             sudo apt-get update
             sudo apt-get install -y cmake
             sudo apt-get install -y libgl1-mesa-dev mesa-common-dev libglu1-mesa-dev libegl1-mesa-dev libgles2-mesa-dev libglew-dev libglfw3-dev --fix-missing
-
+      - name: Install dependencies on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+           # install mingw64
+           sudo apt-get update
+           sudo apt-get install -y mingw-w64
+      - name: Build on Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
             mkdir build
             cmake -B build -S .
             cd build
             make
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            mkdir build
-            cmake -B build -S .
-            cmake --build build
-          fi
+      - name: Build on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+           mkdir build
+           cmake -G "MinGW Makefiles" -B build -S . -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake
+           cmake --build build
