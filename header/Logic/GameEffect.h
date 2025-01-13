@@ -1,0 +1,6 @@
+﻿#pragma once
+enum GameEffect
+{
+    GAME_EFFECT_PLAY_NUCLEAR_EXPLOSION,
+    GAME_EFFECT_PLAY_NUCLEAR_WARNING
+};

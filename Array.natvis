@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!-- 现有的 Array 配置 -->
+  <Type Name="Array&lt;*&gt;">
+    <DisplayString>Array2D [width={width} height={height}]</DisplayString>
+    <Expand>
+      <ArrayItems Condition="data != 0">
+        <Direction>Forward</Direction>
+        <Rank>2</Rank>
+        <Size>height</Size>
+        <Size>width</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+      <Item Name="[Width]">width</Item>
+      <Item Name="[Height]">height</Item>
+    </Expand>
+  </Type>
+
+<!-- GCC vector 可视化 -->
+<Type Name="std::vector&lt;*&gt;">
+  <DisplayString>{{ size={_M_impl._M_finish - _M_impl._M_start} }}</DisplayString>
+  <Expand>
+    <Item Name="[size]">_M_impl._M_finish - _M_impl._M_start</Item>
+    <Item Name="[capacity]">_M_impl._M_end_of_storage - _M_impl._M_start</Item>
+    <ArrayItems>
+      <Size>_M_impl._M_finish - _M_impl._M_start</Size>
+      <ValuePointer>_M_impl._M_start</ValuePointer>
+    </ArrayItems>
+  </Expand>
+</Type>
+
+<Type Name="std::map&lt;*,*&gt;">
+  <DisplayString>{{ size={_M_t._M_impl._M_node_count} }}</DisplayString>
+  <Expand>
+    <Item Name="[size]">_M_t._M_impl._M_node_count</Item>
+    <TreeItems>
+      <Size>_M_t._M_impl._M_node_count</Size>
+      <HeadPointer>_M_t._M_impl._M_header._M_parent</HeadPointer>
+      <LeftPointer>_M_left</LeftPointer>
+      <RightPointer>_M_right</RightPointer>
+      <ValueNode>*(std::string*)(_M_t._M_impl._M_header._M_parent+1)</ValueNode>
+    </TreeItems>
+  </Expand>
+</Type>
+
+<!--String-->
+<Type Name="std::string">
+  <DisplayString>{_M_dataplus._M_p}</DisplayString>
+  <StringView>_M_dataplus._M_p</StringView>
+  <Expand>
+    <Item Name="[size]">_M_string_length</Item>
+    <Item Name="[capacity]">_M_allocated_capacity</Item>
+    <ArrayItems>
+      <Size>_M_string_length</Size>
+      <ValuePointer>_M_dataplus._M_p</ValuePointer>
+    </ArrayItems>
+  </Expand>
+</Type>
+</AutoVisualizer>

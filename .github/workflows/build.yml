@@ -1,0 +1,32 @@
+name: Build for Linux and Windows
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies and build
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y cmake
+            sudo apt-get install -y libgl1-mesa-dev mesa-common-dev libglu1-mesa libglu1-mesa-dev libegl1-mesa libegl1-mesa-dev libgles2-mesa-dev libglew-dev libglfw3-dev --fix-missing
+
+            mkdir build
+            cmake -B build -S .
+            cd build
+            make
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            mkdir build
+            cmake -B build -S .
+            cmake --build build
+          fi
