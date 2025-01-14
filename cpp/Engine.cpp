@@ -19,6 +19,7 @@ bool isPause = false;
 AI_groups ai(2);
 
 void release_game() {
+	ai.clear();
 }
 
 static bool s_exit_game = false;
