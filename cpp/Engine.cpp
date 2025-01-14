@@ -10,11 +10,13 @@
 #include <string>
 #include <vector>
 
-AI ai;
-AI ai2;
+/* AI ai; */
+/* AI ai2; */
 bool isPause = false;
-bool aiState = true;
-bool aiState2 = true;
+/* bool aiState = true; */
+/* bool aiState2 = true; */
+// 指定AI的数量
+AI_groups ai(2);
 
 void release_game() {
 }
@@ -23,15 +25,16 @@ static bool s_exit_game = false;
 static std::thread s_main_loop;
 void initial_game(int width, int height) {
 	isPause = false;
-	aiState = true;
-	aiState2 = true;
+	/* aiState = true; */
+	/* aiState2 = true; */
 	s_exit_game = false;
 	RegionManager::instance_of().init(width, height);
 	RegionManager::instance_of().get_player().create();
-	ai.create(1);
-	ai2.create(2);
-	ai.setParameter(1);
-	ai2.setParameter(1);
+	/* ai.create(1); */
+	/* ai2.create(2); */
+	/* ai.setParameter(1); */
+	/* ai2.setParameter(1); */
+	ai.set_parameter(1);
 }
 
 static std::vector<std::string> s_error_messages;
@@ -222,8 +225,9 @@ std::string push_input_wait_for_result(const Operation& op) {
 void update() {
 	RegionManager::instance_of().update(GlobalTimer::instance_of());
 	RegionManager::instance_of().get_player().update(GlobalTimer::instance_of());
-	ai.update(isPause, aiState);
-	ai2.update(isPause, aiState2);
+	/* ai.update(isPause, aiState); */
+	/* ai2.update(isPause, aiState2); */
+	ai.update();
 }
 
 bool g_game_stop = false;
@@ -235,7 +239,7 @@ void main_loop() {
 	s_wait_lock.lock();
 	GlobalTimer::instance_of().reset();
 	while (!s_exit_game) {
-		if ((aiState || aiState2) && RegionManager::instance_of().get_player().is_alive()) {
+		if ((!ai.get_status()) && RegionManager::instance_of().get_player().is_alive()) {
 			//DEBUGOUTPUT("New Loop\n");
 			GlobalTimer::instance_of().update();
 

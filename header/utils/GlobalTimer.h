@@ -5,6 +5,10 @@
 
 class GlobalTimer
 {
+	std::chrono::steady_clock::time_point last_update_time;
+	double acc_time = 0;
+	bool paused = false;
+	double dt = 0;
 public:
 	static GlobalTimer& instance_of();
 
@@ -49,16 +53,11 @@ public:
 
 	// 重置计时器
 	void reset() {
-		acc_time = 0;
-		dt = 0;
-		last_update_time = std::chrono::steady_clock::now();
-		paused = false;
+		this->acc_time = 0;
+		this->dt = 0;
+		this->last_update_time = std::chrono::steady_clock::now();
+		this->paused = false;
 	}
 
-private:
-	std::chrono::steady_clock::time_point last_update_time;
-	double acc_time = 0;
-	bool paused = false;
-	double dt = 0;
 };
 
