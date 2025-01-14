@@ -379,9 +379,13 @@ void Player::product_weapon(int weapon_type, Region& region) {
 	region.add_weapon_amount(weapon_type);
 }
 
+namespace PathFinder {
+	std::vector<Point> astar(const Array2D<int>& grid, const Array2D<int> neigbours, Point start, Point end);
+}
 void Player::product(Operation operation) {
 	Point start = operation.getStart();
 	Point end = operation.getEnd();
+
 	Region& start_region = m_region_manager.region(std::floor(start.x), std::floor(start.y));
 	Region& end_region = m_region_manager.region(std::floor(end.x), std::floor(end.y));
 
@@ -391,6 +395,22 @@ void Player::product(Operation operation) {
 	if (start_region.get_building().get_type() != BuildingType::MilitaryFactory) {
 		throw std::invalid_argument(u8"没有军事工厂");
 	}
+
+
+	Array2D<int> player_region_matrix(m_region_manager.regions().width(), m_region_manager.regions().height());
+	for (int i = 0; i < m_region_manager.regions().width(); i++) {
+		for (int j = 0; j < m_region_manager.regions().height(); j++) {
+			if (m_region_manager.regions()(i, j).get_owner() == m_id) {
+				player_region_matrix(i, j) = 1;
+			}
+		}
+	}
+	std::vector<Point> path_points = PathFinder::astar(player_region_matrix, m_region_manager.neighbour_regions(), start, end);
+
+	if (path_points.empty()) {
+		throw std::invalid_argument(u8"无法部署到指定位置");
+	}
+
 	Config& configer = Config::instance_of();
 	int cost{};
 	switch (operation.getOp())

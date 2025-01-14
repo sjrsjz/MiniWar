@@ -27,22 +27,22 @@ namespace PathFinder {
 	 * @param end 终点
 	 * @return std::vector<Point> 路径
 	 */
-	std::vector<Point> astar(const Array<int>& grid, const Array<int> neigbours, Point start, Point end) {
+	std::vector<Point> astar(const Array2D<int>& grid, const Array2D<int> neigbours, Point start, Point end) {
 		int width = grid.width();
 		int height = grid.height();
-		Array<bool> closed(width, height);
+		Array2D<bool> closed(width, height);
 		auto cmp = [](const std::pair<Point, double>& a, const std::pair<Point, double>& b) {
 			return a.second > b.second;
 			};
 		std::priority_queue<std::pair<Point, double>, std::vector<std::pair<Point, double>>, decltype(cmp)> open(cmp);
 
 		// 记录每个节点的g值
-		Array<double> g_scores(width, height);
+		Array2D<double> g_scores(width, height);
 		g_scores.fill(std::numeric_limits<double>::infinity());
 		g_scores(std::floor(start.x), std::floor(start.y)) = 0;
 
 		enum direction { W_S, S, E_S, E, E_N, N, W_N, W };
-		Array<direction> directions(width, height);
+		Array2D<direction> directions(width, height);
 
 		open.push({ start, 0.0 });
 
@@ -95,6 +95,63 @@ namespace PathFinder {
 		}
 		return {};
 	}
+
+	/**
+	 * @brief 计算区域的可达性
+	 * @param grid 地图，0表示障碍物，1表示可通行
+	 * @param neighbour_regions 每个节点的邻接关系，用一个8位的二进制数表示，从右到左分别表示右、右下、下、左下、左、左上、上、右上是否可通行
+	 * @param is_origion 判断一个区块是否为起始区块
+	 * @return Array2D<bool> 可达性矩阵
+	 */
+	Array2D<bool> flood_fill_regions(const Array2D<int>& grid, const Array2D<int>& neighbour_regions, std::function<bool(int, int)> is_origion) {
+		// 计算is_origion为true的区块可以到达的区块并标记为true
+		int width = grid.width();
+		int height = grid.height();
+
+		// 采用广度优先搜索，从is_origion为true的区块开始向外扩展，根据neighbour_regions确定可通行的方向
+		// 如果is_origion为true的区块所在的区域已经被标记为true，则跳过该区块
+		Array2D<bool> reachable(width, height);
+		Array2D<bool> closed(width, height);
+		const int dx[8] = { -1, 0, 1, 1, 1, 0, -1, -1 };
+		const int dy[8] = { -1, -1, -1, 0, 1, 1, 1, 0 };
+		// neighbor_regions的第i位表示第i个方向是否可通行
+
+		std::queue<std::pair<int, int>> q;
+
+		// 找到所有起始点
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				if (is_origion(x, y)) {
+					q.push({ x, y });
+					reachable(x,y) = true;
+				}
+			}
+		}
+
+		// BFS
+		while (!q.empty()) {
+			auto [cur_x, cur_y] = q.front();
+			q.pop();
+			closed(cur_x,cur_y) = true;
+
+			for (int dir = 0; dir < 8; dir++) {
+				if (!(neighbour_regions(cur_x,cur_y) & (1 << dir))) continue;
+
+				int new_x = cur_x + dx[dir];
+				int new_y = cur_y + dy[dir];
+
+				if (new_x >= 0 && new_x < width &&
+					new_y >= 0 && new_y < height &&
+					!reachable(new_x,new_y) && !closed(new_x,new_y) && grid(new_x,new_y) == 1) {
+
+					reachable(new_x,new_y) = true;
+					q.push({ new_x, new_y });
+				}
+			}
+		}
+
+		return reachable;
+	}
 }
 
 
@@ -118,7 +175,7 @@ double RegionManager::calculate_path(Point start, Point end, std::vector<std::tu
 	int id = region(start_x, start_y).get_owner();
 
 	double distance = 0.f;
-	Array<int> player_region_matrix(m_regions.width(), m_regions.height());
+	Array2D<int> player_region_matrix(m_regions.width(), m_regions.height());
 	for (int i = 0; i < m_regions.width(); i++) {
 		for (int j = 0; j < m_regions.height(); j++) {
 			if (m_regions(i, j).get_owner() == id || m_regions(i, j).get_owner() == -1 || (i == end_x && j == end_y)) {
@@ -200,8 +257,8 @@ std::vector<MovingMissle> RegionManager::get_moving_missle_position() {
 
 void RegionManager::init(int width, int height) {
 	DEBUGOUTPUT("Initializing RegionManager", width, height);
-	this->m_regions = Array<Region>(width, height);
-	this->m_neighbour_regions = Array<int>(width, height);
+	this->m_regions = Array2D<Region>(width, height);
+	this->m_neighbour_regions = Array2D<int>(width, height);
 	this->m_width = width;
 	this->m_height = height;
 	this->m_player.create();
@@ -340,7 +397,7 @@ void RegionManager::attack_region_army(Point start, Point end, int amount) {
 	army_mutex.unlock();
 }
 
-Array<Region>& RegionManager::regions() {
+Array2D<Region>& RegionManager::regions() {
 	return m_regions;
 }
 

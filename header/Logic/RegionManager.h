@@ -46,7 +46,7 @@ public:
 	~RegionManager();
 
 	static RegionManager& instance_of();
-	Array<Region>& regions();
+	Array2D<Region>& regions();
 	Region& region(int x, int y);
 	Weapon& get_weapon(int id);
 	Player& get_player();
@@ -65,12 +65,15 @@ public:
 	double move_army(Point start, Point end, int amount, int army_level);
 	void attack_region_missle(int weapon_id, int level, Point start, Point end, double time);
 	void attack_region_army(Point start, Point end, int amount);
+	const Array2D<int>& neighbour_regions() {
+		return m_neighbour_regions;
+	}
 
 private:
 	int m_width;
 	int m_height;
-	Array<Region> m_regions;
-	Array<int> m_neighbour_regions; // 邻接区域
+	Array2D<Region> m_regions;
+	Array2D<int> m_neighbour_regions; // 邻接区域
 	Player m_player;
 	std::vector<Weapon> m_weapons;                 // 0: CM, 1: MRBM, 2: ICBM
 	std::vector<MovingArmy> m_moving_armies;

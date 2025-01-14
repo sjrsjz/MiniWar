@@ -48,40 +48,62 @@
 #include <cmath>
 #include <mutex>
 
-static mash s_mash;
-static SmoothCamera camera;
-static SmoothCamera scale_map_camera; // 缩放摄像机
-static Timer timer(0);
+namespace FBO {
+	static FragmentBuffer g_final_mix_pass_fbo;
+	static FragmentBuffer g_main_game_pass_fbo;
+	static FragmentBuffer g_gaussian_blur_pass_fbo;
+	static FragmentBuffer g_gaussian_blur_vertical_pass_fbo;
+	static FlameRenderPass g_flame_render_pass;
+	static FragmentBuffer g_point_render_pass_fbo;
+}
+namespace RENDERER
+{
+	static Timer timer(0);	
+}
 
-static GLuint vertex_shader, fragment_shader, s_main_game_pass_program;
-static GLuint normal_gl_vertex_shader, normal_gl_fragment_shader, s_normal_gl_program;
-
-static GLuint points_vertex_shader, points_fragment_shader, s_points_program;
-static PointRenderer point_renderer;
-
-
-// 直接渲染纹理
-static GLuint direct_tex_vertex_shader, direct_tex_fragment_shader, s_direct_tex_program;
-
-static GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_program;
-static mash map_mash;
-static RegionSSBOBuffer map_info;
-
-static SmoothMove map_rotation;
-
-static GLuint gaussian_blur_vertex_shader, gaussian_blur_fragment_shader, s_gaussian_blur_program;
+namespace MAP {
+	static mash s_mash;
+	static SmoothCamera camera;
+	static SmoothCamera scale_map_camera; // 缩放摄像机
+	static mash map_mash;
+	static RegionSSBOBuffer map_info;
+	static SmoothMove map_rotation;
+	static const float map_plane_y = -0.62f;
+}
 
 
-static GLFWwindow* glfw_win;
-static bool keys[512];
-static vec3 s_mouse_position;
+namespace PASS_MAIN {
+	static GLuint vertex_shader, fragment_shader, s_main_game_pass_program;
+}
 
-static float s_dpi_scale = 1.0f;
+namespace PASS_NORMAL {
+	static GLuint normal_gl_vertex_shader, normal_gl_fragment_shader, s_normal_gl_program;
+}
 
-static int s_current_selected_grid[2] = { -1,-1 };
-static bool s_is_selected = false;
+namespace PASS_POINT {
+	static GLuint points_vertex_shader, points_fragment_shader, s_points_program;
+	static PointRenderer point_renderer;
+}
 
-static const float map_plane_y = -0.62f;
+
+namespace PASS_DIRECT_TEX {
+	static GLuint direct_tex_vertex_shader, direct_tex_fragment_shader, s_direct_tex_program;
+}
+
+namespace PASS_MAP_RENDER {
+	static GLuint map_renderer_vertex_shader, map_renderer_fragment_shader, s_map_renderer_program;
+}
+
+namespace PASS_BLOOM {
+	static GLuint gaussian_blur_vertex_shader, gaussian_blur_fragment_shader, s_gaussian_blur_program;
+}
+
+namespace INTERACTIVE {
+	static bool keys[512];
+	static vec3 s_mouse_position;
+	static int s_current_selected_grid[2] = { -1,-1 };
+	static bool s_is_selected = false;
+}
 
 namespace GAMESOUND {
 #ifdef _WIN32
@@ -289,6 +311,8 @@ namespace GAMESOUND {
 		// 循环使用通道
 		s_current_sound_idx = (s_current_sound_idx + 1) % MAX_SOUND_CHANNELS;
 	}
+#undef SOUND_STR
+#undef SOUND_CHAR
 }
 
 namespace GAMESTATUS {
@@ -306,6 +330,11 @@ namespace LEVELDATA {
 	}s_selected_level;
 }
 
+namespace UIFonts {
+	static ImFont* default_font;
+	static ImFont* menu_font;
+	static ImFont* large_font;
+}
 namespace TEXTURE {
 	static GLuint s_image_radioactive;
 	static GLuint s_image_attack_target;
@@ -316,7 +345,23 @@ namespace TEXTURE {
 	static GLuint s_image_building_icon;
 }
 
+static GLFWwindow* glfw_win;
+static float s_dpi_scale = 1.0f;
 static bool s_pause_rendering = false;
+static int s_scatter_bomb_range = 1;
+static int s_nuclear_missile_level = 0;
+extern bool g_game_over;
+extern bool g_game_stop;
+
+static enum SelectedWeapon {
+	NONE, // 空
+	NUCLEAR_MISSILE, // 核导弹
+	ARMY, // 军队
+	SCATTER_BOMB, // 散弹炸弹
+} s_selected_weapon;
+
+
+
 
 void glfwErrorCallBack(int error, const char* str);
 void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int mods);
@@ -327,21 +372,6 @@ void KeyProcess();
 void KeyRelease(int key);
 void get_screen_position(float x, float y, float z, float& screen_x, float& screen_y);
 
-static enum SelectedWeapon {
-	NONE, // 空
-	NUCLEAR_MISSILE, // 核导弹
-	ARMY, // 军队
-	SCATTER_BOMB, // 散弹炸弹
-} s_selected_weapon;
-
-static int s_scatter_bomb_range = 1;
-static int s_nuclear_missile_level = 0;
-
-namespace UIFonts {
-	static ImFont* default_font;
-	static ImFont* menu_font;
-	static ImFont* large_font;
-}
 inline ImVec2 operator+(const ImVec2& a, const ImVec2& b) {
 	return ImVec2(a.x + b.x, a.y + b.y);
 }
@@ -358,6 +388,12 @@ inline ImVec2 normalize(const ImVec2& v) {
 	float len = sqrt(v.x * v.x + v.y * v.y);
 	return ImVec2(v.x / len, v.y / len);
 }
+
+struct LevelConfig {
+	int map_width = 16;
+	int map_height = 16;
+
+};
 
 static class TechTreeGui {
 	struct TechNode {
@@ -579,16 +615,16 @@ public:
 
 		if (is_active()) {
 			float speed = 0.25 * exp(timer.dt);
-			if (keys[GLFW_KEY_W]) {
+			if (INTERACTIVE::keys[GLFW_KEY_W]) {
 				tree_offset_Y.new_end_position(tree_offset_Y.x() + speed, timer.time());
 			}
-			if (keys[GLFW_KEY_S]) {
+			if (INTERACTIVE::keys[GLFW_KEY_S]) {
 				tree_offset_Y.new_end_position(tree_offset_Y.x() - speed, timer.time());
 			}
-			if (keys[GLFW_KEY_A]) {
+			if (INTERACTIVE::keys[GLFW_KEY_A]) {
 				tree_offset_X.new_end_position(tree_offset_X.x() + speed, timer.time());
 			}
-			if (keys[GLFW_KEY_D]) {
+			if (INTERACTIVE::keys[GLFW_KEY_D]) {
 				tree_offset_X.new_end_position(tree_offset_X.x() - speed, timer.time());
 			}
 			int powerstation_level = RegionManager::instance_of().get_player().get_building_level_limit(BuildingType::PowerStation);
@@ -670,7 +706,7 @@ public:
 	}
 } s_tech_tree_gui;
 
-class ShakeEffect {
+static class ShakeEffect{
 	std::vector<SmoothMove> shake_list; // 共给地图震动效果使用
 public:
 	void clear() {
@@ -756,7 +792,7 @@ public:
 		Region& region = RegionManager::instance_of().region(grid[0], grid[1]);
 		float grid_center_x = region.get_center_position().x / RegionManager::instance_of().map_width() * 2.0 - 1.0;
 		float grid_center_z = region.get_center_position().y / RegionManager::instance_of().map_height() * 2.0 - 1.0;
-		float grid_center_y = map_plane_y;
+		float grid_center_y = MAP::map_plane_y;
 
 		float screen_pos_x, screen_pos_y;
 		get_screen_position(grid_center_x, grid_center_y, grid_center_z, screen_pos_x, screen_pos_y);
@@ -767,7 +803,7 @@ public:
 		//DEBUGOUTPUT(grid_center_x, grid_center_y, grid_center_z, screen_pos_x, screen_pos_y);
 		//ImGui::SetWindowPos(ImVec2(io.DisplaySize.x / 8 * 3, io.DisplaySize.y - 200));
 		float W = 400 * s_dpi_scale;
-		float H = 160 * s_dpi_scale;
+		float H = 180 * s_dpi_scale;
 
 		float W_target = 25 * s_dpi_scale;
 		float H_target = 25 * s_dpi_scale;
@@ -793,7 +829,7 @@ public:
 			ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 10.0f);  // 设置滑块大小
 			ImGui::SetNextItemWidth(W - 20);  // 设置滑块条宽度
 			ImGui::SetCursorPosX(10);
-			ImGui::SliderInt("##ScatterBombRange", &s_scatter_bomb_range, 1, map_info.width() / 2);
+			ImGui::SliderInt("##ScatterBombRange", &s_scatter_bomb_range, 1, MAP::map_info.width() / 2);
 			ImGui::PopStyleVar();
 			ImGui::PopStyleColor(2);
 			break;
@@ -1038,12 +1074,6 @@ public:
 
 }s_status_gui;
 
-struct LevelConfig {
-	int map_width = 16;
-	int map_height = 16;
-
-};
-
 static class SubMenuGui
 {
 	// 弹出建筑选择
@@ -1141,8 +1171,7 @@ public:
 
 } s_sub_menu_gui;
 
-extern bool g_game_over;
-extern bool g_game_stop;
+
 static class GameOverGui {
 	bool open = false;
 public:
@@ -1217,15 +1246,15 @@ void render_update_info() {
 					break;
 				}
 			}
-			map_info.set_region(i, j, region);
+			MAP::map_info.set_region(i, j, region);
 		}
 	}
-	map_info.update();
+	MAP::map_info.update();
 	
 	std::vector<Vertex> vertices;
 	auto army = rm.get_moving_army_position();
 	for (auto& a : army) {
-		Vertex tmp = { std::get<0>(a.current_pos) / map_info.width() * 2 - 1, map_plane_y, std::get<1>(a.current_pos) / map_info.height() * 2 - 1, 1, 1, 1 };
+		Vertex tmp = { std::get<0>(a.current_pos) / MAP::map_info.width() * 2 - 1, MAP::map_plane_y, std::get<1>(a.current_pos) / MAP::map_info.height() * 2 - 1, 1, 1, 1 };
 		if (a.owner_id == 0)
 		{
 			tmp.r = 0; tmp.g = 1; tmp.b = 0;
@@ -1237,11 +1266,11 @@ void render_update_info() {
 	}
 	auto missile = rm.get_moving_missle_position();
 	for (auto& m : missile) {
-		Vertex tmp = { std::get<0>(m.current_pos) / map_info.width() * 2 - 1, map_plane_y + std::get<2>(m.current_pos), std::get<1>(m.current_pos) / map_info.height() * 2 - 1, 1, 1, 0 };
+		Vertex tmp = { std::get<0>(m.current_pos) / MAP::map_info.width() * 2 - 1, MAP::map_plane_y + std::get<2>(m.current_pos), std::get<1>(m.current_pos) / MAP::map_info.height() * 2 - 1, 1, 1, 0 };
 		vertices.push_back(tmp);
 	}
 	//DEBUGOUTPUT("Army size", army.size());
-	point_renderer.update(vertices);
+	PASS_POINT::point_renderer.update(vertices);
 
 
 }
@@ -1254,7 +1283,7 @@ void load_new_game(const LevelConfig& level_config) {
 	DEBUGOUTPUT("Map Width", level_config.map_width);
 	DEBUGOUTPUT("Map Height", level_config.map_height);
 
-	map_info.create(level_config.map_width, level_config.map_height);
+	MAP::map_info.create(level_config.map_width, level_config.map_height);
 
 	DEBUGOUTPUT("Creating SSBO..");
 	for (int i{}; i < level_config.map_width; i++) {
@@ -1266,16 +1295,16 @@ void load_new_game(const LevelConfig& level_config) {
 			region.army_position_y = -1e6;
 			region.identity = 0;
 			region.region_additional_info = 0;
-			map_info.set_region(i, j, region);
+			MAP::map_info.set_region(i, j, region);
 		}
 	}
-	map_info.create_ssbo();
-	map_info.update();
+	MAP::map_info.create_ssbo();
+	MAP::map_info.update();
 	DEBUGOUTPUT("SSBO Created");
 
 
 	std::vector<Vertex> vertices;
-	point_renderer.update(vertices);
+	PASS_POINT::point_renderer.update(vertices);
 
 	s_tech_tree_gui.init_tech_tree_gui();
 	s_shake_effect.clear();
@@ -1295,7 +1324,7 @@ void exit_game() {
 	GAMESTATUS::s_enable_control = false;
 	exit_curr_game();
 	wait_for_exit();
-	map_info.release();
+	MAP::map_info.release();
 	DEBUGOUTPUT("Game exited");
 }
 
@@ -1466,7 +1495,7 @@ public:
 				default:
 					break;
 				}
-				open_gui(false, timer);
+				open_gui(false, RENDERER::timer);
 			}
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 650 * s_dpi_scale));
 
@@ -1481,7 +1510,7 @@ public:
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 200 * s_dpi_scale));
 			if (ImGui::Button(u8"继续游戏", ImVec2(400, 100) * s_dpi_scale)) {
 				GAMESOUND::play_click_sound();
-				open_gui(false, timer);
+				open_gui(false, RENDERER::timer);
 			}
 			ImGui::SetCursorScreenPos(ImVec2((io.DisplaySize.x - 400 * s_dpi_scale) / 2 + x_pos, 360 * s_dpi_scale));
 			if (ImGui::Button(u8"返回主界面", ImVec2(400, 100) * s_dpi_scale)) {
@@ -1580,34 +1609,34 @@ void render_imgui(ImGuiIO& io) {
 
 		// 检查窗口是否被点击
 		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-			s_sub_menu_gui.open_gui(false, ImVec2(io.MousePos.x, io.MousePos.y), s_current_selected_grid[0], s_current_selected_grid[1]);
+			s_sub_menu_gui.open_gui(false, ImVec2(io.MousePos.x, io.MousePos.y), INTERACTIVE::s_current_selected_grid[0], INTERACTIVE::s_current_selected_grid[1]);
 			if (GAMESTATUS::s_enable_control) {
 				// 显示格子信息
-				if (s_is_selected && s_current_selected_grid[0] == s_selected_gui.grid[0] && s_current_selected_grid[1] == s_selected_gui.grid[1]) {
+				if (INTERACTIVE::s_is_selected && INTERACTIVE::s_current_selected_grid[0] == s_selected_gui.grid[0] && INTERACTIVE::s_current_selected_grid[1] == s_selected_gui.grid[1]) {
 					s_selected_gui.is_selected = !s_selected_gui.is_selected;
 					GAMESOUND::play_click_sound();
 				}
 				else {
-					s_selected_gui.is_selected = s_is_selected;
-					s_selected_gui.grid[0] = s_current_selected_grid[0];
-					s_selected_gui.grid[1] = s_current_selected_grid[1];
+					s_selected_gui.is_selected = INTERACTIVE::s_is_selected;
+					s_selected_gui.grid[0] = INTERACTIVE::s_current_selected_grid[0];
+					s_selected_gui.grid[1] = INTERACTIVE::s_current_selected_grid[1];
 					GAMESOUND::play_click_sound();
 				}
 			}
 		}
 		// 检查窗口是否被点击
 		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && GAMESTATUS::s_enable_control) {
-			s_selected_gui.is_selected = s_is_selected;
-			s_selected_gui.grid[0] = s_current_selected_grid[0];
-			s_selected_gui.grid[1] = s_current_selected_grid[1];
-			s_sub_menu_gui.open_gui(s_is_selected, ImVec2(io.MousePos.x, io.MousePos.y), s_current_selected_grid[0], s_current_selected_grid[1]);
+			s_selected_gui.is_selected = INTERACTIVE::s_is_selected;
+			s_selected_gui.grid[0] = INTERACTIVE::s_current_selected_grid[0];
+			s_selected_gui.grid[1] = INTERACTIVE::s_current_selected_grid[1];
+			s_sub_menu_gui.open_gui(INTERACTIVE::s_is_selected, ImVec2(io.MousePos.x, io.MousePos.y), INTERACTIVE::s_current_selected_grid[0], INTERACTIVE::s_current_selected_grid[1]);
 			GAMESOUND::play_click_sound();
 		}
 
 		// 检查鼠标是否移动
 		if (ImGui::IsWindowHovered() && GAMESTATUS::s_enable_control) {
 			ImVec2 mouse_pos = ImGui::GetMousePos();
-			s_mouse_position[0] = mouse_pos.x; s_mouse_position[1] = mouse_pos.y;
+			INTERACTIVE::s_mouse_position[0] = mouse_pos.x; INTERACTIVE::s_mouse_position[1] = mouse_pos.y;
 		}
 
 		//ImGui::SetCursorPos(ImVec2(0, 0));
@@ -1625,7 +1654,7 @@ void render_imgui(ImGuiIO& io) {
 }
 
 void render_main_game_pass() {
-	g_main_game_pass_fbo.bind_frameBuffer();
+	FBO::g_main_game_pass_fbo.bind_frameBuffer();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -1640,49 +1669,49 @@ void render_main_game_pass() {
 	glfwGetFramebufferSize(glfw_win, &W, &H);
 
 	ratio =  W / (float)H;
-	int mvp_location = glGetUniformLocation(s_map_renderer_program, "MVP");
+	int mvp_location = glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "MVP");
 
 	mat4x4_identity(m);
 	mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
 	mat4x4_mul(mvp, p, m);
 
 
-	glUseProgram(s_map_renderer_program);
+	glUseProgram(PASS_MAP_RENDER::s_map_renderer_program);
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
 	
-	map_info.bind(0);
+	MAP::map_info.bind(0);
 
 	// g_fov
-	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_fov"), -2.0);
+	glUniform1f(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_fov"), -2.0);
 	//g_frame_width, g_frame_height
-	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_width"), W);
-	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_frame_height"), H);
-	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_time"), (float)timer.time());
-	glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_map_size"), map_info.width(), map_info.height());
+	glUniform1f(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_frame_width"), W);
+	glUniform1f(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_frame_height"), H);
+	glUniform1f(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_time"), (float)RENDERER::timer.time());
+	glUniform2i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_map_size"), MAP::map_info.width(), MAP::map_info.height());
 
 
 	Camera model_camera;
 	model_camera.setPos(0, 0.5, 0);
-	model_camera.setRot(0, -map_rotation.x(), 0);
+	model_camera.setRot(0, -MAP::map_rotation.x(), 0);
 	mat4x4 model_mat;
 	model_camera.getMat4(model_mat);
 	mat4x4_scale_aniso(model_mat, model_mat, 0.25, 0.25, 0.25);
 
-	glUniformMatrix4fv(glGetUniformLocation(s_map_renderer_program, "g_model_trans_mat"), 1, GL_FALSE, (const GLfloat*)model_mat);
+	glUniformMatrix4fv(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_model_trans_mat"), 1, GL_FALSE, (const GLfloat*)model_mat);
 
 	mat4x4 model_mat_inv_rot;
 	model_camera.setPos(0, 0.5, 0);
-	model_camera.setRot(0, map_rotation.x(), 0);
+	model_camera.setRot(0, MAP::map_rotation.x(), 0);
 	model_camera.getMat4(model_mat_inv_rot);
 	mat4x4_scale_aniso(model_mat_inv_rot, model_mat_inv_rot, 0.25, 0.25, 0.25);
 
-	glUniformMatrix4fv(glGetUniformLocation(s_map_renderer_program, "g_model_trans_mat_inv"), 1, GL_FALSE, (const GLfloat*)model_mat_inv_rot);
+	glUniformMatrix4fv(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_model_trans_mat_inv"), 1, GL_FALSE, (const GLfloat*)model_mat_inv_rot);
 
 	mat4x4 g_trans_mat;
-	camera.getCamera().getMat4(g_trans_mat);
+	MAP::camera.getCamera().getMat4(g_trans_mat);
 	mat4x4 g_scale_mat;
-	scale_map_camera.getCamera().getMat4(g_scale_mat);
+	MAP::scale_map_camera.getCamera().getMat4(g_scale_mat);
 	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
 
 	mat4x4 shake_camera;
@@ -1690,60 +1719,60 @@ void render_main_game_pass() {
 	mat4x4_mul(g_trans_mat, g_trans_mat, shake_camera);
 
 
-	int g_trans_mat_location = glGetUniformLocation(s_map_renderer_program, "g_trans_mat");
+	int g_trans_mat_location = glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_trans_mat");
 	glUniformMatrix4fv(g_trans_mat_location, 1, GL_FALSE, (const GLfloat*)g_trans_mat);
 
 
 
 
-	auto [selected, gridX, gridY] = RegionSelector(-2.0, W, H, g_trans_mat, model_mat, map_info.width(), map_info.height(), map_info.regions())(s_mouse_position[0], s_mouse_position[1]);
+	auto [selected, gridX, gridY] = RegionSelector(-2.0, W, H, g_trans_mat, model_mat, MAP::map_info.width(), MAP::map_info.height(), MAP::map_info.regions())(INTERACTIVE::s_mouse_position[0], INTERACTIVE::s_mouse_position[1]);
 
-	s_current_selected_grid[0] = gridX;
-	s_current_selected_grid[1] = gridY;
-	s_is_selected = selected;
+	INTERACTIVE::s_current_selected_grid[0] = gridX;
+	INTERACTIVE::s_current_selected_grid[1] = gridY;
+	INTERACTIVE::s_is_selected = selected;
 
 	if (s_selected_gui.is_selected) {
-		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_selected"), s_selected_gui.grid[0], s_selected_gui.grid[1]);
+		glUniform2i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_selected"), s_selected_gui.grid[0], s_selected_gui.grid[1]);
 	}
 	else {
-		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_selected"), -1, -1);
+		glUniform2i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_selected"), -1, -1);
 	}
 	if (selected) {
-		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_mouse_selected"), gridX, gridY);
+		glUniform2i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_mouse_selected"), gridX, gridY);
 	}
 	else {
-		glUniform2i(glGetUniformLocation(s_map_renderer_program, "g_mouse_selected"), -1, -1);
+		glUniform2i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_mouse_selected"), -1, -1);
 	}
 
 	bool s_if_selected = s_selected_gui.is_selected;
 
 	// 核辐射标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, RegionManager::instance_of().get_weapon(s_nuclear_missile_level).get_damage_range(RegionManager::instance_of().get_player().get_army_level(s_nuclear_missile_level + 1)), s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
+	glUniform4f(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_radioactive_selected"), gridX, gridY, RegionManager::instance_of().get_weapon(s_nuclear_missile_level).get_damage_range(RegionManager::instance_of().get_player().get_army_level(s_nuclear_missile_level + 1)), s_selected_weapon == NUCLEAR_MISSILE && s_if_selected);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_radioactive);
-	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_radioactive"), 0);
+	glUniform1i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_tex_radioactive"), 0);
 
 	// 攻击目标标识
-	glUniform3f(glGetUniformLocation(s_map_renderer_program, "g_attack_target"), gridX, gridY, s_selected_weapon == ARMY && s_if_selected);
+	glUniform3f(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_attack_target"), gridX, gridY, s_selected_weapon == ARMY && s_if_selected);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_attack_target);
-	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_attack_target"), 1);
+	glUniform1i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_tex_attack_target"), 1);
 
 	// 散弹炸弹标识
-	glUniform4f(glGetUniformLocation(s_map_renderer_program, "g_scatter_target"), gridX, gridY, s_scatter_bomb_range, s_selected_weapon == SCATTER_BOMB && s_if_selected);
+	glUniform4f(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_scatter_target"), gridX, gridY, s_scatter_bomb_range, s_selected_weapon == SCATTER_BOMB && s_if_selected);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_scatter);
-	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_scatter_target"), 2);
+	glUniform1i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_tex_scatter_target"), 2);
 
 	// 禁止攻击标识
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_forbid);
-	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_forbid"), 3);
+	glUniform1i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_tex_forbid"), 3);
 
 	// 建筑标识
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, TEXTURE::s_image_building_icon);
-	glUniform1i(glGetUniformLocation(s_map_renderer_program, "g_tex_building_icon"), 4);
+	glUniform1i(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_tex_building_icon"), 4);
 
 
 	float attack_range = 0;
@@ -1764,36 +1793,36 @@ void render_main_game_pass() {
 		break;
 	}
 
-	glUniform1f(glGetUniformLocation(s_map_renderer_program, "g_valid_attack_range"), attack_range);
+	glUniform1f(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_valid_attack_range"), attack_range);
 	// 渲染！
-	map_mash.render(s_map_renderer_program, "vPos", nullptr, nullptr, nullptr);
+	MAP::map_mash.render(PASS_MAP_RENDER::s_map_renderer_program, "vPos", nullptr, nullptr, nullptr);
 
 	glUseProgram(0);
-	map_info.unbind();
+	MAP::map_info.unbind();
 
-	g_main_game_pass_fbo.unbind_frameBuffer();
+	FBO::g_main_game_pass_fbo.unbind_frameBuffer();
 }
 
 void prepare_render() {
 	GAMESOUND::check_if_need_play_next();
 
 
-	scale_map_camera.update(timer.time());
-	scale_map_camera.clampZ(-8, 0,timer.time());
+	MAP::scale_map_camera.update(RENDERER::timer.time());
+	MAP::scale_map_camera.clampZ(-8, 0,RENDERER::timer.time());
 
-	camera.update(timer.time());
-	camera.clampX(-5, 5, timer.time());
-	camera.clampZ(-6, 4, timer.time());
+	MAP::camera.update(RENDERER::timer.time());
+	MAP::camera.clampX(-5, 5, RENDERER::timer.time());
+	MAP::camera.clampZ(-6, 4, RENDERER::timer.time());
 
-	map_rotation.update_sin(timer.time());
+	MAP::map_rotation.update_sin(RENDERER::timer.time());
 
-	s_menu_gui.update(timer);
-	s_status_gui.update(timer);
-	s_tech_tree_gui.update(timer);
-	s_selected_gui.update(timer);
-	s_sub_menu_gui.update(timer);
+	s_menu_gui.update(RENDERER::timer);
+	s_status_gui.update(RENDERER::timer);
+	s_tech_tree_gui.update(RENDERER::timer);
+	s_selected_gui.update(RENDERER::timer);
+	s_sub_menu_gui.update(RENDERER::timer);
 
-	s_shake_effect.update(timer);
+	s_shake_effect.update(RENDERER::timer);
 
 	GAMESTATUS::s_enable_control = !s_menu_gui.is_activitied() && !s_tech_tree_gui.is_open() && !s_sub_menu_gui.is_open() && !s_game_over_gui.is_open();
 
@@ -1808,7 +1837,7 @@ void prepare_render() {
 	std::vector<std::string> errs = get_error_messages();
 	if (errs.size() > 0) {
 		s_selected_gui.message = errs[0];
-		s_selected_gui.shake_gui(timer);
+		s_selected_gui.shake_gui(RENDERER::timer);
 		GAMESOUND::play_error_sound();
 	}
 
@@ -1819,7 +1848,7 @@ void prepare_render() {
 			switch (e)
 			{
 			case GameEffect::GAME_EFFECT_PLAY_NUCLEAR_EXPLOSION:
-				s_shake_effect.push_shake(timer);
+				s_shake_effect.push_shake(RENDERER::timer);
 				GAMESOUND::play_bomb_explosion_sound();
 				break;
 			case GameEffect::GAME_EFFECT_PLAY_NUCLEAR_WARNING:
@@ -1837,7 +1866,7 @@ void prepare_render() {
 void render_points() {
 	// 渲染点
 
-	g_main_game_pass_fbo.bind_frameBuffer();
+	FBO::g_main_game_pass_fbo.bind_frameBuffer();
 
 	int W, H;
 	float ratio;
@@ -1845,49 +1874,49 @@ void render_points() {
 
 	glfwGetFramebufferSize(glfw_win, &W, &H);
 
-	int mvp_location = glGetUniformLocation(s_points_program, "MVP");
+	int mvp_location = glGetUniformLocation(PASS_POINT::s_points_program, "MVP");
 
 	CoordTranslate::project(mvp, W, H, 2);
 
 	//mat4x4_mul(mvp, p, m);
-	glUseProgram(s_points_program);
+	glUseProgram(PASS_POINT::s_points_program);
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
 	// g_fov
-	glUniform1f(glGetUniformLocation(s_points_program, "g_fov"), -2.0);
+	glUniform1f(glGetUniformLocation(PASS_POINT::s_points_program, "g_fov"), -2.0);
 	//g_frame_width, g_frame_height
-	glUniform1f(glGetUniformLocation(s_points_program, "g_frame_width"), W);
-	glUniform1f(glGetUniformLocation(s_points_program, "g_frame_height"), H);
-	glUniform1f(glGetUniformLocation(s_points_program, "g_time"), (float)timer.time());
-	glUniform2i(glGetUniformLocation(s_points_program, "g_map_size"), map_info.width(), map_info.height());
+	glUniform1f(glGetUniformLocation(PASS_POINT::s_points_program, "g_frame_width"), W);
+	glUniform1f(glGetUniformLocation(PASS_POINT::s_points_program, "g_frame_height"), H);
+	glUniform1f(glGetUniformLocation(PASS_POINT::s_points_program, "g_time"), (float)RENDERER::timer.time());
+	glUniform2i(glGetUniformLocation(PASS_POINT::s_points_program, "g_map_size"), MAP::map_info.width(), MAP::map_info.height());
 
 
 	Camera model_camera;
 	mat4x4 model_mat_inv_rot;
 	model_camera.setPos(0, 0.5, 0);
-	model_camera.setRot(0, map_rotation.x(), 0);
+	model_camera.setRot(0, MAP::map_rotation.x(), 0);
 	model_camera.getMat4(model_mat_inv_rot);
 	mat4x4_scale_aniso(model_mat_inv_rot, model_mat_inv_rot, 0.25, 0.25, 0.25);
-	glUniformMatrix4fv(glGetUniformLocation(s_points_program, "g_model_trans_mat_inv"), 1, GL_FALSE, (const GLfloat*)model_mat_inv_rot);
+	glUniformMatrix4fv(glGetUniformLocation(PASS_POINT::s_points_program, "g_model_trans_mat_inv"), 1, GL_FALSE, (const GLfloat*)model_mat_inv_rot);
 
 
 
 	mat4x4 g_trans_mat;
-	camera.getCamera().getMat4(g_trans_mat);
+	MAP::camera.getCamera().getMat4(g_trans_mat);
 	mat4x4 g_scale_mat;
-	scale_map_camera.getCamera().getMat4(g_scale_mat);
+	MAP::scale_map_camera.getCamera().getMat4(g_scale_mat);
 	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
 
 	mat4x4 shake_camera;
 	s_shake_effect.get_shake_matrix(shake_camera);
 	mat4x4_mul(g_trans_mat, g_trans_mat, shake_camera);
 
-	int g_trans_mat_location = glGetUniformLocation(s_points_program, "g_trans_mat");
+	int g_trans_mat_location = glGetUniformLocation(PASS_POINT::s_points_program, "g_trans_mat");
 	glUniformMatrix4fv(g_trans_mat_location, 1, GL_FALSE, (const GLfloat*)g_trans_mat);
 
-	point_renderer.render(s_points_program);
+	PASS_POINT::point_renderer.render(PASS_POINT::s_points_program);
 	glUseProgram(0);
-	g_main_game_pass_fbo.unbind_frameBuffer();
+	FBO::g_main_game_pass_fbo.unbind_frameBuffer();
 }
 
 void get_screen_position(float x, float y, float z, float& screen_x, float& screen_y) {
@@ -1903,14 +1932,14 @@ void get_screen_position(float x, float y, float z, float& screen_x, float& scre
 	Camera model_camera;
 	mat4x4 model_mat_inv_rot;
 	model_camera.setPos(0, 0.5, 0);
-	model_camera.setRot(0, map_rotation.x(), 0);
+	model_camera.setRot(0, MAP::map_rotation.x(), 0);
 	model_camera.getMat4(model_mat_inv_rot);
 	mat4x4_scale_aniso(model_mat_inv_rot, model_mat_inv_rot, 0.25, 0.25, 0.25);
 	
 	mat4x4 g_trans_mat;
-	camera.getCamera().getMat4(g_trans_mat);
+	MAP::camera.getCamera().getMat4(g_trans_mat);
 	mat4x4 g_scale_mat;
-	scale_map_camera.getCamera().getMat4(g_scale_mat);
+	MAP::scale_map_camera.getCamera().getMat4(g_scale_mat);
 	mat4x4_mul(g_trans_mat, g_trans_mat, g_scale_mat);
 
 	mat4x4 shake_camera;
@@ -1930,7 +1959,7 @@ void get_screen_position(float x, float y, float z, float& screen_x, float& scre
 void render_gaussian_blur() {
 	
 	{
-		g_gaussian_blur_pass_fbo.bind_frameBuffer();
+		FBO::g_gaussian_blur_pass_fbo.bind_frameBuffer();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1942,35 +1971,35 @@ void render_gaussian_blur() {
 		glfwGetFramebufferSize(glfw_win, &W, &H);
 
 		ratio = W / (float)H;
-		int mvp_location = glGetUniformLocation(s_gaussian_blur_program, "MVP");
+		int mvp_location = glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "MVP");
 
 		mat4x4_identity(m);
 		mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
 		mat4x4_mul(mvp, p, m);
 
-		glUseProgram(s_gaussian_blur_program);
+		glUseProgram(PASS_BLOOM::s_gaussian_blur_program);
 		glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
 		glActiveTexture(GL_TEXTURE0);
-		g_main_game_pass_fbo.bind_texture();
+		FBO::g_main_game_pass_fbo.bind_texture();
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glActiveTexture(GL_TEXTURE1);
-		g_gaussian_blur_vertical_pass_fbo.bind_texture();
+		FBO::g_gaussian_blur_vertical_pass_fbo.bind_texture();
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_from_origin"), true);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_blur_radius"), 1);
+		glUniform1f(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_step"), 0.125);
+		glUniform1f(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_w_div_h"), ratio);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_gaussian"), false);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_vertical"), false);
 
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_from_origin"), true);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_blur_radius"), 1);
-		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_step"), 0.125);
-		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_w_div_h"), ratio);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_gaussian"), false);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_vertical"), false);
-
-		s_mash.render(s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
+		MAP::s_mash.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
 		
 		glUseProgram(0);
-		g_gaussian_blur_pass_fbo.unbind_frameBuffer();
+		FBO::g_gaussian_blur_pass_fbo.unbind_frameBuffer();
 	}
 	{
-		g_gaussian_blur_vertical_pass_fbo.bind_frameBuffer();
+		FBO::g_gaussian_blur_vertical_pass_fbo.bind_frameBuffer();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1982,37 +2011,37 @@ void render_gaussian_blur() {
 		glfwGetFramebufferSize(glfw_win, &W, &H);
 
 		ratio = W / (float)H;
-		int mvp_location = glGetUniformLocation(s_gaussian_blur_program, "MVP");
+		int mvp_location = glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "MVP");
 
 		mat4x4_identity(m);
 		mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
 		mat4x4_mul(mvp, p, m);
 
 
-		glUseProgram(s_gaussian_blur_program);
+		glUseProgram(PASS_BLOOM::s_gaussian_blur_program);
 		glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
 		glActiveTexture(GL_TEXTURE0);
-		g_main_game_pass_fbo.bind_texture();
+		FBO::g_main_game_pass_fbo.bind_texture();
 		glActiveTexture(GL_TEXTURE1);
-		g_gaussian_blur_pass_fbo.bind_texture();
+		FBO::g_gaussian_blur_pass_fbo.bind_texture();
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_from_origin"), false);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_blur_radius"), 1);
+		glUniform1f(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_step"), 0.125);
+		glUniform1f(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_w_div_h"), ratio);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_gaussian"), false);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_vertical"), false);
 
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_from_origin"), false);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_blur_radius"), 1);
-		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_step"), 0.125);
-		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_w_div_h"), ratio);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_gaussian"), false);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_vertical"), false);
-
-		s_mash.render(s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
+		MAP::s_mash.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
 
 		glUseProgram(0);
-		g_gaussian_blur_vertical_pass_fbo.unbind_frameBuffer();
+		FBO::g_gaussian_blur_vertical_pass_fbo.unbind_frameBuffer();
 	}
 
 
 	{
-		g_gaussian_blur_pass_fbo.bind_frameBuffer();
+		FBO::g_gaussian_blur_pass_fbo.bind_frameBuffer();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -2024,35 +2053,35 @@ void render_gaussian_blur() {
 		glfwGetFramebufferSize(glfw_win, &W, &H);
 
 		ratio = W / (float)H;
-		int mvp_location = glGetUniformLocation(s_gaussian_blur_program, "MVP");
+		int mvp_location = glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "MVP");
 
 		mat4x4_identity(m);
 		mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
 		mat4x4_mul(mvp, p, m);
 
 
-		glUseProgram(s_gaussian_blur_program);
+		glUseProgram(PASS_BLOOM::s_gaussian_blur_program);
 		glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
 		glActiveTexture(GL_TEXTURE0);
-		g_main_game_pass_fbo.bind_texture();
+		FBO::g_main_game_pass_fbo.bind_texture();
 		glActiveTexture(GL_TEXTURE1);
-		g_gaussian_blur_vertical_pass_fbo.bind_texture();
+		FBO::g_gaussian_blur_vertical_pass_fbo.bind_texture();
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_from_origin"), false);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_blur_radius"), 8);
+		glUniform1f(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_step"), 0.025);
+		glUniform1f(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_w_div_h"), ratio);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_gaussian"), true);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_vertical"), true);
 
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_from_origin"), false);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_blur_radius"), 8);
-		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_step"), 0.025);
-		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_w_div_h"), ratio);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_gaussian"), true);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_vertical"), true);
-
-		s_mash.render(s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
+		MAP::s_mash.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
 
 		glUseProgram(0);
-		g_gaussian_blur_pass_fbo.unbind_frameBuffer();
+		FBO::g_gaussian_blur_pass_fbo.unbind_frameBuffer();
 	}
 	{
-		g_gaussian_blur_vertical_pass_fbo.bind_frameBuffer();
+		FBO::g_gaussian_blur_vertical_pass_fbo.bind_frameBuffer();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -2064,31 +2093,31 @@ void render_gaussian_blur() {
 		glfwGetFramebufferSize(glfw_win, &W, &H);
 
 		ratio = W / (float)H;
-		int mvp_location = glGetUniformLocation(s_gaussian_blur_program, "MVP");
+		int mvp_location = glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "MVP");
 
 		mat4x4_identity(m);
 		mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
 		mat4x4_mul(mvp, p, m);
 
 
-		glUseProgram(s_gaussian_blur_program);
+		glUseProgram(PASS_BLOOM::s_gaussian_blur_program);
 		glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
 		glActiveTexture(GL_TEXTURE0);
-		g_main_game_pass_fbo.bind_texture();
+		FBO::g_main_game_pass_fbo.bind_texture();
 		glActiveTexture(GL_TEXTURE1);
-		g_gaussian_blur_pass_fbo.bind_texture();
+		FBO::g_gaussian_blur_pass_fbo.bind_texture();
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_from_origin"), false);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_blur_radius"), 8);
+		glUniform1f(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_step"), 0.025);
+		glUniform1f(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_w_div_h"), ratio);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_gaussian"), true);
+		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_vertical"), false);
 
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_from_origin"), false);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_blur_radius"), 8);
-		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_step"), 0.025);
-		glUniform1f(glGetUniformLocation(s_gaussian_blur_program, "g_w_div_h"), ratio);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_gaussian"), true);
-		glUniform1i(glGetUniformLocation(s_gaussian_blur_program, "g_vertical"), false);
-
-		s_mash.render(s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
+		MAP::s_mash.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
 		glUseProgram(0);
-		g_gaussian_blur_vertical_pass_fbo.unbind_frameBuffer();
+		FBO::g_gaussian_blur_vertical_pass_fbo.unbind_frameBuffer();
 	}
 }
 
@@ -2105,7 +2134,7 @@ void render_final() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	ratio = 1;
-	int mvp_location = glGetUniformLocation(s_direct_tex_program, "MVP");
+	int mvp_location = glGetUniformLocation(PASS_DIRECT_TEX::s_direct_tex_program, "MVP");
 
 	mat4x4_identity(m);
 	mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
@@ -2114,17 +2143,17 @@ void render_final() {
 	glActiveTexture(GL_TEXTURE0);
 
 	if (s_menu_gui.is_activitied()) {
-		g_flame_render_pass.render(g_final_mix_pass_fbo.get_texture(), timer, s_mash, s_menu_gui.getX());
-		g_flame_render_pass.get_fbo().bind_texture();
+		FBO::g_flame_render_pass.render(FBO::g_final_mix_pass_fbo.get_texture(), RENDERER::timer, MAP::s_mash, s_menu_gui.getX());
+		FBO::g_flame_render_pass.get_fbo().bind_texture();
 	}
 	else
-		g_final_mix_pass_fbo.bind_texture();
+		FBO::g_final_mix_pass_fbo.bind_texture();
 
-	glUseProgram(s_direct_tex_program);
-	glUniform1i(glGetUniformLocation(s_direct_tex_program, "g_pass"), 0);
+	glUseProgram(PASS_DIRECT_TEX::s_direct_tex_program);
+	glUniform1i(glGetUniformLocation(PASS_DIRECT_TEX::s_direct_tex_program, "g_pass"), 0);
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
-	s_mash.render(s_direct_tex_program, "vPos", nullptr, "vUV", nullptr);
+	MAP::s_mash.render(PASS_DIRECT_TEX::s_direct_tex_program, "vPos", nullptr, "vUV", nullptr);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -2142,14 +2171,14 @@ void render() {
 		
 		// 检查是否为arm平台
 //#if defined(__aarch64__) || defined(__arm__)
-//		g_main_game_pass_fbo.bind_texture();
+//		FBO::g_main_game_pass_fbo.bind_texture();
 //		glGenerateMipmap(GL_TEXTURE_2D);
 //#else
 		render_gaussian_blur();
 //#endif
 	}
 	glUseProgram(0);
-	g_final_mix_pass_fbo.bind_frameBuffer();
+	FBO::g_final_mix_pass_fbo.bind_frameBuffer();
 	int W, H;
 	float ratio;
 	mat4x4 m, p, mvp;
@@ -2159,46 +2188,47 @@ void render() {
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	ratio = 1;
-	int mvp_location = glGetUniformLocation(s_main_game_pass_program, "MVP");
+	int mvp_location = glGetUniformLocation(PASS_MAIN::s_main_game_pass_program, "MVP");
 
 	mat4x4_identity(m);
 	mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
 	mat4x4_mul(mvp, p, m);
 
 	glActiveTexture(GL_TEXTURE0);
-	g_main_game_pass_fbo.bind_texture();
+	FBO::g_main_game_pass_fbo.bind_texture();
 	glActiveTexture(GL_TEXTURE1);
-	g_gaussian_blur_vertical_pass_fbo.bind_texture();
-	glUseProgram(s_main_game_pass_program);
+	FBO::g_gaussian_blur_vertical_pass_fbo.bind_texture();
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glUseProgram(PASS_MAIN::s_main_game_pass_program);
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
 	// 菜单模糊/泛光
 	if (s_menu_gui.is_activitied())
 //#if defined(__aarch64__) || defined(__arm__)
-//		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.0);
+//		glUniform1f(glGetUniformLocation(PASS_MAIN::s_main_game_pass_program, "g_blur"), 0.0);
 //#else
-		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_menu_gui.getX());
+		glUniform1f(glGetUniformLocation(PASS_MAIN::s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_menu_gui.getX());
 //#endif
 	else if (s_tech_tree_gui.is_active()) {
 //#if defined(__aarch64__) || defined(__arm__)
-//		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.0);
+//		glUniform1f(glGetUniformLocation(PASS_MAIN::s_main_game_pass_program, "g_blur"), 0.0);
 //#else
-		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_tech_tree_gui.getX());
+		glUniform1f(glGetUniformLocation(PASS_MAIN::s_main_game_pass_program, "g_blur"), 0.05 + 0.95 * s_tech_tree_gui.getX());
 //#endif
 	}
 	else {
 //#if defined(__aarch64__) || defined(__arm__)
-//		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.0);
+//		glUniform1f(glGetUniformLocation(PASS_MAIN::s_main_game_pass_program, "g_blur"), 0.0);
 //#else
-		glUniform1f(glGetUniformLocation(s_main_game_pass_program, "g_blur"), 0.05);
+		glUniform1f(glGetUniformLocation(PASS_MAIN::s_main_game_pass_program, "g_blur"), 0.05);
 //#endif
 	}
-	s_mash.render(s_main_game_pass_program, "vPos", nullptr, "vUV", nullptr);
+	MAP::s_mash.render(PASS_MAIN::s_main_game_pass_program, "vPos", nullptr, "vUV", nullptr);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
 
 	
-	g_final_mix_pass_fbo.unbind_frameBuffer();
+	FBO::g_final_mix_pass_fbo.unbind_frameBuffer();
 
 	render_final();
 
@@ -2209,11 +2239,11 @@ void render() {
 }
 
 void reset_camera() {
-	camera.move_to(0, 0, -1.75, timer.time());
-	camera.rotate_to(0, 0, -1.2, timer.time());
-	scale_map_camera.move_to(0, 0, -8, timer.time());
-	camera.rotate_to(0, 0, -1.2 / (1 + 2 * exp(-0.05 * -8 * -8)), timer.time());
-	map_rotation.new_end_position(-(exp(-0.01 * pow(-8 * -8, 2))), timer.time());
+	MAP::camera.move_to(0, 0, -1.75, RENDERER::timer.time());
+	MAP::camera.rotate_to(0, 0, -1.2, RENDERER::timer.time());
+	MAP::scale_map_camera.move_to(0, 0, -8, RENDERER::timer.time());
+	MAP::camera.rotate_to(0, 0, -1.2 / (1 + 2 * exp(-0.05 * -8 * -8)), RENDERER::timer.time());
+	MAP::map_rotation.new_end_position(-(exp(-0.01 * pow(-8 * -8, 2))), RENDERER::timer.time());
 }
 
 void KeyProcess() {
@@ -2223,28 +2253,28 @@ void KeyProcess() {
 
 	float dx = 0, dz = 0;
 
-	float speed = 0.5 * exp(- 0.25 * scale_map_camera.getZ());
+	float speed = 0.5 * exp(- 0.25 * MAP::scale_map_camera.getZ());
 
-	if (keys[GLFW_KEY_W]) {
+	if (INTERACTIVE::keys[GLFW_KEY_W]) {
 		dz += speed;
 	}
-	if (keys[GLFW_KEY_S]) {
+	if (INTERACTIVE::keys[GLFW_KEY_S]) {
 		dz += -speed;
 	}
-	if (keys[GLFW_KEY_A]) {
+	if (INTERACTIVE::keys[GLFW_KEY_A]) {
 		dx += speed;
 	}
-	if (keys[GLFW_KEY_D]) {
+	if (INTERACTIVE::keys[GLFW_KEY_D]) {
 		dx += -speed;
 	}
 
 	if (dx != 0 || dz != 0) {
-		dx *= exp(timer.dt);
-		dz *= exp(timer.dt);
-		camera.move(dx, 0, dz, timer.time());
+		dx *= exp(RENDERER::timer.dt);
+		dz *= exp(RENDERER::timer.dt);
+		MAP::camera.move(dx, 0, dz, RENDERER::timer.time());
 
 	}
-	if (keys[GLFW_KEY_R]) {
+	if (INTERACTIVE::keys[GLFW_KEY_R]) {
 		// 重置摄像机
 		reset_camera();
 	}
@@ -2253,7 +2283,7 @@ void KeyProcess() {
 void KeyRelease(int key) {
 	if(key == GLFW_KEY_ESCAPE)
 		if (s_menu_gui.get_gui_mode() == MenuGui::GuiMode::Pause) {
-			s_menu_gui.open_gui(!s_menu_gui.is_open(), timer);
+			s_menu_gui.open_gui(!s_menu_gui.is_open(), RENDERER::timer);
 		}
 	
 	if (s_menu_gui.is_open()) {
@@ -2268,13 +2298,13 @@ void KeyRelease(int key) {
 		}
 		break;
 	case GLFW_KEY_T:
-		s_tech_tree_gui.open(!s_tech_tree_gui.is_open(), timer);
+		s_tech_tree_gui.open(!s_tech_tree_gui.is_open(), RENDERER::timer);
 		break;
 	case GLFW_KEY_E: // 发动攻击
 		if (GAMESTATUS::s_enable_control) {
 			if (s_selected_gui.is_selected) {
 				Point start_point = Point::to_point(s_selected_gui.grid);
-				Point end_point = Point::to_point(s_current_selected_grid);
+				Point end_point = Point::to_point(INTERACTIVE::s_current_selected_grid);
 				try {
 					Region& from_region = RegionManager::instance_of().region(start_point.x, start_point.y);
 					Region& to_region = RegionManager::instance_of().region(end_point.x, end_point.y);
@@ -2287,7 +2317,7 @@ void KeyRelease(int key) {
 					case NUCLEAR_MISSILE:
 						if (from_region.get_owner() != 0) {
 							s_selected_gui.message = u8"无效区块！";
-							s_selected_gui.shake_gui(timer);
+							s_selected_gui.shake_gui(RENDERER::timer);
 							break;
 						}
 
@@ -2309,8 +2339,8 @@ void KeyRelease(int key) {
 							DEBUGOUTPUT("Nuclear Missile");
 							GAMESOUND::play_nuclear_launch_sound();
 							s_selected_gui.message = u8"核导弹已发射";
-							s_selected_gui.shake_gui(timer);
-							s_shake_effect.push_shake(timer);
+							s_selected_gui.shake_gui(RENDERER::timer);
+							s_shake_effect.push_shake(RENDERER::timer);
 						}
 						break;
 					case ARMY:
@@ -2335,7 +2365,7 @@ void KeyRelease(int key) {
 		if (GAMESTATUS::s_enable_control) {
 			if (s_selected_gui.is_selected) {
 				Point start_point = Point::to_point(s_selected_gui.grid);
-				Point end_point = Point::to_point(s_current_selected_grid);
+				Point end_point = Point::to_point(INTERACTIVE::s_current_selected_grid);
 				try {
 					Region& from_region = RegionManager::instance_of().region(start_point.x, start_point.y);
 					Region& to_region = RegionManager::instance_of().region(end_point.x, end_point.y);
@@ -2348,7 +2378,7 @@ void KeyRelease(int key) {
 					case NUCLEAR_MISSILE:
 						if (from_region.get_owner() != 0) {
 							s_selected_gui.message = u8"无效区块！";
-							s_selected_gui.shake_gui(timer);
+							s_selected_gui.shake_gui(RENDERER::timer);
 							break;
 						}
 
@@ -2403,7 +2433,7 @@ void KeyRelease(int key) {
 	case GLFW_KEY_X:
 		if (GAMESTATUS::s_enable_control && s_selected_weapon == SCATTER_BOMB) {
 			// 增大范围
-			s_scatter_bomb_range = fmin(map_info.width() / 2, s_scatter_bomb_range + 1);
+			s_scatter_bomb_range = fmin(MAP::map_info.width() / 2, s_scatter_bomb_range + 1);
 		}
 		if (GAMESTATUS::s_enable_control && s_selected_weapon == NUCLEAR_MISSILE) {
 			s_nuclear_missile_level = (s_nuclear_missile_level - 1 + 3) % 3;
@@ -2437,17 +2467,17 @@ void KeyRelease(int key) {
 
 bool compileShaders() {
 	DEBUGOUTPUT("Compiling Shaders");
-	s_main_game_pass_program = CompileShader(main_game_pass_vert, main_game_pass_frag, nullptr, &vertex_shader, &fragment_shader, nullptr);
-	if (s_main_game_pass_program == -1) return false;
-	s_normal_gl_program = CompileShader(normal_gl_vert, normal_gl_frag, nullptr, &normal_gl_vertex_shader, &normal_gl_fragment_shader, nullptr);
-	if (s_normal_gl_program == -1) return false;
-	s_map_renderer_program = CompileShader(map_renderer_vert, map_renderer_frag, nullptr, &map_renderer_vertex_shader, &map_renderer_fragment_shader, nullptr);
-	if (s_map_renderer_program == -1) return false;
-	s_gaussian_blur_program = CompileShader(gaussian_blur_vert, gaussian_blur_frag, nullptr, &gaussian_blur_vertex_shader, &gaussian_blur_fragment_shader, nullptr);
-	if (s_gaussian_blur_program == -1) return false;
-	s_direct_tex_program = CompileShader(direct_tex_pass_vert, direct_tex_pass_frag, nullptr, &direct_tex_vertex_shader, &direct_tex_fragment_shader, nullptr);
-	if (s_direct_tex_program == -1) return false;
-	s_points_program = CompileShader(point_renderer_vert, point_renderer_frag, nullptr, &points_vertex_shader, &points_fragment_shader, nullptr);
+	PASS_MAIN::s_main_game_pass_program = CompileShader(main_game_pass_vert, main_game_pass_frag, nullptr, &PASS_MAIN::vertex_shader, &PASS_MAIN::fragment_shader, nullptr);
+	if (PASS_MAIN::s_main_game_pass_program == -1) return false;
+	PASS_NORMAL::s_normal_gl_program = CompileShader(normal_gl_vert, normal_gl_frag, nullptr, &PASS_NORMAL::normal_gl_vertex_shader, &PASS_NORMAL::normal_gl_fragment_shader, nullptr);
+	if (PASS_NORMAL::s_normal_gl_program == -1) return false;
+	PASS_MAP_RENDER::s_map_renderer_program = CompileShader(map_renderer_vert, map_renderer_frag, nullptr, &PASS_MAP_RENDER::map_renderer_vertex_shader, &PASS_MAP_RENDER::map_renderer_fragment_shader, nullptr);
+	if (PASS_MAP_RENDER::s_map_renderer_program == -1) return false;
+	PASS_BLOOM::s_gaussian_blur_program = CompileShader(gaussian_blur_vert, gaussian_blur_frag, nullptr, &PASS_BLOOM::gaussian_blur_vertex_shader, &PASS_BLOOM::gaussian_blur_fragment_shader, nullptr);
+	if (PASS_BLOOM::s_gaussian_blur_program == -1) return false;
+	PASS_DIRECT_TEX::s_direct_tex_program = CompileShader(direct_tex_pass_vert, direct_tex_pass_frag, nullptr, &PASS_DIRECT_TEX::direct_tex_vertex_shader, &PASS_DIRECT_TEX::direct_tex_fragment_shader, nullptr);
+	if (PASS_DIRECT_TEX::s_direct_tex_program == -1) return false;
+	PASS_POINT::s_points_program = CompileShader(point_renderer_vert, point_renderer_frag, nullptr, &PASS_POINT::points_vertex_shader, &PASS_POINT::points_fragment_shader, nullptr);
 	DEBUGOUTPUT("Shaders Compiled");
 	return true;
 }
@@ -2462,33 +2492,33 @@ void init() {
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	glEnable(GL_POINT_SPRITE);
 
-	scale_map_camera.setMoveDuration(0.25);
-	scale_map_camera.setPos(0, 0, -32,timer.time());
-	camera.setMoveDuration(0.5);
-	camera.setRotateDuration(0.25);
-	camera.rotate(0, 0, -1.5, timer.time());
-	camera.move(0, 0, -2, timer.time());
-	map_rotation.set_start_position(-1, timer.time());
-	map_rotation.set_total_duration(0.25);
+	MAP::scale_map_camera.setMoveDuration(0.25);
+	MAP::scale_map_camera.setPos(0, 0, -32,RENDERER::timer.time());
+	MAP::camera.setMoveDuration(0.5);
+	MAP::camera.setRotateDuration(0.25);
+	MAP::camera.rotate(0, 0, -1.5, RENDERER::timer.time());
+	MAP::camera.move(0, 0, -2, RENDERER::timer.time());
+	MAP::map_rotation.set_start_position(-1, RENDERER::timer.time());
+	MAP::map_rotation.set_total_duration(0.25);
 
 	reset_camera();
 
 	DEBUGOUTPUT("Building meshes..");
 
-	s_mash.append(1, -1, 0);
-	s_mash.append(1, 1, 0);
-	s_mash.append(-1, 1, 0);
-	s_mash.append(-1, -1, 0);
-	s_mash.build();
+	MAP::s_mash.append(1, -1, 0);
+	MAP::s_mash.append(1, 1, 0);
+	MAP::s_mash.append(-1, 1, 0);
+	MAP::s_mash.append(-1, -1, 0);
+	MAP::s_mash.build();
 
-	map_mash.append(1, -1, 0);
-	map_mash.append(1, 1, 0);
-	map_mash.append(-1, 1, 0);
-	map_mash.append(-1, -1, 0);
-	map_mash.build();
+	MAP::map_mash.append(1, -1, 0);
+	MAP::map_mash.append(1, 1, 0);
+	MAP::map_mash.append(-1, 1, 0);
+	MAP::map_mash.append(-1, -1, 0);
+	MAP::map_mash.build();
 	DEBUGOUTPUT("Meshes built");
 
-	point_renderer.init();
+	PASS_POINT::point_renderer.init();
 
 
 	DEBUGOUTPUT("Loading Textures...");
@@ -2500,40 +2530,40 @@ void init() {
 	TEXTURE::s_image_forbid = LoadPNG("resources/textures/forbid.png");
 	TEXTURE::s_image_building_icon = LoadPNG("resources/textures/buildings.png");
 	DEBUGOUTPUT("Textures Loaded");
-	timer.set_time(glfwGetTime());
+	RENDERER::timer.set_time(glfwGetTime());
 	// 启动背景音乐
 	GAMESOUND::play_background();
 }
 
 void destroy() {
-	if (s_main_game_pass_program != -1) glDeleteProgram(s_main_game_pass_program);
-	if (s_normal_gl_program != -1) glDeleteProgram(s_normal_gl_program);
-	if (s_map_renderer_program != -1) glDeleteProgram(s_map_renderer_program);
-	if (s_gaussian_blur_program != -1) glDeleteProgram(s_gaussian_blur_program);
-	if (s_direct_tex_program != -1) glDeleteProgram(s_direct_tex_program);
-	if (s_points_program != -1) glDeleteProgram(s_points_program);
+	if (PASS_MAIN::s_main_game_pass_program != -1) glDeleteProgram(PASS_MAIN::s_main_game_pass_program);
+	if (PASS_NORMAL::s_normal_gl_program != -1) glDeleteProgram(PASS_NORMAL::s_normal_gl_program);
+	if (PASS_MAP_RENDER::s_map_renderer_program != -1) glDeleteProgram(PASS_MAP_RENDER::s_map_renderer_program);
+	if (PASS_BLOOM::s_gaussian_blur_program != -1) glDeleteProgram(PASS_BLOOM::s_gaussian_blur_program);
+	if (PASS_DIRECT_TEX::s_direct_tex_program != -1) glDeleteProgram(PASS_DIRECT_TEX::s_direct_tex_program);
+	if (PASS_POINT::s_points_program != -1) glDeleteProgram(PASS_POINT::s_points_program);
 
-	if (vertex_shader != -1) glDeleteShader(vertex_shader);
-	if (fragment_shader != -1) glDeleteShader(fragment_shader);
-	if (normal_gl_vertex_shader != -1) glDeleteShader(normal_gl_vertex_shader);
-	if (normal_gl_fragment_shader != -1) glDeleteShader(normal_gl_fragment_shader);
-	if (map_renderer_vertex_shader != -1) glDeleteShader(map_renderer_vertex_shader);
-	if (map_renderer_fragment_shader != -1) glDeleteShader(map_renderer_fragment_shader);
-	if (gaussian_blur_vertex_shader != -1) glDeleteShader(gaussian_blur_vertex_shader);
-	if (gaussian_blur_fragment_shader != -1) glDeleteShader(gaussian_blur_fragment_shader);
-	if (direct_tex_vertex_shader != -1) glDeleteShader(direct_tex_vertex_shader);
-	if (direct_tex_fragment_shader != -1) glDeleteShader(direct_tex_fragment_shader);
-	if (points_vertex_shader != -1) glDeleteShader(points_vertex_shader);
-	if (points_fragment_shader != -1) glDeleteShader(points_fragment_shader);
+	if (PASS_MAIN::vertex_shader != -1) glDeleteShader(PASS_MAIN::vertex_shader);
+	if (PASS_MAIN::fragment_shader != -1) glDeleteShader(PASS_MAIN::fragment_shader);
+	if (PASS_NORMAL::normal_gl_vertex_shader != -1) glDeleteShader(PASS_NORMAL::normal_gl_vertex_shader);
+	if (PASS_NORMAL::normal_gl_fragment_shader != -1) glDeleteShader(PASS_NORMAL::normal_gl_fragment_shader);
+	if (PASS_MAP_RENDER::map_renderer_vertex_shader != -1) glDeleteShader(PASS_MAP_RENDER::map_renderer_vertex_shader);
+	if (PASS_MAP_RENDER::map_renderer_fragment_shader != -1) glDeleteShader(PASS_MAP_RENDER::map_renderer_fragment_shader);
+	if (PASS_BLOOM::gaussian_blur_vertex_shader != -1) glDeleteShader(PASS_BLOOM::gaussian_blur_vertex_shader);
+	if (PASS_BLOOM::gaussian_blur_fragment_shader != -1) glDeleteShader(PASS_BLOOM::gaussian_blur_fragment_shader);
+	if (PASS_DIRECT_TEX::direct_tex_vertex_shader != -1) glDeleteShader(PASS_DIRECT_TEX::direct_tex_vertex_shader);
+	if (PASS_DIRECT_TEX::direct_tex_fragment_shader != -1) glDeleteShader(PASS_DIRECT_TEX::direct_tex_fragment_shader);
+	if (PASS_POINT::points_vertex_shader != -1) glDeleteShader(PASS_POINT::points_vertex_shader);
+	if (PASS_POINT::points_fragment_shader != -1) glDeleteShader(PASS_POINT::points_fragment_shader);
 	
-	g_gaussian_blur_pass_fbo.release();
-	g_gaussian_blur_vertical_pass_fbo.release();
-	g_main_game_pass_fbo.release();
-	g_final_mix_pass_fbo.release();
-	g_flame_render_pass.release();
-	g_point_render_pass_fbo.release();
+	FBO::g_gaussian_blur_pass_fbo.release();
+	FBO::g_gaussian_blur_vertical_pass_fbo.release();
+	FBO::g_main_game_pass_fbo.release();
+	FBO::g_final_mix_pass_fbo.release();
+	FBO::g_flame_render_pass.release();
+	FBO::g_point_render_pass_fbo.release();
 
-	point_renderer.cleanup();
+	PASS_POINT::point_renderer.cleanup();
 
 	if (TEXTURE::s_image_radioactive != GLFW_INVALID_VALUE) {
 		glDeleteTextures(1, &TEXTURE::s_image_radioactive);
@@ -2666,13 +2696,13 @@ int main() {
 
 	int width, height;
 	glfwGetFramebufferSize(glfw_win, &width, &height);
-	g_main_game_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F, true);
-	g_final_mix_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
-	g_gaussian_blur_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
-	g_gaussian_blur_vertical_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
-	g_point_render_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
-	g_flame_render_pass = FlameRenderPass(width, height, GL_RGBA16F);
-	g_flame_render_pass.init();
+	FBO::g_main_game_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F, true);
+	FBO::g_final_mix_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
+	FBO::g_gaussian_blur_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F, true);
+	FBO::g_gaussian_blur_vertical_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F, true);
+	FBO::g_point_render_pass_fbo = FragmentBuffer(width, height, GL_RGBA16F);
+	FBO::g_flame_render_pass = FlameRenderPass(width, height, GL_RGBA16F);
+	FBO::g_flame_render_pass.init();
 
 
 	if (!compileShaders()) goto destroy;
@@ -2695,7 +2725,7 @@ int main() {
 			ImGui_ImplGlfw_Sleep(10);
 			continue;
 		}
-		timer.set_time(glfwGetTime());
+		RENDERER::timer.set_time(glfwGetTime());
 		prepare_render();
 		KeyProcess();
 		render();
@@ -2740,7 +2770,7 @@ void glfwErrorCallBack(int error, const char* str) {
 	DEBUGOUTPUT(str);
 }
 void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int mods) {
-	keys[key] = (bool)action;
+	INTERACTIVE::keys[key] = (bool)action;
 	if (action == GLFW_PRESS)
 	{
 		switch (key)
@@ -2773,20 +2803,20 @@ void glfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 	if (s_menu_gui.is_open() || !GAMESTATUS::s_in_game || !GAMESTATUS::s_enable_control) { 
 		return;
 	}
-	scale_map_camera.move(0, 0, yoffset, timer.time());
-	camera.rotate_to(0, 0, -1.2 /(1 + 2 * exp(-0.05 * scale_map_camera.getZ() * scale_map_camera.getZ())), timer.time());
-	map_rotation.new_end_position(-(exp(-0.01 * pow(scale_map_camera.getZ() * scale_map_camera.getZ(),2))),timer.time());
+	MAP::scale_map_camera.move(0, 0, yoffset, RENDERER::timer.time());
+	MAP::camera.rotate_to(0, 0, -1.2 /(1 + 2 * exp(-0.05 * MAP::scale_map_camera.getZ() * MAP::scale_map_camera.getZ())), RENDERER::timer.time());
+	MAP::map_rotation.new_end_position(-(exp(-0.01 * pow(MAP::scale_map_camera.getZ() * MAP::scale_map_camera.getZ(),2))),RENDERER::timer.time());
 }
 
 void glfwWindowSizeCallback(GLFWwindow* window, int width, int height) {
 	try {
 		glViewport(0, 0, width, height);
-		g_main_game_pass_fbo.resize(width, height, true);
-		g_gaussian_blur_pass_fbo.resize(width, height);
-		g_gaussian_blur_vertical_pass_fbo.resize(width, height);
-		g_final_mix_pass_fbo.resize(width, height);
-		g_point_render_pass_fbo.resize(width, height);
-		g_flame_render_pass.get_fbo().resize(width, height);
+		FBO::g_main_game_pass_fbo.resize(width, height, true);
+		FBO::g_gaussian_blur_pass_fbo.resize(width, height, true);
+		FBO::g_gaussian_blur_vertical_pass_fbo.resize(width, height, true);
+		FBO::g_final_mix_pass_fbo.resize(width, height);
+		FBO::g_point_render_pass_fbo.resize(width, height);
+		FBO::g_flame_render_pass.get_fbo().resize(width, height);
 		s_pause_rendering = false;
 
 		ImGuiIO& io = ImGui::GetIO();
