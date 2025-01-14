@@ -14,19 +14,37 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - name: Install dependencies and build
+      - name: Install dependencies on Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             sudo apt-get update
             sudo apt-get install -y cmake
-            sudo apt-get install -y libgl1-mesa-dev mesa-common-dev libglu1-mesa libglu1-mesa-dev libegl1-mesa libegl1-mesa-dev libgles2-mesa-dev libglew-dev libglfw3-dev --fix-missing
-
+            sudo apt-get install -y libgl1-mesa-dev mesa-common-dev libglu1-mesa-dev libegl1-mesa-dev libgles2-mesa-dev libglew-dev libglfw3-dev --fix-missing
+      - name: Build on Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
             mkdir build
             cmake -B build -S .
             cd build
             make
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            mkdir build
-            cmake -B build -S .
-            cmake --build build
-          fi
+      - name: Build on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+           mkdir build
+           cmake -B build -S .
+           cmake --build build
+
+           
+      - name: Upload Linux Build Artifacts
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-build
+          path: build/
+
+      - name: Upload Windows Build Artifacts
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-build
+          path: build/
