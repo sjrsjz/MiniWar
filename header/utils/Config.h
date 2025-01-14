@@ -60,6 +60,8 @@ public:
 		double A{};
 		double k{};
 		double t0{};
+		std::vector<double> ArmyUpLevelCost{};
+		std::vector<std::vector<double>> WeaponUpLevelCost{};
 	};
 
 	bool isLoaded = false;

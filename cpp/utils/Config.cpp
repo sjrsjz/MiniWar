@@ -79,6 +79,8 @@ void Config::load(const std::string& path) {
 				item.value()["A"].get<double>(),
 				item.value()["k"].get<double>(),
 				item.value()["t0"].get<double>(),
+				item.value()["ArmyUpLevelCost"].get<std::vector<double>>(),
+				item.value()["WeaponUpLevelCost"].get<std::vector<std::vector<double>>>()
 			};
 	}
 
