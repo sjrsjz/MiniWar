@@ -184,7 +184,7 @@ class AI {
 
 	// 资源增长公式
 	const double formula(double t) {
-		return sqrt(cur_AI_region_size) * A / (1 + exp(-k * (t - t0))) + 1500 / cur_AI_region_size;
+		return 0.5 * cur_AI_region_size * A / (1 + exp(-k * (t - t0))) + 1500 / cur_AI_region_size;
 	}
 
 public:
@@ -945,4 +945,3 @@ public:
 		return no_alive;
 	}
 };
-
