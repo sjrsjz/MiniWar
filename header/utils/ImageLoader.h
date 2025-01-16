@@ -4,10 +4,10 @@
 #include "../../include/stb/stb_image.h"
 #include "../debug.h"
 
-GLuint LoadPNG(const char* path, bool repeat = false) {
+GLuint LoadPNG(const char* path, bool repeat = false, bool invert_y = false) {
     int width, height, nrChannels;
     // 翻转图片Y轴
-    // stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(invert_y);
     unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
 
     if (!data) {

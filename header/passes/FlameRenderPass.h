@@ -55,7 +55,7 @@ public:
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	inline void render(GLuint mix_tex, const Timer& timer, const mash& quad, float mix_strength) {
+	inline void render(GLuint mix_tex, const Timer& timer, const Mash& quad, float mix_strength) {
 		m_fbo.bind_frameBuffer();
 		mat4x4 m, p, mvp;
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

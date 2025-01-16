@@ -1,26 +1,73 @@
 ﻿#pragma once
 #include "../include/GL/glew.h"
+#include "../include/tinyobjloader/tiny_obj_loader.h"
+#include "../include/linmath.h"
 #include <vector>
 #include <stdexcept>
 #include <memory>
 
-struct vertex {
-    float x, y, z;
-    float r, g, b, a;
-    float u, v;
-    float n_x, n_y, n_z;
-};
+class Mash {
+private:
+    GLenum m_render_mode = GL_QUADS; // 添加渲染模式
 
-class mash {
+    struct vertex {
+        float x, y, z;
+        float r, g, b, a;
+        float u, v;
+        float n_x, n_y, n_z;
+    };
+
+    struct _mat4x4 {
+        float m[4][4];
+    };
+
 public:
     float r = 0.f, g = 0.f, b = 0.f, a = 0.f;
     float u = 0.f, v = 0.f;
     float n_x = 0.f, n_y = 0.f, n_z = 0.f;
     GLuint vertex_buffer;
+    GLuint instance_mat_buffer;
     std::vector<vertex> vertexs;
     bool enable_color = false, enable_uv = false, enable_normal = false;
 
-    mash() : vertex_buffer(0) {}
+    std::vector<_mat4x4> instance_matrix_stack;
+    bool enable_instance = false;
+
+    void push_matrix() {
+        _mat4x4 m;
+        m.m[0][0] = 1.f; m.m[0][1] = 0.f; m.m[0][2] = 0.f; m.m[0][3] = 0.f;
+        m.m[1][0] = 0.f; m.m[1][1] = 1.f; m.m[1][2] = 0.f; m.m[1][3] = 0.f;
+        m.m[2][0] = 0.f; m.m[2][1] = 0.f; m.m[2][2] = 1.f; m.m[2][3] = 0.f;
+        m.m[3][0] = 0.f; m.m[3][1] = 0.f; m.m[3][2] = 0.f; m.m[3][3] = 1.f;
+        instance_matrix_stack.push_back(m);
+    }
+
+    void push_matrix(const mat4x4& mat) {
+        _mat4x4 m;
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                m.m[i][j] = mat[i][j];
+            }
+        }
+        instance_matrix_stack.push_back(m);
+    }
+
+    void clear_matrix() {
+        instance_matrix_stack.clear();
+    }
+
+    void update_instance_matrix() {
+        if (instance_matrix_stack.empty()) return;
+        if (instance_mat_buffer != 0) {
+            glDeleteBuffers(1, &instance_mat_buffer);
+        }
+        glGenBuffers(1, &instance_mat_buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, instance_mat_buffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(_mat4x4) * instance_matrix_stack.size(), instance_matrix_stack.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    Mash() : vertex_buffer(0), instance_mat_buffer(0) {}
 
     void append(float x, float y, float z) {
         vertex v_;
@@ -67,7 +114,7 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
-    void render(GLuint program, const GLchar* pos, const GLchar* color, const GLchar* uv, const GLchar* normal) const{
+    void render(GLuint program, const GLchar* pos, const GLchar* color = nullptr, const GLchar* uv = nullptr, const GLchar* normal = nullptr, const GLchar* model_mat = nullptr) const {
         //int location = 0;
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
         int size0 = (3 + 4 * (int)enable_color + 2 * (int)enable_uv + 3 * (int)enable_normal) * sizeof(float);
@@ -80,7 +127,7 @@ public:
         glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE, size0, (void*)0);
         j += sizeof(float) * 3;
 
-		GLuint vcol_location = 0, vuv_location = 0, vnormal_location = 0;
+        GLuint vcol_location = 0, vuv_location = 0, vnormal_location = 0, instance_matrix_location = 0;
 
         if (enable_color) {
             vcol_location = glGetAttribLocation(program, color);
@@ -107,7 +154,36 @@ public:
             j += sizeof(float) * 3;
         }
 
-		glDrawArrays(GL_QUADS, 0, vertexs.size());
+        //glDrawArrays(m_render_mode, 0, vertexs.size());
+        if (enable_instance) {
+            // 保存当前绑定的缓冲区
+            GLint currentBuffer;
+            glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &currentBuffer);
+
+            // 绑定实例矩阵缓冲区
+            glBindBuffer(GL_ARRAY_BUFFER, instance_mat_buffer);
+            instance_matrix_location = glGetAttribLocation(program, model_mat);
+            if (instance_matrix_location == -1) throw std::runtime_error("instance matrix uniform not found");
+
+            // 设置矩阵属性
+            for (int i = 0; i < 4; ++i) {
+                glEnableVertexAttribArray(instance_matrix_location + i);
+                glVertexAttribPointer(instance_matrix_location + i, 4, GL_FLOAT, GL_FALSE,
+                    sizeof(_mat4x4), (void*)(sizeof(float) * 4 * i));
+                glVertexAttribDivisor(instance_matrix_location + i, 1);
+            }
+
+            // 恢复之前的缓冲区绑定
+            glBindBuffer(GL_ARRAY_BUFFER, currentBuffer);
+        }
+
+
+        if (enable_instance) {
+            glDrawArraysInstanced(m_render_mode, 0, vertexs.size(), instance_matrix_stack.size());
+        }
+        else {
+            glDrawArrays(m_render_mode, 0, vertexs.size());
+        }
 
 
 		glDisableVertexAttribArray(vpos_location);
@@ -120,9 +196,21 @@ public:
         if (enable_normal) {
             glDisableVertexAttribArray(vnormal_location);
         }
+        if (enable_instance) {
+            for (int i = 0; i < 4; ++i) {
+                glDisableVertexAttribArray(instance_matrix_location + i);
+                glVertexAttribDivisor(instance_matrix_location + i, 0);
+            }
+        }
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
+    void set_render_mode(GLenum mode) {
+        m_render_mode = mode;
+    }
+    GLenum render_mode() const {
+        return m_render_mode;
+    }
 
     void rgba(float r, float g, float b, float a) {
         this->r = r; this->g = g; this->b = b; this->a = a;
@@ -135,10 +223,65 @@ public:
     void normal(float n_x, float n_y, float n_z) {
         this->n_x = n_x; this->n_y = n_y; this->n_z = n_z;
     }
+    bool load_from_obj(const std::string& filepath) {
+        tinyobj::attrib_t attrib;
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+        std::string err;
 
-    ~mash() {
+        bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+            filepath.c_str());
+
+        if (!ret) {
+            throw std::runtime_error(err);
+        }
+
+        // 清空当前数据
+        vertexs.clear();
+
+        // 设置启用的属性
+        enable_normal = !attrib.normals.empty();
+        enable_uv = !attrib.texcoords.empty();
+
+        // 处理每个shape
+        for (const auto& shape : shapes) {
+            for (const auto& index : shape.mesh.indices) {
+                vertex v_;
+                // 位置
+                v_.x = attrib.vertices[3 * index.vertex_index + 0];
+                v_.y = attrib.vertices[3 * index.vertex_index + 1];
+                v_.z = attrib.vertices[3 * index.vertex_index + 2];
+
+                // 法线
+                if (enable_normal) {
+                    v_.n_x = attrib.normals[3 * index.normal_index + 0];
+                    v_.n_y = attrib.normals[3 * index.normal_index + 1];
+                    v_.n_z = attrib.normals[3 * index.normal_index + 2];
+                }
+
+                // UV坐标
+                if (enable_uv) {
+                    v_.u = attrib.texcoords[2 * index.texcoord_index + 0];
+                    v_.v = attrib.texcoords[2 * index.texcoord_index + 1];
+                }
+
+                // 颜色(使用当前设置的颜色)
+                v_.r = r; v_.g = g; v_.b = b; v_.a = a;
+
+                vertexs.push_back(v_);
+            }
+        }
+
+        m_render_mode = GL_TRIANGLES; // OBJ默认使用三角形
+        return true;
+    }
+    ~Mash() {
         if (vertex_buffer != 0) {
             glDeleteBuffers(1, &vertex_buffer);
         }
+        if (instance_mat_buffer != 0) {
+            glDeleteBuffers(1, &instance_mat_buffer);
+        }
+
     }
 };
