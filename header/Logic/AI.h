@@ -41,102 +41,104 @@ const int ARMY = 0;
 
 void push_game_effects(GameEffect effect);
 
-class Time {
-    GlobalTimer& Timer = GlobalTimer::instance_of();
-    double last_t = Timer.get_acc_time();
-    double delta_t = 0;
-    double target;
-    bool* state;  // 改为指针
-    bool is_bound = false;
-    std::function<void()> call_back_func;
-
-public:
-    Time(double target) : target(target) {
-        state = new bool(false);
-    }
-    
-    Time(double target, bool& state_ref) : target(target) {
-        state = &state_ref;
-        *state = false;
-        is_bound = true;
-    }
-    
-    Time(double target, bool& state_ref, std::function<void()> call_back_func) 
-        : target(target), call_back_func(call_back_func) {
-        state = &state_ref;
-        *state = false;
-        is_bound = true;
-    }
-    
-    Time() : target(1) {
-        state = new bool(false);
-    }
-
-    bool update() {
-        delta_t += Timer.get_acc_time() - last_t;
-        last_t = Timer.get_acc_time();
-        if (delta_t < target) {
-            *state = false;
-            return false;
-        }
-        delta_t -= target;
-        *state = true;
-        return true;
-    }
-    Time(const Time& other) : target(other.target), Timer(other.Timer) {
-        if (other.is_bound) {
-            state = other.state;
-            is_bound = true;
-        } else {
-            state = new bool(*other.state);
-            is_bound = false;
-        }
-        call_back_func = other.call_back_func;
-        last_t = other.last_t;
-        delta_t = other.delta_t;
-    }
-
-    // 添加赋值运算符
-    Time& operator=(const Time& other) {
-        if (this != &other) {
-            if (!is_bound && state != nullptr) {
-                delete state;
-            }
-            
-            target = other.target;
-            if (other.is_bound) {
-                state = other.state;
-                is_bound = true;
-            } else {
-                state = new bool(*other.state);
-                is_bound = false;
-            }
-            call_back_func = other.call_back_func;
-            last_t = other.last_t;
-            delta_t = other.delta_t;
-        }
-        return *this;
-    }
-    
-    ~Time() {
-        if (call_back_func) {
-			try{
-   		        call_back_func();
-			} catch (std::exception& e) {
-				DEBUGOUTPUT("Time call_back_func error: ", e.what());
-			}
-        }
-        if (!is_bound && state != nullptr) {
-            delete state;  // 正确删除动态分配的内存
-			state = nullptr;
-        }
-    }
-};
 
 
 
 // 玩家指玩家和其他AI
 class AI {
+	
+	class Timed_trigger {
+		GlobalTimer& Timer = GlobalTimer::instance_of();
+		double last_t = Timer.get_acc_time();
+		double delta_t = 0;
+		double target;
+		bool* state;  // 改为指针
+		bool is_bound = false;
+		std::function<void()> call_back_func;
+
+	public:
+		Timed_trigger(double target) : target(target) {
+			state = new bool(false);
+		}
+		
+		Timed_trigger(double target, bool& state_ref) : target(target) {
+			state = &state_ref;
+			*state = false;
+			is_bound = true;
+		}
+		
+		Timed_trigger(double target, bool& state_ref, std::function<void()> call_back_func) 
+			: target(target), call_back_func(call_back_func) {
+			state = &state_ref;
+			*state = false;
+			is_bound = true;
+		}
+		
+		Timed_trigger() : target(1) {
+			state = new bool(false);
+		}
+
+		bool update() {
+			if (delta_t < 0) delta_t = 0;
+			delta_t += Timer.get_acc_time() - last_t;
+			last_t = Timer.get_acc_time();
+			if (delta_t < target) {
+				*state = false;
+				return false;
+			}
+			delta_t -= target;
+			*state = true;
+			return true;
+		}
+		Timed_trigger(const Timed_trigger& other) : target(other.target), Timer(other.Timer) {
+			if (other.is_bound) {
+				state = other.state;
+				is_bound = true;
+			} else {
+				state = new bool(*other.state);
+				is_bound = false;
+			}
+			call_back_func = other.call_back_func;
+			last_t = other.last_t;
+			delta_t = other.delta_t;
+		}
+
+		// 添加赋值运算符
+		Timed_trigger& operator=(const Timed_trigger& other) {
+			if (this != &other) {
+				if (!is_bound && state != nullptr) {
+					delete state;
+				}
+				
+				target = other.target;
+				if (other.is_bound) {
+					state = other.state;
+					is_bound = true;
+				} else {
+					state = new bool(*other.state);
+					is_bound = false;
+				}
+				call_back_func = other.call_back_func;
+				last_t = other.last_t;
+				delta_t = other.delta_t;
+			}
+			return *this;
+		}
+		
+		~Timed_trigger() {
+			if (call_back_func) {
+				try{
+					call_back_func();
+				} catch (std::exception& e) {
+					DEBUGOUTPUT("Time call_back_func error: ", e.what());
+				}
+			}
+			if (!is_bound && state != nullptr) {
+				delete state;  // 正确删除动态分配的内存
+				state = nullptr;
+			}
+		}
+	};
 	int gold;
 	std::vector<int> weapons;
 	std::vector<int> arm_level;	// 0: army, 1: weapon1, 2: weapon2, 3: weapon3
@@ -155,7 +157,7 @@ class AI {
 	double k = 0.01; //AI资源增长速度
 	double t0 = 150; //AI资源增速达到A的一半所需时间
 	/* AITimer Timer; */
-	std::list<Time> times; //移动中的时间(代替thread)
+	std::list<Timed_trigger> times; //移动中的时间(代替thread)
 	GlobalTimer& Timer = GlobalTimer::instance_of(); // 全局计时器
 	/* double attackTime = 0; //上一次导弹攻击累计时间 */
 	/* double last_at = 0; //上一个游戏帧导弹攻击累计时间 */
@@ -165,7 +167,7 @@ class AI {
 	bool capital_alive = true; //AI首都是否存活
 	bool can_attack = true; //是否可以用导弹攻击
 	double army_increase_cost_weight = 0.2; //军队增长花费权重
-	double max_army_increase_cost = 4000; //军队增长花费权重上限
+	double max_army_increase_cost = 2000; //军队增长花费权重上限
 	double weapon_increase_cost_weight = 0.9; //武器制造花费权重
 	double uplevel_cost_weight = 1; //升级花费权重
 	double expand_army_max_weight = 0.7; //扩张军队最大权重
@@ -182,7 +184,7 @@ class AI {
 
 	// 资源增长公式
 	const double formula(double t) {
-		return 0.1 * cur_AI_region_size * A / (1 + exp(-k * (t - t0)));
+		return 0.5 * cur_AI_region_size * A / (1 + exp(-k * (t - t0))) + 1500 / cur_AI_region_size;
 	}
 
 public:
@@ -278,9 +280,12 @@ public:
 	}
 	
 	void update(char& ai_state) {
-		//DEBUGOUTPUT("AI source", this->gold);
 		//DEBUGOUTPUT("canMove: ", this->canMove);
 		//DEBUGOUTPUT("AI Called increse()");
+		can_run = src_increase_time.update();
+		if (!can_run) {
+			return;
+		}
 		
 		try {
 			this->increase();
@@ -331,7 +336,7 @@ private:
 		if (!can_attack) {
 			return;
 		}
-		int maxcnt = 20; //最大导弹攻击次数
+		int maxcnt = 100; //最大导弹攻击次数
 		int cnt = 0; //当前导弹攻击次数
 		/* int playerSize = playerRegions.size(); */
 
@@ -342,6 +347,7 @@ private:
 			int round_cnt = 0;
 			for (auto player_region: player_regions) {
 				for (auto aiRegion: AI_regions) {
+					if (weapons[i] == 0) break;
 					Point start(std::get<0>(aiRegion), std::get<1>(aiRegion));
 					Point end(std::get<0>(player_region), std::get<1>(player_region));
 					auto attackRange = region_manager.get_weapon(i).get_attack_range();
@@ -353,6 +359,7 @@ private:
 						DEBUGOUTPUT("WeaponAttack() called");
 						std::cout << "roundSize: " << round_size << std::endl;
 						region_manager.attack_region_missle(i, arm_level[i + 1], start, end, time);
+						weapons[i]--;
 						std::cout << "Weapon attack" << std::endl;
 						push_game_effects(GameEffect::GAME_EFFECT_PLAY_NUCLEAR_WARNING);
 						cnt++;
@@ -383,6 +390,10 @@ private:
 		player_regions.clear();
 		border.clear();
 		distance.clear();
+		// AI_regions.resize(0);
+		// player_regions.resize(0);
+		// border.resize(0);
+		// distance.resize(0);
 		average_force = 0;
 		player_average_force = 0;
 		for (int i = 0; i < region_manager.map_width(); i++) {
@@ -469,8 +480,8 @@ private:
 		player_average_force /= player_region_size;
 	}
 	
-	Time src_increase_time{1}; //资源增长时间间隔
-	Time attack_increase_time{30}; //导弹攻击时间间隔
+	Timed_trigger src_increase_time{1}; //资源增长时间间隔
+	Timed_trigger attack_increase_time{30}; //导弹攻击时间间隔
 
 	void increase() {
 		// TODO
@@ -488,9 +499,10 @@ private:
 		/* attackTime += Timer.elapsedSeconds() - last_at; */	
 		/* last_t = Timer.elapsedSeconds(); */
 		/* last_at = Timer.elapsedSeconds(); */
-		if (!src_increase_time.update()) {
-			return;
-		}
+		// if (!src_increase_time.update()) {
+		// 	return;
+		// }
+		DEBUGOUTPUT("AI source:", this->id, this->gold);
 		if (attack_increase_time.update()) {
 			can_attack = true;
 		}
@@ -499,7 +511,9 @@ private:
 		/* DEBUGOUTPUT("army: ", this->averageForce); */
 		/* DEBUGOUTPUT("canMove: ", this->canMove); */
 		/* DEBUGOUTPUT("canDefend: ", this->canDefend); */
-		this->gold += formula(Timer.get_acc_time());	
+		double increase = formula(Timer.get_acc_time());
+		this->gold += increase;	
+		DEBUGOUTPUT("AI source increase:", this->id, increase);
 		int buildArmy = std::min((this->gold * army_increase_cost_weight), max_army_increase_cost);
 		/* json ArmyInfo = config.getConfig({"Army"}); */
 		//int cost = 1000;// ArmyInfo["cost"].template get<int>();
@@ -525,7 +539,9 @@ private:
 				this->gold -= config.get_weapon_parameter(WEAPON::WEAPON2).AICost;
 			}
 		} else {
-			if (biuldWeapon >= config.get_weapon_parameter(WEAPON::WEAPON3).AICost && arm_level[WEAPON::WEAPON3] > 0) {
+			// double debug = config.get_weapon_parameter(WEAPON::WEAPON3).AICost;
+			// DEBUGOUTPUT("Weapon3AIcost: ", debug);
+			if (biuldWeapon >= config.get_weapon_parameter(WEAPON::WEAPON3).AICost && arm_level[WEAPON::WEAPON3 + 1] > 0) {
 				weapons[WEAPON::WEAPON3]++;
 				this->gold -= config.get_weapon_parameter(WEAPON::WEAPON3).AICost;
 			}
@@ -702,8 +718,8 @@ private:
 
 		this->can_move = false;
 
-		times.push_back(Time(max_time, this->can_move));
-		times.push_back(Time(max_time, this->can_defend));
+		times.push_back(Timed_trigger(max_time, this->can_move));
+		times.push_back(Timed_trigger(max_time, this->can_defend));
 
 		/* std::thread t([this, maxTime](){ */
 		/* 		this->sleep(std::ceil(maxTime)); */
@@ -756,7 +772,7 @@ private:
 					/* std::this_thread::sleep_for(std::chrono::milliseconds((int)(maxTime * 1100))); */
 					/* DEBUGOUTPUT("ArmyAttack finished: "); */
 					/* this->canMove = true; */
-					times.push_back(Time(maxTime, this->can_move,[this, start, end, cur_force, armyLevel](){
+					times.push_back(Timed_trigger(maxTime, this->can_move,[this, start, end, cur_force, armyLevel](){
 							this->region_manager.move_army(start, end, cur_force, armyLevel);
 							}));
 					return;
@@ -929,4 +945,3 @@ public:
 		return no_alive;
 	}
 };
-
