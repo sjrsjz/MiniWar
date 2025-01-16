@@ -14,13 +14,15 @@ out vec4 color;
 out vec3 world_pos;
 out vec3 normal;
 out vec2 uv;
+out vec3 light_dir;
 void main()
 {
 	vec4 wp = inverse(g_model_trans_mat_inv * g_trans_mat) * vModelMat *vec4(vPos, 1.0);
 	gl_Position = MVP  * wp;
 	color = vColor;
 	world_pos = wp.xyz;
-	normal = vNormal;
+	normal = normalize((transpose(inverse(vModelMat)) * vec4(vNormal, 0.0)).xyz);
+	light_dir = normalize(vec3(1,1,1));
 	uv = vUV;
 }
 )";

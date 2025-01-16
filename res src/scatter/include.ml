@@ -70,12 +70,12 @@ Framework{
     N:Tex;
     N:getFFT;
     N:playFFT;
-    N:BuildUpMash;
-    N:TexMash;
-    N:GetTexMash;
-    N:UpdateMash;
-    N:ClearMashData;
-    N:PushMashData;
+    N:BuildUpMesh;
+    N:TexMesh;
+    N:GetTexMesh;
+    N:UpdateMesh;
+    N:ClearMeshData;
+    N:PushMeshData;
     N:TexLWH;
     Framework_Main()->N:={
         buffer1D=getFunc(&"buffer1D");
@@ -102,12 +102,12 @@ Framework{
         getTime=getFunc(&"time");
         getFFT=getFunc(&"getFFT");
         playFFT=getFunc(&"playFFT");
-        BuildUpMash=getFunc(&"BuildUpMash");
-        TexMash=getFunc(&"TexMash");
-        GetTexMash=getFunc(&"GetTexMash");
-        UpdateMash=getFunc(&"UpdateMash");
-        PushMashData=getFunc(&"PushMashData");
-        ClearMashData=getFunc(&"ClearMashData");
+        BuildUpMesh=getFunc(&"BuildUpMesh");
+        TexMesh=getFunc(&"TexMesh");
+        GetTexMesh=getFunc(&"GetTexMesh");
+        UpdateMesh=getFunc(&"UpdateMesh");
+        PushMeshData=getFunc(&"PushMeshData");
+        ClearMeshData=getFunc(&"ClearMeshData");
         setVars=getFunc(&"setVars");
         TexLWH=getFunc(&"TexLWH");
         setFunc(&"frame_start",~frame_start);
@@ -151,12 +151,12 @@ Framework{
     [Transit]getFloat(N:str,N:t)->N:={return(getFloat)}
     [Transit]getVec4(N:str,vec4:t)->N:={return(getVec4)}
     [Transit]getFFT(N:str,N:tex,N:size)->N:={return(getFFT)}
-    [Transit]BuildUpMash(N:tex)->N:={return(BuildUpMash)}
-    [Transit]TexMash(N:/*&*/tex)->N:={return(TexMash)}
-    [Transit]GetTexMash(N:tex)->N:={return(GetTexMash)}
-    [Transit]UpdateMash()->N:={return(UpdateMash)}
-    [Transit]PushMashData()->N:={return(PushMashData)}
-    [Transit]ClearMashData()->N:={return(ClearMashData)}
+    [Transit]BuildUpMesh(N:tex)->N:={return(BuildUpMesh)}
+    [Transit]TexMesh(N:/*&*/tex)->N:={return(TexMesh)}
+    [Transit]GetTexMesh(N:tex)->N:={return(GetTexMesh)}
+    [Transit]UpdateMesh()->N:={return(UpdateMesh)}
+    [Transit]PushMeshData()->N:={return(PushMeshData)}
+    [Transit]ClearMeshData()->N:={return(ClearMeshData)}
     [Transit]TexLWH(N:tex,vec4:dim)->N:={return(TexLWH)}
     GetFloat(N:str)->R:={R:t;getFloat(str,&t);return(t)}
 }

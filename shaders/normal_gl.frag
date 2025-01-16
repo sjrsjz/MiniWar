@@ -8,10 +8,11 @@ in vec4 color;
 in vec3 world_pos;
 in vec3 normal;
 in vec2 uv;
+in vec3 light_dir;
 
 out vec4 fragColor;
 void main(){
-	fragColor = color * max(0.2, dot(normalize(normal),normalize(vec3(1,1,1)))) * texture(tex, uv);
+	fragColor = color * max(0.2, dot(normalize(normal),normalize(light_dir))) * texture(tex, uv);
 	float depth = length(world_pos);
 	gl_FragDepth = depth/(1+depth);
 }

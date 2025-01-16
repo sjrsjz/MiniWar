@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "FragmentBuffer.h"
 #include "../Timer.h"
-#include "../mash.h"
+#include "../mesh.h"
 #include "../../shaders/flame_render_pass.frag"
 #include "../../shaders/flame_render_pass.vert"
 #include "../shader.h"
@@ -55,7 +55,7 @@ public:
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	inline void render(GLuint mix_tex, const Timer& timer, const Mash& quad, float mix_strength) {
+	inline void render(GLuint mix_tex, const Timer& timer, const Mesh& quad, float mix_strength) {
 		m_fbo.bind_frameBuffer();
 		mat4x4 m, p, mvp;
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

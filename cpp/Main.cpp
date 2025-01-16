@@ -6,7 +6,7 @@
 
 #include "../header/output.h"
 #include "../header/shader.h"
-#include "../header/mash.h"
+#include "../header/mesh.h"
 #include "../header/Camera.h"
 #include "../header/Timer.h"
 
@@ -63,10 +63,10 @@ namespace RENDERER
 }
 
 namespace MAP {
-	static Mash s_mash;
+	static Mesh s_mesh;
 	static SmoothCamera camera;
 	static SmoothCamera scale_map_camera; // 缩放摄像机
-	static Mash map_mash;
+	static Mesh map_mesh;
 	static RegionSSBOBuffer map_info;
 	static SmoothMove map_rotation;
 	static const float map_plane_y = -0.62f;
@@ -108,7 +108,7 @@ namespace INTERACTIVE {
 
 namespace MODEL {
 	namespace MISSLE {
-		static Mash missle_mash;
+		static Mesh missle_mesh;
 		static GLuint missle_texture;
 	}
 
@@ -1261,7 +1261,7 @@ void render_update_info() {
 	MAP::map_info.update();
 	
 	std::vector<Vertex> vertices;
-	auto army = rm.get_moving_army_position();
+	auto army = rm.get_moving_army();
 	for (auto& a : army) {
 		Vertex tmp = { std::get<0>(a.current_pos) / MAP::map_info.width() * 2 - 1, MAP::map_plane_y, std::get<1>(a.current_pos) / MAP::map_info.height() * 2 - 1, 1, 1, 1 };
 		if (a.owner_id == 0)
@@ -1273,11 +1273,32 @@ void render_update_info() {
 		}
 		vertices.push_back(tmp);
 	}
-	auto missile = rm.get_moving_missle_position();
+	auto missile = rm.get_moving_missle();
+	MODEL::MISSLE::missle_mesh.clear_matrix();
+	float scale = 1.0 / std::fmax(MAP::map_info.width(), MAP::map_info.height());
+	float missile_size = 0.1;
+	Camera model_camera;
+	model_camera.setPos(0, 0, 0);
 	for (auto& m : missile) {
-		Vertex tmp = { std::get<0>(m.current_pos) / MAP::map_info.width() * 2 - 1, MAP::map_plane_y + std::get<2>(m.current_pos), std::get<1>(m.current_pos) / MAP::map_info.height() * 2 - 1, 1, 1, 0 };
-		vertices.push_back(tmp);
+		auto [x, z, y] = m.current_pos;
+		auto [heading_x, heading_z, heading_y] = m.heading;
+		model_camera.setPos(-x * scale * 2 + 1, -y * scale * 2, -z * scale * 2 + 1);
+		mat4x4 model_mat;
+		model_camera.getMat4(model_mat);
+		mat4x4 model_trans;
+		vec3 heading_axis = { -heading_x, -heading_y, -heading_z };
+		CoordTranslate::mat4x4_align_x_to(model_trans, heading_axis);
+		
+		mat4x4_scale_aniso(model_trans, model_trans, missile_size * 0.25 * scale, missile_size * 0.25 * scale, missile_size * 0.25 * scale);
+		mat4x4 final_model_mat;
+		mat4x4_mul(final_model_mat, model_mat, model_trans);
+		MODEL::MISSLE::missle_mesh.push_matrix(final_model_mat);
+
 	}
+	glDebugMessageCallback((GLDEBUGPROC)0, nullptr);
+	MODEL::MISSLE::missle_mesh.update_instance_matrix();
+	glDebugMessageCallback((GLDEBUGPROC)debugproc, 0);
+
 	//DEBUGOUTPUT("Army size", army.size());
 	PASS_POINT::point_renderer.update(vertices);
 
@@ -1804,7 +1825,7 @@ void render_main_game_pass() {
 
 	glUniform1f(glGetUniformLocation(PASS_MAP_RENDER::s_map_renderer_program, "g_valid_attack_range"), attack_range);
 	// 渲染！
-	MAP::map_mash.render(PASS_MAP_RENDER::s_map_renderer_program, "vPos", nullptr, nullptr, nullptr);
+	MAP::map_mesh.render(PASS_MAP_RENDER::s_map_renderer_program, "vPos", nullptr, nullptr, nullptr);
 
 	glUseProgram(0);
 	MAP::map_info.unbind();
@@ -1942,15 +1963,15 @@ void get_screen_position(float x, float y, float z, float& screen_x, float& scre
 	screen_y = screen_pos[1];
 }
 
-void test_render_missile() {
-	glDebugMessageCallback((GLDEBUGPROC)0, nullptr);
+void render_missile() {
 	CommonTransform transform;
 	calculate_common_transform(transform);
 
 	mat4x4 model_trans_mat;
 	mat4x4_identity(model_trans_mat);
 	mat4x4_translate_in_place(model_trans_mat, 0, MAP::map_plane_y, 0);
-	mat4x4_scale_aniso(model_trans_mat, model_trans_mat, 0.005, 0.005, 0.005);
+	//float scale = 1.0 / std::fmax(MAP::map_info.width(), MAP::map_info.height());
+	//mat4x4_scale_aniso(model_trans_mat, model_trans_mat, scale, scale, scale);
 	mat4x4 inv_mat;
 	mat4x4_invert(inv_mat, model_trans_mat);
 	mat4x4 tmp_model_mat_inv_rot;
@@ -1974,32 +1995,12 @@ void test_render_missile() {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, MODEL::MISSLE::missle_texture);
 
-	MODEL::MISSLE::missle_mash.clear_matrix();
 
-	Camera model_camera;
-	model_camera.setPos(0, 0, 0);
-	for (int i = 0; i < 100; i++) {
-		for(int j = 0; j < 100; j++){
-			model_camera.setPos(i*5, 1, j*5);
-			model_camera.setRot(std::sin(i) + G_PI/2, std::sin(i), 0);
-			mat4x4 model_mat;
-			model_camera.getMat4(model_mat);
-			mat4x4 model_scale;
-			mat4x4_identity(model_scale);
-			mat4x4_scale_aniso(model_scale, model_scale, 0.125, 0.125, 0.125);
-			mat4x4 final_model_mat;
-			mat4x4_mul(final_model_mat, model_mat, model_scale);
-			MODEL::MISSLE::missle_mash.push_matrix(final_model_mat);
-		}
-	}
-
-	MODEL::MISSLE::missle_mash.update_instance_matrix();
-	MODEL::MISSLE::missle_mash.enable_instance = true;
-	MODEL::MISSLE::missle_mash.render(PASS_NORMAL::s_normal_gl_program, "vPos", "vColor", "vUV", "vNormal", "vModelMat");
+	MODEL::MISSLE::missle_mesh.enable_instance = true;
+	MODEL::MISSLE::missle_mesh.render(PASS_NORMAL::s_normal_gl_program, "vPos", "vColor", "vUV", "vNormal", "vModelMat");
 
 	glUseProgram(0);
 	FBO::g_main_game_pass_fbo.unbind_frameBuffer();
-	glDebugMessageCallback((GLDEBUGPROC)debugproc, 0);
 }
 
 
@@ -2040,7 +2041,7 @@ void render_gaussian_blur() {
 		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_gaussian"), false);
 		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_vertical"), false);
 
-		MAP::s_mash.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
+		MAP::s_mesh.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
 		
 		glUseProgram(0);
 		FBO::g_gaussian_blur_pass_fbo.unbind_frameBuffer();
@@ -2080,7 +2081,7 @@ void render_gaussian_blur() {
 		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_gaussian"), false);
 		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_vertical"), false);
 
-		MAP::s_mash.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
+		MAP::s_mesh.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
 
 		glUseProgram(0);
 		FBO::g_gaussian_blur_vertical_pass_fbo.unbind_frameBuffer();
@@ -2122,7 +2123,7 @@ void render_gaussian_blur() {
 		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_gaussian"), true);
 		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_vertical"), true);
 
-		MAP::s_mash.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
+		MAP::s_mesh.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
 
 		glUseProgram(0);
 		FBO::g_gaussian_blur_pass_fbo.unbind_frameBuffer();
@@ -2162,7 +2163,7 @@ void render_gaussian_blur() {
 		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_gaussian"), true);
 		glUniform1i(glGetUniformLocation(PASS_BLOOM::s_gaussian_blur_program, "g_vertical"), false);
 
-		MAP::s_mash.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
+		MAP::s_mesh.render(PASS_BLOOM::s_gaussian_blur_program, "vPos", nullptr, "vUV", nullptr);
 		glUseProgram(0);
 		FBO::g_gaussian_blur_vertical_pass_fbo.unbind_frameBuffer();
 	}
@@ -2190,7 +2191,7 @@ void render_final() {
 	glActiveTexture(GL_TEXTURE0);
 
 	if (s_menu_gui.is_activitied()) {
-		FBO::g_flame_render_pass.render(FBO::g_final_mix_pass_fbo.get_texture(), RENDERER::timer, MAP::s_mash, s_menu_gui.getX());
+		FBO::g_flame_render_pass.render(FBO::g_final_mix_pass_fbo.get_texture(), RENDERER::timer, MAP::s_mesh, s_menu_gui.getX());
 		FBO::g_flame_render_pass.get_fbo().bind_texture();
 	}
 	else
@@ -2200,7 +2201,7 @@ void render_final() {
 	glUniform1i(glGetUniformLocation(PASS_DIRECT_TEX::s_direct_tex_program, "g_pass"), 0);
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
 
-	MAP::s_mash.render(PASS_DIRECT_TEX::s_direct_tex_program, "vPos", nullptr, "vUV", nullptr);
+	MAP::s_mesh.render(PASS_DIRECT_TEX::s_direct_tex_program, "vPos", nullptr, "vUV", nullptr);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -2215,7 +2216,7 @@ void render() {
 	if (!s_menu_gui.is_activitied() && GAMESTATUS::s_in_game) {
 		render_main_game_pass();
 		render_points();
-		test_render_missile();
+		render_missile();
 
 		// 检查是否为arm平台
 //#if defined(__aarch64__) || defined(__arm__)
@@ -2271,7 +2272,7 @@ void render() {
 		glUniform1f(glGetUniformLocation(PASS_MAIN::s_main_game_pass_program, "g_blur"), 0.05);
 //#endif
 	}
-	MAP::s_mash.render(PASS_MAIN::s_main_game_pass_program, "vPos", nullptr, "vUV", nullptr);
+	MAP::s_mesh.render(PASS_MAIN::s_main_game_pass_program, "vPos", nullptr, "vUV", nullptr);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
 
@@ -2555,26 +2556,26 @@ void init() {
 
 	DEBUGOUTPUT("Loading Models...");
 	DEBUGOUTPUT("Loading Model: Missile");
-	MODEL::MISSLE::missle_mash.rgba(1, 1, 1, 1);
-	MODEL::MISSLE::missle_mash.load_from_obj("./resources/models/Missile AGM-65.obj");
-	MODEL::MISSLE::missle_mash.enable_color = true;
-	MODEL::MISSLE::missle_mash.enable_normal = true;
-	MODEL::MISSLE::missle_mash.enable_uv = true;
+	MODEL::MISSLE::missle_mesh.rgba(1, 1, 1, 1);
+	MODEL::MISSLE::missle_mesh.load_from_obj("./resources/models/Missile AGM-65.obj");
+	MODEL::MISSLE::missle_mesh.enable_color = true;
+	MODEL::MISSLE::missle_mesh.enable_normal = true;
+	MODEL::MISSLE::missle_mesh.enable_uv = true;
 
-	MODEL::MISSLE::missle_mash.build();
+	MODEL::MISSLE::missle_mesh.build();
 
-	DEBUGOUTPUT("Building Map Mash...");
-	MAP::s_mash.append(1, -1, 0);
-	MAP::s_mash.append(1, 1, 0);
-	MAP::s_mash.append(-1, 1, 0);
-	MAP::s_mash.append(-1, -1, 0);
-	MAP::s_mash.build();
+	DEBUGOUTPUT("Building Map Mesh...");
+	MAP::s_mesh.append(1, -1, 0);
+	MAP::s_mesh.append(1, 1, 0);
+	MAP::s_mesh.append(-1, 1, 0);
+	MAP::s_mesh.append(-1, -1, 0);
+	MAP::s_mesh.build();
 
-	MAP::map_mash.append(1, -1, 0);
-	MAP::map_mash.append(1, 1, 0);
-	MAP::map_mash.append(-1, 1, 0);
-	MAP::map_mash.append(-1, -1, 0);
-	MAP::map_mash.build();
+	MAP::map_mesh.append(1, -1, 0);
+	MAP::map_mesh.append(1, 1, 0);
+	MAP::map_mesh.append(-1, 1, 0);
+	MAP::map_mesh.append(-1, -1, 0);
+	MAP::map_mesh.build();
 	DEBUGOUTPUT("Meshes built");
 
 	PASS_POINT::point_renderer.init();

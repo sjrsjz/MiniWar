@@ -6521,7 +6521,7 @@ static void ShowDemoWindowTables()
     IMGUI_DEMO_MARKER("Tables/Angled headers");
     if (ImGui::TreeNode("Angled headers"))
     {
-        const char* column_names[] = { "Track", "cabasa", "ride", "smash", "tom-hi", "tom-mid", "tom-low", "hihat-o", "hihat-c", "snare-s", "snare-c", "clap", "rim", "kick" };
+        const char* column_names[] = { "Track", "cabasa", "ride", "smesh", "tom-hi", "tom-mid", "tom-low", "hihat-o", "hihat-c", "snare-s", "snare-c", "clap", "rim", "kick" };
         const int columns_count = IM_ARRAYSIZE(column_names);
         const int rows_count = 12;
 

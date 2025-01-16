@@ -235,7 +235,7 @@ Player& RegionManager::get_player() {
 	return m_player;
 }
 
-std::vector<MovingArmy> RegionManager::get_moving_army_position() {
+std::vector<MovingArmy> RegionManager::get_moving_army() {
 	std::vector<MovingArmy> copy;
 	{
 		std::lock_guard<std::mutex> lock(army_mutex);
@@ -246,7 +246,7 @@ std::vector<MovingArmy> RegionManager::get_moving_army_position() {
 
 }
 
-std::vector<MovingMissle> RegionManager::get_moving_missle_position() {
+std::vector<MovingMissle> RegionManager::get_moving_missle() {
 	std::vector<MovingMissle> copy;
 	{
 		std::lock_guard<std::mutex> lock(missle_mutex);
@@ -562,11 +562,26 @@ void RegionManager::update(GlobalTimer& timer) {
 			double P2X = middleX - (middleX - endX) * M;
 			double P2Y = middleY - (middleY - endY) * M;
 
-			double h = missle.h / 1000.0;
+			double h = missle.h / 3000.0;
 			double x = (1 - mix) * (1 - mix) * (1 - mix) * startX + 3 * mix * (1 - mix) * (1 - mix) * P1X + 3 * mix * mix * (1 - mix) * P2X + mix * mix * mix * endX;
 			double y = (1 - mix) * (1 - mix) * (1 - mix) * startY + 3 * mix * (1 - mix) * (1 - mix) * P1Y + 3 * mix * mix * (1 - mix) * P2Y + mix * mix * mix * endY;
-			double z = (3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix) * 0.025;
+			double z = (3 * h * (1 - mix) * (1 - mix) * mix + 3 * h * (1 - mix) * mix * mix);
+
+			double dx = -3 * (1 - mix) * (1 - mix) * startX + 3 * (1 - mix) * (1 - mix) * P1X - 6 * mix * (1 - mix) * P1X
+				+ 6 * mix * (1 - mix) * P2X - 3 * mix * mix * P2X + 3 * mix * mix * endX;
+
+			double dy = -3 * (1 - mix) * (1 - mix) * startY + 3 * (1 - mix) * (1 - mix) * P1Y - 6 * mix * (1 - mix) * P1Y
+				+ 6 * mix * (1 - mix) * P2Y - 3 * mix * mix * P2Y + 3 * mix * mix * endY;
+
+			double dz = h * (3 * (1 - mix) * (1 - mix) - 6 * (1 - mix) * mix - 3 * mix * mix + 6 * (1 - mix) * mix);
+
+			double len = sqrt(dx * dx + dy * dy + dz * dz);
+			dx /= len;
+			dy /= len;
+			dz /= len;
+
 			missle.current_pos = std::make_tuple(x, y, z);
+			missle.heading = std::make_tuple(dx, dy, dz);
 		}
 
 	}

@@ -30,10 +30,70 @@ struct MovingMissle {
 	std::tuple<int, int> start_point{};
 	std::tuple<int, int> end_point{};
 	std::tuple<double, double, double> current_pos{};
+	std::tuple<double, double, double> heading{};
 	int h;
 	int M;
-	bool operator<(const MovingMissle& rhs) const {
-		return reach_time > rhs.reach_time;
+	
+	MovingMissle() = default;
+	MovingMissle(MovingMissle&& rhs) {
+		owner_id = rhs.owner_id;
+		weapon_id = rhs.weapon_id;
+		weapon_level = rhs.weapon_level;
+		time = rhs.time;
+		reach_time = rhs.reach_time;
+		start_point = rhs.start_point;
+		end_point = rhs.end_point;
+		current_pos = rhs.current_pos;
+		heading = rhs.heading;
+		h = rhs.h;
+		M = rhs.M;
+	}
+	MovingMissle& operator=(MovingMissle&& rhs) {
+		if (this == &rhs) {
+			return *this;
+		}
+		owner_id = rhs.owner_id;
+		weapon_id = rhs.weapon_id;
+		weapon_level = rhs.weapon_level;
+		time = rhs.time;
+		reach_time = rhs.reach_time;
+		start_point = rhs.start_point;
+		end_point = rhs.end_point;
+		current_pos = rhs.current_pos;
+		heading = rhs.heading;
+		h = rhs.h;
+		M = rhs.M;
+		return *this;
+	}
+	MovingMissle& operator=(const MovingMissle& rhs) {
+		if (this == &rhs) {
+			return *this;
+		}
+		owner_id = rhs.owner_id;
+		weapon_id = rhs.weapon_id;
+		weapon_level = rhs.weapon_level;
+		time = rhs.time;
+		reach_time = rhs.reach_time;
+		start_point = rhs.start_point;
+		end_point = rhs.end_point;
+		current_pos = rhs.current_pos;
+		heading = rhs.heading;
+		h = rhs.h;
+		M = rhs.M;
+		return *this;
+	}
+	MovingMissle(const MovingMissle& rhs) {
+		owner_id = rhs.owner_id;
+		weapon_id = rhs.weapon_id;
+		weapon_level = rhs.weapon_level;
+		time = rhs.time;
+		reach_time = rhs.reach_time;
+		start_point = rhs.start_point;
+		end_point = rhs.end_point;
+		current_pos = rhs.current_pos;
+		heading = rhs.heading;
+		h = rhs.h;
+		M = rhs.M;
 	}
 };
 
@@ -53,8 +113,8 @@ public:
 	int map_width();
 	int map_height();
 
-	std::vector<MovingArmy> get_moving_army_position();
-	std::vector<MovingMissle> get_moving_missle_position();
+	std::vector<MovingArmy> get_moving_army();
+	std::vector<MovingMissle> get_moving_missle();
 	int calculate_region_amount(int player_id);
 
 	void calculate_delta_resources(std::vector<double>& delta_resource, double delta_t, int player_id);
