@@ -18,3 +18,4 @@ void push_error_message(const std::string& msg);
 std::vector<std::string> get_error_messages();
 void push_game_effects(GameEffect effect);
 std::vector<GameEffect> get_game_effects();
+void pause_game(bool pause);

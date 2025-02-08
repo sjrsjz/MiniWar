@@ -343,6 +343,7 @@ namespace UIFonts {
 	static ImFont* default_font;
 	static ImFont* menu_font;
 	static ImFont* large_font;
+	static ImFont* small_font;
 }
 namespace TEXTURE {
 	static GLuint s_image_radioactive;
@@ -369,6 +370,11 @@ static enum SelectedWeapon {
 	SCATTER_BOMB, // 散弹炸弹
 } s_selected_weapon;
 
+static struct {
+	bool dragging = false;
+	double last_x = 0;
+	double last_y = 0;
+} g_main_window_state;
 
 
 
@@ -605,6 +611,33 @@ public:
 		ImGui::Begin("Tech Tree", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		ImGui::SetWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
 		ImGui::SetWindowPos(ImVec2(0, 0) * s_dpi_scale);
+
+		// 处理鼠标拖动
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+			if (!g_main_window_state.dragging) {
+				// 开始拖动
+				g_main_window_state.dragging = true;
+				g_main_window_state.last_x = io.MousePos.x;
+				g_main_window_state.last_y = io.MousePos.y;
+			}
+			else {
+				// 计算拖动偏移
+				float dx = (io.MousePos.x - g_main_window_state.last_x);
+				float dy = (io.MousePos.y - g_main_window_state.last_y);
+
+				// 更新偏移位置
+				float speed = 0.01f;
+				tree_offset_X.new_end_position(tree_offset_X.x() + dx * speed, RENDERER::timer.time());
+				tree_offset_Y.new_end_position(tree_offset_Y.x() + dy * speed, RENDERER::timer.time());
+
+				// 更新上一次位置
+				g_main_window_state.last_x = io.MousePos.x;
+				g_main_window_state.last_y = io.MousePos.y;
+			}
+		}
+		else {
+			g_main_window_state.dragging = false;
+		}
 
 		tree.draw(io, show.x(), ImVec2(1000 * tree_offset_X.x(), 1000 * tree_offset_Y.x()) * s_dpi_scale);
 
@@ -1038,23 +1071,23 @@ public:
 		std::vector<double> resources = RegionManager::instance_of().get_player().get_remain_resources();
 		std::vector<double> max_resources = RegionManager::instance_of().get_player().get_resources();
 		
-		double gold = resources[ResourceType::GOLD];
+		double gold = (int)resources[ResourceType::GOLD];
 		gold_amount.new_end_position(gold, timer.time());
 		gold_amount_back.new_end_position(gold, timer.time());
 		gold_amount_max = _10_n_max_than(gold);
-		double electricity = resources[ResourceType::ELECTRICITY];
+		double electricity = (int)resources[ResourceType::ELECTRICITY];
 		electricity_amount.new_end_position(electricity, timer.time());
 		electricity_amount_back.new_end_position(electricity, timer.time());
 		electricity_amount_max = _10_n_max_than(electricity);
-		double labor = resources[ResourceType::LABOR];
+		double labor = (int)resources[ResourceType::LABOR];
 		labor_amount_max = max_resources[ResourceType::LABOR];
 		labor_amount.new_end_position(fmax(0, labor), timer.time());
 		labor_amount_back.new_end_position(fmax(0, labor), timer.time());
-		double oil = resources[ResourceType::OIL];
+		double oil = (int)resources[ResourceType::OIL];
 		oil_amount.new_end_position(oil, timer.time());
 		oil_amount_back.new_end_position(oil, timer.time());
 		oil_amount_max = _10_n_max_than(oil);
-		double steel = resources[ResourceType::STEEL];
+		double steel = (int)resources[ResourceType::STEEL];
 		steel_amount.new_end_position(steel, timer.time());
 		steel_amount_back.new_end_position(steel, timer.time());
 		steel_amount_max = _10_n_max_than(steel);
@@ -1075,109 +1108,208 @@ public:
 
 
 		occupation_amount_max = RegionManager::instance_of().map_width() * RegionManager::instance_of().map_height();
-		double x = region_count;
-		occupation_amount.new_end_position(x, timer.time());
-		occupation_amount_back.new_end_position(x, timer.time());
+		occupation_amount.new_end_position(region_count, timer.time());
+		occupation_amount_back.new_end_position(region_count, timer.time());
 
 	}
 
 }s_status_gui;
 
-static class SubMenuGui
-{
+static class SubMenuGui {
 	// 弹出建筑选择
 	ImVec2 mouse_position;
 	int grid[2]{};
 	bool open = false;
+	bool should_open = false;
 public:
 	void open_gui(bool open, const ImVec2& mouse_position, int grid_x, int grid_y) {
 		this->open = open;
 		this->mouse_position = mouse_position;
 		grid[0] = grid_x;
 		grid[1] = grid_y;
+		if (open) {
+			should_open = true;
+		}
 	}
+
 	void render_gui(ImGuiIO& io) {
 		if (!open) return;
-		ImGui::SetNextWindowBgAlpha(0.75);
-		ImGui::Begin("Building", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
-		//ImGui::SetWindowSize(ImVec2(200, 200));
-		ImGui::SetWindowPos(mouse_position);
-		ImGui::Text(u8"建筑");
-		// 列表
-		if (ImGui::BeginListBox("##BuildingList")) {
-			if (ImGui::Selectable(u8"发电站")) {
-				push_input({ Point::to_point(grid),Operator::SetPowerStation });
-				open = false;
-			}
-			if (ImGui::Selectable(u8"炼油厂")) {
-				push_input({ Point::to_point(grid),Operator::SetRefinery });
-				open = false;
-			}
-			if (ImGui::Selectable(u8"炼钢厂")) {
-				push_input({ Point::to_point(grid),Operator::SetSteelFactory });
-				open = false;
-			}
-			if (ImGui::Selectable(u8"民生工厂")) {
-				push_input({ Point::to_point(grid),Operator::SetCivilFactory });
-				open = false;
-			}
-			if (ImGui::Selectable(u8"军事工厂")) {
-				push_input({ Point::to_point(grid),Operator::SetMilitaryFactory });
-				open = false;
-			}
-			/*if (ImGui::Selectable(u8"升级建筑")) {
-				push_input({ Point::toPoint(grid),Operator::BuildingLevel });
-				open = false;
-			}*/
-			if (ImGui::Selectable(u8"移除建筑")) {
-				push_input({ Point::to_point(grid),Operator::RemoveBuilding });
-				open = false;
-			}
-			ImGui::EndListBox();
+		if (should_open) {
+			ImGui::OpenPopup("BuildingMenuPopup");
+			should_open = false;
 		}
-		// 生产菜单
-		ImGui::Text(u8"生产");
-		if (ImGui::BeginListBox("##ProductionList")) {
-			if (ImGui::Selectable(u8"军队")) {
-				push_input({ Point::to_point(grid),Point::to_point(grid),100,Operator::ProductArmy });
-				open = false;
+		//ImGui::PushFont(UIFonts::small_font);
+
+		// 设置弹出菜单风格
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(5, 5));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(16, 16));
+		
+		// 设置颜色
+		ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.08f, 0.08f, 0.08f, 0.94f));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.43f, 0.43f, 0.50f, 0.50f));
+		ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0.14f, 0.14f, 0.14f, 0.94f));
+		
+		// 菜单项颜色
+		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.24f, 0.24f, 0.24f, 0.55f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.59f, 0.98f, 0.80f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.26f, 0.59f, 0.98f, 1.00f));
+		
+
+		ImGui::SetNextWindowPos(mouse_position);
+		ImGui::SetNextWindowBgAlpha(0.5);
+
+		float text_size = ImGui::CalcTextSize(u8"发电站").y;
+		float icon_size = text_size;
+
+		if (ImGui::BeginPopup("BuildingMenuPopup", ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
+			ImGui::SetNextWindowBgAlpha(0.5);
+			if (ImGui::BeginMenu(u8"建筑")) {
+				// UV计算的基础值
+				const float ICON_WIDTH = 0.125f;  // 每个图标宽度占比
+				const float ICON_OFFSETS[] = {
+					0.373f,  // PowerStation (发电站)
+					0.25f,   // Refinery (炼油厂)
+					0.118f,  // SteelFactory (炼钢厂)
+					0.0f,    // CivilFactory (民生工厂)
+					0.5f     // MilitaryFactory (军事工厂)
+				};
+
+				// 发电站
+				ImGui::Image(TEXTURE::s_image_building_icon,
+					ImVec2(icon_size, icon_size),
+					ImVec2(ICON_OFFSETS[0], 0),                    // UV开始坐标
+					ImVec2(ICON_OFFSETS[0] + ICON_WIDTH, 1)        // UV结束坐标
+				);
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"发电站")) {
+					push_input({ Point::to_point(grid),Operator::SetPowerStation });
+					open = false;
+				}
+
+				// 炼油厂
+				ImGui::Image(TEXTURE::s_image_building_icon,
+					ImVec2(icon_size, icon_size),
+					ImVec2(ICON_OFFSETS[1], 0),
+					ImVec2(ICON_OFFSETS[1] + ICON_WIDTH, 1)
+				);
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"炼油厂")) {
+					push_input({ Point::to_point(grid),Operator::SetRefinery });
+					open = false;
+				}
+
+				// 炼钢厂
+				ImGui::Image(TEXTURE::s_image_building_icon,
+					ImVec2(icon_size, icon_size),
+					ImVec2(ICON_OFFSETS[2], 0),
+					ImVec2(ICON_OFFSETS[2] + ICON_WIDTH, 1)
+				);
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"炼钢厂")) {
+					push_input({ Point::to_point(grid),Operator::SetSteelFactory });
+					open = false;
+				}
+
+				// 民生工厂
+				ImGui::Image(TEXTURE::s_image_building_icon,
+					ImVec2(icon_size, icon_size),
+					ImVec2(ICON_OFFSETS[3], 0),
+					ImVec2(ICON_OFFSETS[3] + ICON_WIDTH, 1)
+				);
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"民生工厂")) {
+					push_input({ Point::to_point(grid),Operator::SetCivilFactory });
+					open = false;
+				}
+
+				// 军事工厂
+				ImGui::Image(TEXTURE::s_image_building_icon,
+					ImVec2(icon_size, icon_size),
+					ImVec2(ICON_OFFSETS[4], 0),
+					ImVec2(ICON_OFFSETS[4] + ICON_WIDTH, 1)
+				);
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"军事工厂")) {
+					push_input({ Point::to_point(grid),Operator::SetMilitaryFactory });
+					open = false;
+				}
+				ImGui::Dummy(ImVec2(icon_size, 0)); // 水平占位，宽度为icon_size
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"移除建筑")) {
+					push_input({ Point::to_point(grid),Operator::RemoveBuilding });
+					open = false;
+				}
+				ImGui::EndMenu();
 			}
-			if (ImGui::Selectable(u8"核导弹一级")) {
-				push_input({ Point::to_point(grid),Point::to_point(grid),Operator::ProductWeapon0 });
-				open = false;
+			ImGui::SetNextWindowBgAlpha(0.5);
+			if (ImGui::BeginMenu(u8"生产")) {
+				// 武器
+				ImGui::Image(TEXTURE::s_image_guard, ImVec2(icon_size, icon_size));
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"军队")) {
+					push_input({ Point::to_point(grid),Point::to_point(grid),100,Operator::ProductArmy });
+					open = false;
+					// push_error_message(u8"已生产100军队"); // 提示信息（借用错误信息）
+				}
+				ImGui::Image(TEXTURE::s_image_radioactive, ImVec2(icon_size, icon_size));
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"核导弹一级")) {
+					push_input({ Point::to_point(grid),Point::to_point(grid),Operator::ProductWeapon0 });
+					open = false;
+					// push_error_message(u8"已生产核导弹一级");
+				}
+				ImGui::Image(TEXTURE::s_image_radioactive, ImVec2(icon_size, icon_size));
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"核导弹二级")) {
+					push_input({ Point::to_point(grid),Point::to_point(grid),Operator::ProductWeapon1 });
+					open = false;
+					// push_error_message(u8"已生产核导弹二级");
+				}
+				ImGui::Image(TEXTURE::s_image_radioactive, ImVec2(icon_size, icon_size));
+				ImGui::SameLine();
+				if (ImGui::MenuItem(u8"核导弹三级")) {
+					push_input({ Point::to_point(grid),Point::to_point(grid),Operator::ProductWeapon2 });
+					open = false;
+					// push_error_message(u8"已生产核导弹三级");
+				}
+				ImGui::EndMenu();
 			}
-			if (ImGui::Selectable(u8"核导弹二级")) {
-				push_input({ Point::to_point(grid),Point::to_point(grid),Operator::ProductWeapon1 });
-				open = false;
-			}
-			if (ImGui::Selectable(u8"核导弹三级")) {
-				push_input({ Point::to_point(grid),Point::to_point(grid),Operator::ProductWeapon2 });
-				open = false;
-			}
-			ImGui::EndListBox();
+			ImGui::EndPopup();
 		}
-		ImGui::End();
+		else {
+			open = false;
+		}
+
+		ImGui::PopStyleColor(6);
+		ImGui::PopStyleVar(3);
+		//ImGui::PopFont();
 	}
+
 	void update(const Timer& timer) {
 		if (s_selected_weapon != NONE) {
 			open = false;
+			ImGui::CloseCurrentPopup();
 		}
 		try {
 			if (RegionManager::instance_of().region(grid[0], grid[1]).get_owner() != 0) {
 				open = false;
+				ImGui::CloseCurrentPopup();
 			}
 		}
 		catch (std::exception e) {
 			open = false;
+			ImGui::CloseCurrentPopup();
 		}
 		if (grid[0] < 0 || grid[1] < 0) {
 			open = false;
+			ImGui::CloseCurrentPopup();
 		}
 	}
+
 	bool is_open() {
 		return open;
 	}
-
 } s_sub_menu_gui;
 
 
@@ -1838,7 +1970,7 @@ void prepare_render() {
 
 
 	MAP::scale_map_camera.update(RENDERER::timer.time());
-	MAP::scale_map_camera.clampZ(-80, 0,RENDERER::timer.time());
+	MAP::scale_map_camera.clampZ(-8, 0,RENDERER::timer.time());
 
 	MAP::camera.update(RENDERER::timer.time());
 	MAP::camera.clampX(-5, 5, RENDERER::timer.time());
@@ -1891,6 +2023,8 @@ void prepare_render() {
 	}
 
 	s_game_over_gui.open_gui(g_game_stop);
+
+	pause_game(GAMESTATUS::s_in_game && s_menu_gui.get_gui_mode() == MenuGui::Pause && s_menu_gui.is_activitied());
 }
 
 // 添加新的结构体定义
@@ -2744,6 +2878,7 @@ int main() {
 	UIFonts::default_font = io.Fonts->AddFontFromFileTTF("./resources/fonts/msyh.ttf", 32.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	UIFonts::large_font = io.Fonts->AddFontFromFileTTF("./resources/fonts/msyh.ttf", 48.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	UIFonts::menu_font = io.Fonts->AddFontFromFileTTF("./resources/fonts/msyh.ttf", 64.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	UIFonts::small_font = io.Fonts->AddFontFromFileTTF("./resources/fonts/msyh.ttf", 24.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 	if (!io.Fonts->Build()) {
 		DEBUGOUTPUT("Failed to build fonts");
 		goto destroy;
@@ -2855,8 +2990,37 @@ void glfwKeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int 
 		}
 	}
 }
-void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
+// 修改鼠标回调函数
+void glfwMouseCallback(GLFWwindow* window, double xpos, double ypos) {
+	if (s_menu_gui.is_open() || !GAMESTATUS::s_enable_control) {
+		return;
+	}
+
+	if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered()) {
+		if (!g_main_window_state.dragging) {
+			// 开始拖动
+			g_main_window_state.dragging = true;
+			g_main_window_state.last_x = xpos;
+			g_main_window_state.last_y = ypos;
+		}
+		else {
+			// 计算拖动距离
+			float dx = (xpos - g_main_window_state.last_x);
+			float dz = (ypos - g_main_window_state.last_y);
+
+			// 移动相机
+			float speed = -0.01f * (MAP::scale_map_camera.getZ() - 1);
+			MAP::camera.move(dx * speed, 0, dz * speed, RENDERER::timer.time());
+
+			// 更新上一次位置
+			g_main_window_state.last_x = xpos;
+			g_main_window_state.last_y = ypos;
+		}
+	}
+	else {
+		g_main_window_state.dragging = false;
+	}
 }
 
 // 滚轮事件

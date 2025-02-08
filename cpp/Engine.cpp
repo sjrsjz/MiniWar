@@ -234,6 +234,17 @@ void update() {
 bool g_game_stop = false;
 bool g_game_over = false;
 
+void pause_game(bool pause) {
+	if (pause && !isPause) {
+		isPause = true;
+		GlobalTimer::instance_of().pause();
+	}
+	else if (!pause && isPause) {
+		isPause = false;
+		GlobalTimer::instance_of().resume();
+	}
+}
+
 void main_loop() {
 	g_game_over = false;
 	g_game_stop = false;

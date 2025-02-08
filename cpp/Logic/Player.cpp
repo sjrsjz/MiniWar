@@ -435,7 +435,7 @@ void Player::product(Operation operation) {
 	}
 }
 void push_error_message(const std::string& msg);
-void Player:: update(GlobalTimer& timer){
+void Player::update(GlobalTimer& timer){
 	std::vector<double> delta_resource = { 0,0,0,0,0 };
 	double delta_t = timer.get_dt();
 	std::vector<double> steady_cost_resource = { 0,0,0,0,0 };
